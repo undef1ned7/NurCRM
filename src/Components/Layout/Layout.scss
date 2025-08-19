@@ -1,0 +1,48 @@
+
+.App {
+  display: flex;
+  position: relative;
+  transition: transform 0.3s ease-in-out;
+
+  &--sidebar-open {
+    transform: translateX(60%);
+
+    @media (min-width: 769px) {
+      transform: translateX(0);
+    }
+  }
+}
+
+.content {
+  width: 100%;
+  height: 100vh;
+  padding: 0 20px 20px 20px;
+  position: relative;
+  transition: transform 0.3s ease-in-out;
+
+  @media (min-width: 769px) {
+    margin-left: 255px;
+  }
+
+  .content_image1 {
+    position: absolute;
+    top: 0;
+    left: 10%;
+    z-index: -1;
+  }
+
+  .content_image2 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+  }
+
+  .content_image3 {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    z-index: -1;
+  }
+}
