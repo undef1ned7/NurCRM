@@ -389,9 +389,9 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
   // const [barcodeError, setBarcodeError] = useState(null);
   const [newItemData, setNewItemData] = useState({
     name: "",
-    article: "",
-    brand: "",
-    category: "",
+    barcode: "",
+    brand_name: "",
+    category_name: "",
     price: "",
     quantity: "",
   });
@@ -401,25 +401,21 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
 
     setNewItemData((prevData) => ({
       ...prevData,
-      [name]:
-        type === "number" || name === "brand" || name === "category"
-          ? value === ""
-            ? ""
-            : parseInt(value)
-          : value,
+      [name]: type === "number" ? (value === "" ? "" : parseInt(value)) : value,
     }));
   };
 
   const handleSubmit = async () => {
-    const { name, article, brand, category, price, quantity } = newItemData;
+    const { name, barcode, brand_name, category_name, price, quantity } =
+      newItemData;
 
     if (
       !name ||
-      !article ||
+      !barcode ||
       price === "" ||
       quantity === "" ||
-      brand === "" ||
-      category === ""
+      brand_name === "" ||
+      category_name === ""
     ) {
       alert("Пожалуйста, заполните все обязательные поля.");
       return;
@@ -427,9 +423,9 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
 
     const payload = {
       name,
-      article,
-      brand: Number(brand),
-      category: Number(category),
+      barcode,
+      brand_name,
+      category_name,
       price: price.toString(),
       quantity: Number(quantity),
     };
@@ -473,10 +469,10 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
             <label>Штрих код *</label>
             <input
               type="text"
-              name="article"
-              placeholder="Артикул"
+              name="barcode"
+              placeholder="Штрих код"
               className="add-modal__input"
-              value={newItemData.article}
+              value={newItemData.barcode}
               onChange={handleChange}
               required
             />
@@ -485,15 +481,15 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
           <div className="add-modal__section">
             <label>Бренд *</label>
             <select
-              name="brand"
+              name="brand_name"
               className="add-modal__input"
-              value={newItemData.brand}
+              value={newItemData.brand_name}
               onChange={handleChange}
               required
             >
               <option value="">-- Выберите бренд --</option>
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>
+              {brands.map((brand, idx) => (
+                <option key={idx} value={brand.name}>
                   {brand.name}
                 </option>
               ))}
@@ -503,15 +499,15 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
           <div className="add-modal__section">
             <label>Категория *</label>
             <select
-              name="category"
+              name="category_name"
               className="add-modal__input"
-              value={newItemData.category}
+              value={newItemData.category_name}
               onChange={handleChange}
               required
             >
               <option value="">-- Выберите категорию --</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
+              {categories.map((category, idx) => (
+                <option key={idx} value={category.name}>
                   {category.name}
                 </option>
               ))}

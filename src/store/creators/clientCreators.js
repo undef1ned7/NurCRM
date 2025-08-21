@@ -62,3 +62,30 @@ export const getItemClient = createAsyncThunk(
     }
   }
 );
+
+export const createDeals = createAsyncThunk(
+  "client/createDeals",
+  async ({ clientId, ...data }, { rejectWithValue }) => {
+    try {
+      const { data: response } = await api.post(
+        `/main/clients/${clientId}/deals/`,
+        data
+      );
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const getClientDeals = createAsyncThunk(
+  "client/getClientDeals",
+  async (clientId, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/main/clients/${clientId}/deals/`);
+      return data.results;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);

@@ -69,18 +69,6 @@ export const deleteProductAsync = createAsyncThunk(
   }
 );
 
-export const sendBarCode = createAsyncThunk(
-  "products/sendBarcode",
-  async (barcode, { rejectWithValue }) => {
-    try {
-      const { data } = await api.post("", barcode);
-      return data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
 /* =================================================================== */
 /*                                BRANDS                               */
 /* =================================================================== */

@@ -486,12 +486,114 @@
 }
 
 .clientDetail {
+  // background-color: #ecf2f2;
   margin-top: 40px;
-  &__first,
-  &__second {
+  padding: 20px;
+  &__back {
+    display: flex;
+    align-items: center;
+    column-gap: 20px;
+  }
+  &__dealsList {
+    margin-top: 20px;
+    background-color: #fff;
+    padding: 20px;
+
+    &-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid #ccc;
+      div {
+        display: flex;
+        align-items: center;
+        column-gap: 50px;
+      }
+    }
+  }
+  &__add-deal {
+    background-color: #f7d74f;
+    color: #333;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  &__head {
+    padding: 20px;
+    border-bottom: 1px solid #ccc;
+    // margin-bottom: 20px;
+    background-color: #fff;
+    &-title {
+      text-align: center;
+    }
+  }
+  .row {
+    padding-top: 20px;
+    background-color: #fff;
+  }
+
+  &__data {
     display: flex;
     flex-direction: column;
-    row-gap: 20px;
+    // gap: 12px;
+    width: 80%;
+    &-item {
+      width: 100%;
+      border-bottom: 1px solid #ccc;
+      padding: 20px 0;
+      div {
+        display: flex;
+        align-items: center;
+        // column-gap: 100px;
+        width: 30%;
+        justify-content: space-between;
+      }
+    }
+  }
+  &__status {
+    display: flex;
+    flex-direction: column;
+    row-gap: 15px;
+    width: calc(20% - 15px);
+    margin-left: 15px;
+    // height: 100%;
+    &-box {
+      width: 100%;
+      height: 33.3%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      row-gap: 5px;
+      padding: 10px;
+      &.credit {
+        background-color: #fff9f9;
+        p {
+          color: #ae5c62;
+          font-weight: 800;
+        }
+      }
+      &.sale {
+        background-color: #f6fffa;
+        p {
+          color: #599671;
+          font-weight: 800;
+        }
+      }
+      &.prepayment {
+        background-color: #feff97;
+        p {
+          color: #d9cc42;
+          font-weight: 800;
+        }
+      }
+    }
   }
 }
 

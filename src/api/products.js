@@ -41,7 +41,10 @@ export const getCategoriesPorduct = async (params = {}) => {
 
 export const createProductApi = async (productData) => {
   try {
-    const response = await api.post("main/products/", productData);
+    const response = await api.post(
+      "main/products/create-manual/",
+      productData
+    );
     return response.data;
   } catch (error) {
     if (error.response) {

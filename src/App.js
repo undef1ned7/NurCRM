@@ -27,6 +27,7 @@ import BrandCategoryPage from "./Components/Deposits/BrandCategoryPage/BrandCate
 import "./App.scss";
 import ClientDetail from "./Components/Deposits/Clients/ClientDetail";
 import Sell from "./Components/pages/Sell/Sell";
+import SellDetail from "./Components/pages/Sell/SellDetail";
 
 function App() {
   const [profile, setProfile] = useState(null);
@@ -78,6 +79,7 @@ function App() {
             <Route path="employ" element={<Employ />} />
             <Route path="sklad" element={<Sklad />} />
             <Route path="sell" element={<Sell />} />
+            <Route path="sell/:id" element={<SellDetail />} />
             {/* <Route path="vitrina" element={<Vitrina />} /> */}
             <Route path="brand-category" element={<BrandCategoryPage />} />
             <Route path="clients" element={<ClientsTable />} />

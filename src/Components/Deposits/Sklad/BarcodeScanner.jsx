@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import useScanDetection from "use-scan-detection";
-import { sendBarCode } from "../../../store/creators/productCreators";
+import { sendBarCode } from "../../../store/creators/saleThunk";
+// import { sendBarCode } from "../../../store/creators/productCreators";
 
-const BarcodeScanner = () => {
-  const [barcodeScan, setBarcodeScan] = useState("s");
+const BarcodeScanner = ({ id, requestName }) => {
+  const [barcodeScan, setBarcodeScan] = useState("");
   const dispatch = useDispatch();
-
+  // const id = "some-sale-id";
   useScanDetection({
     onComplete: (scanned) => {
       if (scanned.length >= 3) {
@@ -18,7 +19,7 @@ const BarcodeScanner = () => {
 
   useEffect(() => {
     if (barcodeScan) {
-      dispatch(sendBarCode(barcodeScan));
+      dispatch(requestName({ barcode: barcodeScan, id }));
     }
   }, [barcodeScan, dispatch]);
 

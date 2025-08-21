@@ -5,6 +5,8 @@ import {
   updateClientAsync,
   deleteClientAsync,
   getItemClient,
+  createDeals,
+  getClientDeals,
 } from "../creators/clientCreators";
 import { useSelector } from "react-redux";
 
@@ -19,6 +21,7 @@ const initialState = {
   updating: false,
   deleting: false,
   client: null,
+  clientDeals: [],
 };
 
 const clientSlice = createSlice({
@@ -102,6 +105,27 @@ const clientSlice = createSlice({
       .addCase(getItemClient.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
+      })
+      .addCase(createDeals.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(createDeals.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(createDeals.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.loading = false;
+      })
+      .addCase(getClientDeals.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getClientDeals.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.clientDeals = payload;
+      })
+      .addCase(getClientDeals.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.loading = false;
       });
   },
 });

@@ -19,8 +19,6 @@ const initialState = {
   previous: null,
   loading: false,
   error: null,
-  barcode: "не найдено",
-  barcodeError: null,
 
   brands: [],
   brandsLoading: false,
@@ -73,17 +71,6 @@ const productSlice = createSlice({
       .addCase(fetchProductsAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      })
-      .addCase(sendBarCode.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(sendBarCode.fulfilled, (state, { payload }) => {
-        state.barcode = payload;
-        state.loading = false;
-      })
-      .addCase(sendBarCode.rejected, (state, { payload }) => {
-        state.barcodeError = payload;
-        state.loading = false;
       })
 
       // 🆕 FETCH BRANDS

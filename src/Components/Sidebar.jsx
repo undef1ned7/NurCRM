@@ -22,6 +22,7 @@ import "./Sidebar.scss";
 import Logo from "./Photo/Logo.png";
 import arnament1 from "./Photo/Group 1203.png";
 import arnament2 from "./Photo/Group 1204 (1).png";
+import Lang from "./Lang/Lang";
 
 // --- API Configuration ---
 const BASE_URL = "https://app.nurcrm.kg/api";
@@ -385,6 +386,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 </NavLink>
               </li>
             ))}
+          <Lang />
         </ul>
       </div>
     </div>

@@ -11,36 +11,74 @@ import {
 import barcodeImage from "../../Deposits/Sklad/barcode (2).gif";
 
 import { clearProducts, useProducts } from "../../../store/slices/productSlice";
+import {
+  doSearch,
+  historySellProduct,
+  manualFilling,
+  productCheckout,
+  sendBarCode,
+  startSale,
+} from "../../../store/creators/saleThunk";
+import BarcodeScanner from "../../Deposits/Sklad/BarcodeScanner";
+import { useSale } from "../../../store/slices/saleSlice";
+import { useDebounce } from "../../../hooks/useDebounce";
+import { h } from "@fullcalendar/core/preact.js";
+import { useNavigate } from "react-router-dom";
 
-const SellModal = ({ onClose }) => {
+const SellModal = ({ onClose, id }) => {
+  const dispatch = useDispatch();
   const { creating, createError, brands, categories, barcodeError } =
     useProducts();
+  const { cart, loading, barcode, error, start, foundProduct } = useSale();
   const [activeTab, setActiveTab] = useState(0);
   const [isTabSelected, setIsTabSelected] = useState(true);
+  // const [state, setState] = useState({ barcode: "" });
+  const debouncedSearch = useDebounce((value) => {
+    dispatch(doSearch({ search: value }));
+  }, 1000);
+
+  const onChange = (e) => {
+    debouncedSearch(e.target.value);
+  };
 
   const tabs = [
     {
       label: "Сканировать",
-      content: (
-        <div className="scan" onClick={() => setActiveTab(null)}>
-          <div className="scan__content">
-            <img src={barcodeImage} alt="" />
-          </div>
-        </div>
-      ),
+      content: <BarcodeScanner requestName={sendBarCode} id={id} />,
       option: "scan",
     },
     {
       label: "Вручную",
       content: (
         <>
-          <form>
+          <div>
             <input
               type="text"
               placeholder="штрих код"
               className="add-modal__input"
+              name="search"
+              onChange={onChange}
             />
-          </form>
+            {/* {foundProduct?.results.length > 0 && ( */}
+            <ul>
+              {foundProduct?.results?.map((product) => (
+                <li key={product.id}>
+                  {product.name}{" "}
+                  <button
+                    onClick={async () => {
+                      await dispatch(
+                        manualFilling({ id, productId: product.id })
+                      );
+                      await dispatch(startSale());
+                    }}
+                  >
+                    +
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {/* )} */}
+          </div>
         </>
       ),
       option: "manually",
@@ -83,34 +121,43 @@ const SellModal = ({ onClose }) => {
           <div className="add-modal__container">{tabs[activeTab].content}</div>
         )}
 
-        {products.length !== 0 && (
+        {start?.items.length !== 0 && (
           <div className="receipt">
             <h2 className="receipt__title">Приход</h2>
-            {products.map((product) => (
+            {start?.items.map((product, idx) => (
               <div className="receipt__item">
                 <p className="receipt__item-name">
-                  {product.id}. {product.name}
+                  {idx + 1}. {product.product_name}
                 </p>
                 <p className="receipt__item-price">
-                  {product.amount} x {product.price} ≡{" "}
-                  {product.amount * product.price}
+                  {product.quantity} x {product.unit_price} ≡{" "}
+                  {product.quantity * product.unit_price}
                 </p>
               </div>
             ))}
             <div className="receipt__total">
               <b>ИТОГО</b>
-              <b>
-                ≡{" "}
-                {products
-                  .reduce((acc, rec) => {
-                    return acc + rec.amount * rec.price;
-                  }, 0)
-                  .toFixed(2)}
-              </b>
+              <b>≡ {start?.total}</b>
             </div>
             <div className="receipt__row">
-              <button className="receipt__row-btn">Печать чека</button>
-              <button className="receipt__row-btn">Без чека</button>
+              <button
+                className="receipt__row-btn"
+                onClick={() => {
+                  dispatch(productCheckout({ id: start?.id, bool: true }));
+                  onClose();
+                }}
+              >
+                Печать чека
+              </button>
+              <button
+                className="receipt__row-btn"
+                onClick={() => {
+                  dispatch(productCheckout({ id: start?.id, bool: false }));
+                  onClose();
+                }}
+              >
+                Без чека
+              </button>
             </div>
           </div>
         )}
@@ -136,6 +183,9 @@ const Sell = () => {
     deleting,
     // categories.
   } = useSelector((state) => state.product);
+  const navigate = useNavigate();
+  const { history, start } = useSale();
+  // const { start } = useSale();
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -228,10 +278,30 @@ const Sell = () => {
     setCurrentPage(1);
   };
 
+  const debouncedSearch = useDebounce((value) => {
+    dispatch(historySellProduct({ search: value }));
+  }, 1000);
+
+  const onChange = (e) => {
+    debouncedSearch(e.target.value);
+  };
+
   const isFiltered = searchTerm || Object.keys(currentFilters).length > 0;
 
   const totalPages =
     count && products.length > 0 ? Math.ceil(count / products.length) : 1;
+
+  useEffect(() => {
+    dispatch(historySellProduct({ search: "" }));
+  }, [dispatch]);
+  console.log(history);
+
+  useEffect(() => {
+    if (showSellModal) {
+      dispatch(startSale());
+    }
+  }, [showSellModal, dispatch]);
+
   return (
     <div>
       <div className="sklad__header">
@@ -240,8 +310,8 @@ const Sell = () => {
             type="text"
             placeholder="Поиск по названию товара"
             className="sklad__search"
-            value={searchTerm}
-            onChange={handleSearchChange}
+            // value={searchTerm}
+            onChange={onChange}
           />
           {/* <button className="sklad__filter" onClick={() => setShowFilterModal(true)}>
               <SlidersHorizontal size={16} />
@@ -301,16 +371,19 @@ const Sell = () => {
                 </th>
                 <th></th>
                 <th>№</th>
-                <th>Название</th>
+                <th>Почта</th>
                 {/* <th>Описание</th> */}
                 <th>Цена</th>
-                <th>Количество</th>
-                <th>Категория</th>
+                <th>Статус</th>
+                <th>Дата</th>
               </tr>
             </thead>
             <tbody>
-              {products.map((item, index) => (
-                <tr key={item.id}>
+              {history?.map((item, index) => (
+                <tr
+                  onClick={() => navigate(`/crm/sell/${item.id}`)}
+                  key={item.id}
+                >
                   <td>
                     <input type="checkbox" />
                   </td>
@@ -323,11 +396,11 @@ const Sell = () => {
                   </td>
                   <td>{index + 1}</td>
                   <td>
-                    <strong>{item.name}</strong>
+                    <strong>{item.user_display}</strong>
                   </td>
-                  <td>{item.price}</td>
-                  <td>{item.quantity}</td>
-                  <td>{item.category}</td>
+                  <td>{item.total}</td>
+                  <td>{item.status}</td>
+                  <td>{new Date(item.created_at).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -352,7 +425,9 @@ const Sell = () => {
           →
         </button>
       </div>
-      {showSellModal && <SellModal onClose={() => setShowSellModal(false)} />}
+      {showSellModal && (
+        <SellModal id={start?.id} onClose={() => setShowSellModal(false)} />
+      )}
     </div>
   );
 };

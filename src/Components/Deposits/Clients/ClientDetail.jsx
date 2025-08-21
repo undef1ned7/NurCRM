@@ -1,14 +1,155 @@
-import React, { useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  createDeals,
+  getClientDeals,
+  getItemClient,
+} from "../../../store/creators/clientCreators";
 import { useClient } from "../../../store/slices/ClientSlice";
-import { useParams } from "react-router-dom";
-import { getItemClient } from "../../../store/creators/clientCreators";
+
+const AddModal = ({ onClose }) => {
+  const dispatch = useDispatch();
+  // const {  } = useSelector((s) => s.client);
+  const { client, creating, createError } = useClient();
+
+  const [form, setForm] = useState({
+    title: "",
+    amount: "",
+    note: "",
+    kind: "sale",
+  });
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const statusOptions = [
+    { value: "new", label: "Новый" },
+    { value: "contacted", label: "Контакт установлен" },
+    { value: "interested", label: "Заинтересован" },
+    { value: "converted", label: "Конвертирован" },
+    { value: "inactive", label: "Неактивный" },
+    { value: "paid_for", label: "оплачено" },
+    { value: "awaiting", label: "ожидает" },
+    { value: "credit", label: "долг" },
+    { value: "rejection", label: "отказ" },
+  ];
+
+  // console.log(form.status);
+  const onFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await dispatch(createDeals({ clientId: client.id, ...form })).unwrap();
+      dispatch(getClientDeals(client.id));
+      onClose();
+    } catch {
+      alert("Ошибка");
+    }
+  };
+
+  return (
+    <div className="add-modal">
+      <div className="add-modal__overlay" onClick={onClose} />
+      <form className="add-modal__content" onSubmit={onFormSubmit}>
+        <div className="add-modal__header">
+          <h3>Новая сделка</h3>
+          <X size={18} onClick={onClose} className="add-modal__close-icon" />
+        </div>
+
+        {createError && (
+          <p className="add-modal__error-message">{String(createError)}</p>
+        )}
+
+        <div className="add-modal__section">
+          <label>Название сделки *</label>
+          <input
+            name="title"
+            className="add-modal__input"
+            value={form.title}
+            onChange={onChange}
+            required
+          />
+        </div>
+        <div className="add-modal__section">
+          <label>Сумма *</label>
+          <input
+            name="amount"
+            className="add-modal__input"
+            value={form.amount}
+            onChange={onChange}
+            type="text"
+            required
+          />
+        </div>
+        <div className="add-modal__section">
+          <label>Статус *</label>
+          <select
+            name="kind"
+            value={form.kind}
+            onChange={onChange}
+            className="add-modal__input"
+            required
+          >
+            <option value="sale">Продажа</option>
+            <option value="debt">Долг</option>
+            <option value="prepayment">Предоплата</option>
+          </select>
+        </div>
+        <div className="add-modal__section">
+          <label>Комментарий *</label>
+          <input
+            name="note"
+            className="add-modal__input"
+            value={form.note}
+            onChange={onChange}
+            type="text"
+            required
+          />
+        </div>
+        <div className="add-modal__footer">
+          <button
+            onClick={onClose}
+            type="button"
+            disabled={creating}
+            className="add-modal__cancel"
+          >
+            Отмена
+          </button>
+          <button
+            type="submit"
+            // onClick={handleSubmit}
+            disabled={creating}
+            className="add-modal__save"
+          >
+            {creating ? "Сохранение..." : "Сохранить"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+function getSumsByKind(results) {
+  return results.reduce((acc, item) => {
+    const kind = item.kind;
+    const amount = parseFloat(item.amount);
+
+    if (!acc[kind]) acc[kind] = 0;
+    acc[kind] += amount;
+
+    return acc;
+  }, {});
+}
 
 const ClientDetail = () => {
-  const { client } = useClient();
+  const [showModal, setShowModal] = useState(false);
+  const { client, clientDeals } = useClient();
   const dispatch = useDispatch();
   const { id } = useParams();
-
+  const navigate = useNavigate();
   // console.log(id);
   const statusOptions = [
     { value: "all", label: "Все" },
@@ -22,40 +163,113 @@ const ClientDetail = () => {
     { value: "credit", label: "долг" },
     { value: "rejection", label: "отказ" },
   ];
-  // console.log(client);
+
+  function getStatusLabel(status) {
+    const found = statusOptions.find((s) => s.value === status);
+    return found ? found.label : status;
+  }
+
+  const sums = getSumsByKind(clientDeals);
+
+  const kindTranslate = {
+    debt: "Долг",
+    sale: "Продажа",
+    prepayment: "Предоплата",
+  };
+
   useEffect(() => {
     dispatch(getItemClient(id));
+    dispatch(getClientDeals(id));
   }, [id]);
   return (
     <div className="clientDetail">
+      <div className="clientDetail__back">
+        <p style={{ cursor: "pointer" }} onClick={() => navigate(-1)}>
+          Назад
+        </p>
+        <button
+          className="clientDetail__add-deal"
+          onClick={() => setShowModal(true)}
+        >
+          Быстрое добавления сделки
+        </button>
+      </div>
+      <div className="clientDetail__head">
+        <h2 className="clientDetail__head-title">
+          Клиент # {client?.full_name}
+        </h2>
+      </div>
       <div className="row">
-        <div className="col-6">
-          <div className="clientDetail__first">
-            <h2>ФИО: {client?.full_name}</h2>
-            <p>Company: {client?.company}</p>
-          </div>
-        </div>
-        <div className="col-6">
-          <div className="clientDetail__second">
-            <p>Номер телефона: {client?.phone}</p>
+        <div className="clientDetail__data">
+          <div className="clientDetail__data-item">
             <div>
-              <p>
-                Дата создания: {new Date(client.created_at).toLocaleString()}
-              </p>
-              <p>
-                Дата обновления: {new Date(client.updated_at).toLocaleString()}
+              <p className="clientDetail__data-label">ФИО:</p>
+              <p className="clientDetail__data-value">{client?.full_name}</p>
+            </div>
+          </div>
+          <div className="clientDetail__data-item">
+            <div>
+              <p className="clientDetail__data-label">Телефон:</p>
+              <p className="clientDetail__data-value">{client?.phone}</p>
+            </div>
+          </div>
+          <div className="clientDetail__data-item">
+            <div>
+              <p className="clientDetail__data-label">Статус:</p>
+              <p className="clientDetail__data-value">
+                {getStatusLabel(client?.status)}
               </p>
             </div>
-            <select className="employee__search-wrapper" name="" id="">
-              {statusOptions.map((status, index) => (
-                <option key={index} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
+          </div>
+          <div className="clientDetail__data-item">
+            <div>
+              <p className="clientDetail__data-label">Сумма покупки:</p>
+              <p className="clientDetail__data-value">{client?.price} сом</p>
+            </div>
+          </div>
+        </div>
+        <div className="clientDetail__status">
+          <div className="clientDetail__status-box credit">
+            <p>Долги</p>
+            <b>{sums.debt || 0} сом</b>
+          </div>
+          <div className="clientDetail__status-box sale">
+            <p>Продажа</p>
+            <b>{sums.sale || 0} сом</b>
+          </div>
+          <div className="clientDetail__status-box prepayment">
+            <p>Предоплата</p>
+            <b>{sums.prepayment || 0} сом</b>
           </div>
         </div>
       </div>
+      <div className="clientDetail__dealsList">
+        <h2 className="clientDetail__dealsList-title">Сделки</h2>
+
+        <table className="clientDetail__dealsList-table sklad__table">
+          <thead>
+            <tr>
+              <th>Название</th>
+              <th>Сумма</th>
+              <th>Тип</th>
+              <th>Комментарий</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clientDeals?.map((deal) => (
+              <tr key={deal.id}>
+                <td>{deal.title}</td>
+                <td>
+                  <b>{deal.amount} с</b>
+                </td>
+                <td>{kindTranslate[deal.kind] || deal.kind}</td>
+                <td>{deal.note.length > 0 ? deal.note : "Нет комментария"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {showModal && <AddModal onClose={() => setShowModal(false)} />}
     </div>
   );
 };

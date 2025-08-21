@@ -220,7 +220,7 @@ const AddModal = ({ onClose }) => {
             required
           />
         </div>
-        <div className="add-modal__section">
+        {/* <div className="add-modal__section">
           <label>Дата *</label>
           <input
             name="date"
@@ -230,7 +230,7 @@ const AddModal = ({ onClose }) => {
             type="date"
             required
           />
-        </div>
+        </div> */}
 
         <div className="add-modal__section">
           <label>Телефон *</label>
