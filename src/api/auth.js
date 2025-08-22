@@ -23,9 +23,9 @@ export const registerUser = async (userData) => {
   try {
     const indt = await getIndustries()
     const subcrb = await getSubscriptionPlans()
-    console.log('dasd', { ...userData });
+    // console.log('dasd', { ...userData });
     const response = await api.post('/users/auth/register/', { ...userData, });
-    console.log(response,'res res res');
+    // console.log(response,'res res res');
     
 
 

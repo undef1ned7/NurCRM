@@ -30,7 +30,7 @@ function DepartmentAnalyticsChart() {
   // We'll then destructure `results` from `departmentData.data`
   const { list: departmentResponse = { results: [] }, status, error } = useSelector((state) => state.departments);
 
-  console.log(departmentResponse, 'departmentResponse');
+  // console.log(departmentResponse, 'departmentResponse');
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [],
@@ -44,7 +44,7 @@ function DepartmentAnalyticsChart() {
   useEffect(() => {
     // Extract the actual array of departments from the 'results' key
     const departmentData = departmentResponse.results || [];
-    console.log(departmentData, 'departmentData');
+    // console.log(departmentData, 'departmentData');
     // console.log(status);
     
     if (departmentData.length > 0) {

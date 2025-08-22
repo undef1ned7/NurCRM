@@ -46,7 +46,7 @@ const Kassa = () => {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log("Fetched cashboxes data:", data);
+                // console.log("Fetched cashboxes data:", data);
 
                 // Assuming data.results is an array of cashbox objects
                 setCashboxes(data.results || []); // Ensure it's an array

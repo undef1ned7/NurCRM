@@ -39,6 +39,18 @@ export const manualFilling = createAsyncThunk(
   }
 );
 
+export const deleteProductInCart = createAsyncThunk(
+  "sale/deleteProductInCart",
+  async ({ id, productId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`/main/pos/carts/${id}/items/${productId}/`);
+      // return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
 export const sendBarCode = createAsyncThunk(
   "products/sendBarcode",
   async ({ barcode, id }, { rejectWithValue }) => {
@@ -67,6 +79,7 @@ export const doSearch = createAsyncThunk(
     }
   }
 );
+
 export const historySellProduct = createAsyncThunk(
   "products/historySellProduct",
   async (search, { rejectWithValue }) => {
@@ -80,6 +93,7 @@ export const historySellProduct = createAsyncThunk(
     }
   }
 );
+
 export const historySellProductDetail = createAsyncThunk(
   "products/historySellProductDetail",
   async (id, { rejectWithValue }) => {

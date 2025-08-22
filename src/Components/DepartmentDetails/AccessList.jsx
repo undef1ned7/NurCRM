@@ -39,7 +39,7 @@ const ALL_ACCESS_TYPES = [
 // const LOCAL_STORAGE_KEY = "userSelectedAccesses";
 
 const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
-  console.log(employeeAccesses, "employeeAccesses in AccessList");
+  // console.log(employeeAccesses, "employeeAccesses in AccessList");
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAccess, setSelectedAccess] = useState(() => {
@@ -58,7 +58,7 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
         accessType.value
       );
     });
-    console.log(initialAccess);
+    // console.log(initialAccess);
 
     return initialAccess;
   });
@@ -70,8 +70,8 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
   useEffect(() => {
     const newAccessState = {};
     ALL_ACCESS_TYPES.forEach((accessType) => {
-      console.log(accessType, "das");
-      console.log(employeeAccesses.includes(accessType.value));
+      // console.log(accessType, "das");
+      // console.log(employeeAccesses.includes(accessType.value));
 
       newAccessState[accessType.backendKey] = employeeAccesses.includes(
         accessType.value
@@ -93,7 +93,7 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
       payloadForBackend[accessType.backendKey] =
         !!selectedAccess[accessType.backendKey];
     });
-    console.log(payloadForBackend);
+    // console.log(payloadForBackend);
 
     onSaveAccesses(payloadForBackend);
     setIsOpen(false);

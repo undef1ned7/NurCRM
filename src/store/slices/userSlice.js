@@ -6,6 +6,7 @@ import {
   getIndustriesAsync,
   getSubscriptionPlansAsync,
   getCompany,
+  SubmitApplicationAsync,
 } from "../creators/userCreators";
 import { useSelector } from "react-redux";
 
@@ -19,6 +20,7 @@ const initialState = {
   subscriptionPlans: [],
   tariff: "",
   sector: "",
+  submitApplication: null,
 };
 
 const userSlice = createSlice({
@@ -105,6 +107,18 @@ const userSlice = createSlice({
         state.subscriptionPlans = payload;
       })
       .addCase(getCompany.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
+      })
+      .addCase(SubmitApplicationAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(SubmitApplicationAsync.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.submitApplication = payload;
+      })
+      .addCase(SubmitApplicationAsync.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
       });

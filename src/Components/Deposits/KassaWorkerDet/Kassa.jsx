@@ -54,7 +54,7 @@ const KassaDet = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            console.log("Fetched cashbox details:", data);
+            // console.log("Fetched cashbox details:", data);
             setCashboxDetails(data);
             setSelectedCashbox(data);
         } catch (err) {

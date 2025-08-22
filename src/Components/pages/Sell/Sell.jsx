@@ -1,4 +1,4 @@
-import { MoreVertical, Plus, X } from "lucide-react";
+import { Minus, MoreVertical, Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 // import "./Sklad.scss";
@@ -8,10 +8,11 @@ import {
   fetchCategoriesAsync,
   fetchProductsAsync,
 } from "../../../store/creators/productCreators";
-import barcodeImage from "../../Deposits/Sklad/barcode (2).gif";
 
-import { clearProducts, useProducts } from "../../../store/slices/productSlice";
+import { useNavigate } from "react-router-dom";
+import { useDebounce } from "../../../hooks/useDebounce";
 import {
+  deleteProductInCart,
   doSearch,
   historySellProduct,
   manualFilling,
@@ -19,11 +20,9 @@ import {
   sendBarCode,
   startSale,
 } from "../../../store/creators/saleThunk";
-import BarcodeScanner from "../../Deposits/Sklad/BarcodeScanner";
+import { clearProducts, useProducts } from "../../../store/slices/productSlice";
 import { useSale } from "../../../store/slices/saleSlice";
-import { useDebounce } from "../../../hooks/useDebounce";
-import { h } from "@fullcalendar/core/preact.js";
-import { useNavigate } from "react-router-dom";
+import BarcodeScanner from "../../Deposits/Sklad/BarcodeScanner";
 
 const SellModal = ({ onClose, id }) => {
   const dispatch = useDispatch();
@@ -51,7 +50,7 @@ const SellModal = ({ onClose, id }) => {
       label: "Вручную",
       content: (
         <>
-          <div>
+          <div className="sell__manual">
             <input
               type="text"
               placeholder="штрих код"
@@ -60,7 +59,7 @@ const SellModal = ({ onClose, id }) => {
               onChange={onChange}
             />
             {/* {foundProduct?.results.length > 0 && ( */}
-            <ul>
+            <ul className="sell__list">
               {foundProduct?.results?.map((product) => (
                 <li key={product.id}>
                   {product.name}{" "}
@@ -72,7 +71,7 @@ const SellModal = ({ onClose, id }) => {
                       await dispatch(startSale());
                     }}
                   >
-                    +
+                    <Plus size={16} />
                   </button>
                 </li>
               ))}
@@ -129,10 +128,22 @@ const SellModal = ({ onClose, id }) => {
                 <p className="receipt__item-name">
                   {idx + 1}. {product.product_name}
                 </p>
-                <p className="receipt__item-price">
-                  {product.quantity} x {product.unit_price} ≡{" "}
-                  {product.quantity * product.unit_price}
-                </p>
+                <div>
+                  <p className="receipt__item-price">
+                    {product.quantity} x {product.unit_price} ≡{" "}
+                    {product.quantity * product.unit_price}
+                  </p>
+                  <button
+                    onClick={async () => {
+                      await dispatch(
+                        deleteProductInCart({ id, productId: product.id })
+                      );
+                      await dispatch(startSale());
+                    }}
+                  >
+                    <Minus size={16} />
+                  </button>
+                </div>
               </div>
             ))}
             <div className="receipt__total">
@@ -144,6 +155,7 @@ const SellModal = ({ onClose, id }) => {
                 className="receipt__row-btn"
                 onClick={() => {
                   dispatch(productCheckout({ id: start?.id, bool: true }));
+
                   onClose();
                 }}
               >
@@ -153,6 +165,7 @@ const SellModal = ({ onClose, id }) => {
                 className="receipt__row-btn"
                 onClick={() => {
                   dispatch(productCheckout({ id: start?.id, bool: false }));
+
                   onClose();
                 }}
               >
@@ -293,8 +306,8 @@ const Sell = () => {
 
   useEffect(() => {
     dispatch(historySellProduct({ search: "" }));
-  }, [dispatch]);
-  console.log(history);
+  }, [dispatch, showSellModal]);
+  // console.log(history);
 
   useEffect(() => {
     if (showSellModal) {
@@ -318,12 +331,14 @@ const Sell = () => {
             </button> */}
           <select className="employee__search-wrapper">
             {categories.map((category) => (
-              <option value={category.id}>{category.name}</option>
+              <option value={category.id} key={category.id}>
+                {category.name}
+              </option>
             ))}
           </select>
           <div className="sklad__center">
             <span>Всего: {count !== null ? count : "-"}</span>
-            <span>Найдено: {products.length}</span>
+            <span>Найдено: {history?.length}</span>
             {isFiltered && (
               <span
                 className="sklad__reset"
@@ -359,7 +374,7 @@ const Sell = () => {
           Ошибка загрузки:
           {/* {error.detail || error.message || JSON.stringify(error)} */}
         </p>
-      ) : products.length === 0 ? (
+      ) : history?.length === 0 ? (
         <p className="sklad__no-products-message">Нет доступных товаров.</p>
       ) : (
         <div className="table-wrapper">

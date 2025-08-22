@@ -7,3 +7,28 @@
     width: 500px;
   }
 }
+
+.sell {
+  &__manual {
+    padding: 0 30px;
+  }
+  &__list {
+    list-style: none;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    row-gap: 10px;
+    li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      column-gap: 20px;
+    }
+    button {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+  }
+}

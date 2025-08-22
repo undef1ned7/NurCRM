@@ -1,7 +1,7 @@
-import React from 'react';
-import styles from './Landing.module.scss';
-import logo from '../../Photo/Logo.png'; // Убедитесь, что путь к логотипу корректен
-import { Link } from 'react-router-dom'; // Импортируем Link для навигации
+import React from "react";
+import styles from "./Landing.module.scss";
+import logo from "../../Photo/Logo.png"; // Убедитесь, что путь к логотипу корректен
+import { Link } from "react-router-dom"; // Импортируем Link для навигации
 
 const Landing = () => {
   return (
@@ -13,20 +13,25 @@ const Landing = () => {
           </div>
           {/* Добавляем кнопки Вход и Регистрация */}
           <div className={styles.authButtons}>
-            <Link to="/login" className={styles.buttonSecondary}>Вход</Link>
-            <Link to="/register" className={styles.buttonPrimary}>Регистрация</Link>
+            <Link to="/login" className={styles.buttonSecondary}>
+              Вход
+            </Link>
+            <Link to="/submit-application" className={styles.buttonPrimary}>
+              Оставить заявку
+            </Link>
           </div>
         </div>
         <p className={styles.slogan}>Сила управления в ваших руках</p>
       </header>
 
       {/* Узор в правом верхнем углу */}
-      <div className={styles.patternTopRight} />
+      {/* <div className={styles.patternTopRight} /> */}
 
       <section className={styles.about}>
         <h2>О нас</h2>
         <p>
-          NUR CRM — это премиум-платформа для управления бизнесом. Эстетика, точность и скорость — всё, что нужно настоящему делу.
+          NUR CRM — это премиум-платформа для управления бизнесом. Эстетика,
+          точность и скорость — всё, что нужно настоящему делу.
         </p>
       </section>
 
@@ -44,28 +49,41 @@ const Landing = () => {
         <h2>Тарифы</h2>
         <div className={styles.plans}>
           <div className={styles.plan}>
-            <h3>Начальный</h3>
+            <h3>Старт</h3>
             <p>Минимум функций, максимум пользы</p>
-            <div className={styles.price}>Бесплатно</div>
+            <div className={styles.price}>500 сом</div>
           </div>
           <div className={`${styles.plan} ${styles.highlight}`}>
-            <h3>Профессионал</h3>
+            <h3>Стандарт</h3>
             <p>Аналитика, отчёты, поддержка 24/7</p>
-            <div className={styles.price}>₽490 / мес</div>
+            <div className={styles.price}>3000 сом / мес</div>
           </div>
           <div className={styles.plan}>
-            <h3>Элитный</h3>
+            <h3>Стандарт+</h3>
             <p>Полный контроль и кастомизация</p>
-            <div className={styles.price}>₽990 / мес</div>
+            <div className={styles.price}>10000 сом / мес</div>
           </div>
         </div>
       </section>
 
       <section className={styles.contact}>
         <h2>Связь с нами</h2>
-        <p>Email: <a href="mailto:support@nurcrm.com">support@nurcrm.com</a></p>
-        <p>Телефон: <a href="tel:+996700123456">+996 700 123 456</a></p>
-        <p>Telegram: <a href="https://t.me/nurcrm" target="_blank" rel="noopener noreferrer">@nurcrm</a></p>
+        <p>
+          Email: <a href="mailto:support@nurcrm.com">support@nurcrm.com</a>
+        </p>
+        <p>
+          Телефон: <a href="tel:+996700123456">+996 700 123 456</a>
+        </p>
+        <p>
+          Telegram:{" "}
+          <a
+            href="https://t.me/nurcrm"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            @nurcrm
+          </a>
+        </p>
       </section>
 
       <footer className={styles.footer}>

@@ -555,7 +555,7 @@ const AddModal = ({ onClose }) => {
       items: itemsToSend, // Используем преобразованный массив items
     };
 
-    console.log(payload);
+    // console.log(payload);
 
     try {
       await dispatch(createOrderAsync(payload)).unwrap();

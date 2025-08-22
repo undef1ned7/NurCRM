@@ -76,7 +76,7 @@ export default function Raspisanie() {
         dateClick={handleDateClick}
         editable={true}
         eventContent={(arg) => {
-          console.log(arg.event.start);
+          // console.log(arg.event.start);
           const time = format(new Date(arg.event.start), "hh:mm a");
           return (
             <>

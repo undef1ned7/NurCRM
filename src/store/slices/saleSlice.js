@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { useSelector } from "react-redux";
 import {
+  deleteProductInCart,
   doSearch,
   historySellProduct,
   historySellProductDetail,
@@ -60,6 +61,17 @@ const saleSlice = createSlice({
         state.loading = false;
       })
       .addCase(manualFilling.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.loading = false;
+      })
+      .addCase(deleteProductInCart.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteProductInCart.fulfilled, (state) => {
+        // state.cart = payload;
+        state.loading = false;
+      })
+      .addCase(deleteProductInCart.rejected, (state, { payload }) => {
         state.error = payload;
         state.loading = false;
       })

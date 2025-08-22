@@ -512,6 +512,17 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 20px;
+    div {
+      button {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+      }
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
     // row-gap: 20px;
   }
   &__total {

@@ -1,0 +1,191 @@
+/* src/components/Education/LessonsRooms.module.scss */
+
+/* Font */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap");
+
+:root {
+  --primary: #f7d74f;
+  --primary-dark: #d4b800;
+  --text: #0f172a;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --surface: #fff;
+  --radius: 12px;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.lr {
+  font-family: "Montserrat", sans-serif;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Header */
+.lr__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.lr__title { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
+.lr__subtitle { font-size: 13px; color: var(--muted); }
+
+/* Toolbar: search stretches, actions on the right */
+.lr__toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 280px;
+}
+@media (max-width: 820px) {
+  .lr__toolbar { grid-template-columns: 1fr; }
+}
+.lr__search { position: relative; width: 100%; }
+.lr__search-input {
+  width: 100%;
+  padding: 10px 12px 10px 32px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+.lr__search-input:focus { outline: none; border-color: var(--primary); }
+.lr__search-icon {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px; color: var(--muted);
+  pointer-events: none;
+}
+.lr__toolbarActions {
+  display: inline-flex;
+  gap: 8px;
+  justify-self: end;
+}
+
+/* Buttons */
+.lr__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .12s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+  border: 1px solid transparent;
+  user-select: none;
+  white-space: nowrap;
+}
+.lr__btn:hover { filter: brightness(0.98); }
+.lr__btn:active { transform: translateY(1px); }
+.lr__btn--primary { background: var(--primary); color: #111; }
+.lr__btn--primary:hover { background: var(--primary-dark); }
+.lr__btn--secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.lr__btn--secondary:hover { background: #f9fafb; }
+.lr__btn--danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
+.lr__btn--danger:hover { background: rgba(239, 68, 68, 0.06); }
+
+/* Alerts */
+.lr__alert {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.35);
+}
+
+/* List & Card */
+.lr__list { display: grid; gap: 10px; }
+.lr__card {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fafafa;
+  transition: background 0.2s;
+}
+.lr__card:hover { background: #f1f5f9; }
+.lr__card-left { display: flex; gap: 12px; align-items: flex-start; }
+.lr__avatar {
+  min-width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff; font-weight: 700; font-size: 14px;
+  display: grid; place-items: center; box-shadow: var(--shadow);
+}
+.lr__name { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
+.lr__meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.lr__muted { color: var(--muted); font-size: 13px; }
+.lr__rowActions { display: flex; gap: 8px; align-items: center; }
+
+/* Attendance */
+.lr__att { margin-top: 8px; }
+.lr__att summary { cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.lr__attList { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.lr__attItem { border: 1px solid var(--border); border-radius: 10px; background: #fff; padding: 8px 10px; }
+.lr__attLabel { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+
+/* Modal */
+.lr__modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 50;
+}
+.lr__modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  width: 100%;
+  max-width: 720px;
+  animation: lr-fade .18s ease;
+  box-shadow: var(--shadow);
+}
+@keyframes lr-fade { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.lr__modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.lr__modal-title { font-size: 18px; font-weight: 700; margin: 0; }
+.lr__icon-btn { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--muted); padding: 6px; border-radius: 8px; }
+.lr__icon-btn:hover { color: var(--text); background: #f3f4f6; }
+
+/* Form */
+.lr__form { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+.lr__form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 720px) { .lr__form-grid { grid-template-columns: 1fr; } }
+.lr__field { display: flex; flex-direction: column; gap: 6px; }
+.lr__label { font-size: 14px; font-weight: 600; color: var(--muted); }
+.lr__req { color: red; }
+.lr__input, .lr__textarea {
+  padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; font-family: inherit;
+}
+.lr__input:focus, .lr__textarea:focus { outline: none; border-color: var(--primary); }
+
+.lr__form-actions { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.lr__actions-spacer { flex: 1 1 auto; }
+.lr__actions-right { display: flex; gap: 10px; }
+
+.lr__hint {
+  margin-top: 8px;
+  color: #8a6d1a;
+  background: #fff8db;
+  border: 1px solid #f6e58d;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  display: flex; gap: 8px; align-items: center;
+}
+
+/* Mobile button / search behavior */
+@media (max-width: 820px) {
+  .lr__toolbarActions { justify-self: stretch; }
+  .lr__toolbarActions > .lr__btn { width: 100%; justify-content: center; }
+}

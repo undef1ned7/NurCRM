@@ -13,7 +13,7 @@ export const registerUserAsync = createAsyncThunk(
   async (props, { rejectWithValue }) => {
     try {
       const response = await registerUser(props.formData);
-      console.log(response);
+      // console.log(response);
       if (response.status) {
         props.navigate("/login");
       }
@@ -77,6 +77,18 @@ export const getCompany = createAsyncThunk(
       });
       // console.log(data);
       return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const SubmitApplicationAsync = createAsyncThunk(
+  "user/submitApplication",
+  async (applicationData, { rejectWithValue }) => {
+    try {
+      const response = await api.post("/users/applications/", applicationData);
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }

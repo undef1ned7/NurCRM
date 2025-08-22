@@ -112,7 +112,7 @@ const Kassa = () => {
   };
 
   const handleDelete = async () => {
-    console.log(selectedCashbox);
+    // console.log(selectedCashbox);
 
     if (!selectedCashbox) return;
 
@@ -152,7 +152,7 @@ const Kassa = () => {
   const handleSaveAdd = () => {
     // Logic to save new cashbox data
     // В будущем здесь нужно будет реализовать логику отправки данных на API
-    console.log("Добавление новой кассы");
+    // console.log("Добавление новой кассы");
     setShowAddModal(false);
   };
 

@@ -1,20 +1,18 @@
-
-import { createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk } from "@reduxjs/toolkit";
 import {
   fetchEmployeesApi,
   fetchEmployeeByIdApi,
   createEmployeeApi,
   updateEmployeeApi,
   deleteEmployeeApi,
-} from '../../api/employees';
-
+} from "../../api/employees";
 
 export const fetchEmployeesAsync = createAsyncThunk(
-  'employees/fetchEmployees',
+  "employees/fetchEmployees",
   async (params, { rejectWithValue }) => {
     try {
       const response = await fetchEmployeesApi(params);
-      return response; 
+      return response;
     } catch (error) {
       return rejectWithValue(error);
     }
@@ -22,7 +20,7 @@ export const fetchEmployeesAsync = createAsyncThunk(
 );
 
 export const fetchEmployeeByIdAsync = createAsyncThunk(
-  'employees/fetchEmployeeById',
+  "employees/fetchEmployeeById",
   async (employeeId, { rejectWithValue }) => {
     try {
       const employee = await fetchEmployeeByIdApi(employeeId);
@@ -33,14 +31,13 @@ export const fetchEmployeeByIdAsync = createAsyncThunk(
   }
 );
 
-
 export const createEmployeeAsync = createAsyncThunk(
-  'employees/createEmployee',
+  "employees/createEmployee",
   async (employeeData, { rejectWithValue }) => {
     try {
       const newEmployee = await createEmployeeApi(employeeData);
-      console.log('New Employee Created:', newEmployee);
-      
+      // console.log('New Employee Created:', newEmployee);
+
       return newEmployee;
     } catch (error) {
       return rejectWithValue(error);
@@ -48,9 +45,8 @@ export const createEmployeeAsync = createAsyncThunk(
   }
 );
 
-
 export const updateEmployeeAsync = createAsyncThunk(
-  'employees/updateEmployee',
+  "employees/updateEmployee",
   async ({ employeeId, updatedData }, { rejectWithValue }) => {
     try {
       const updatedEmployee = await updateEmployeeApi(employeeId, updatedData);
@@ -61,13 +57,12 @@ export const updateEmployeeAsync = createAsyncThunk(
   }
 );
 
-
 export const deleteEmployeeAsync = createAsyncThunk(
-  'employees/deleteEmployee',
+  "employees/deleteEmployee",
   async (employeeId, { rejectWithValue }) => {
     try {
       await deleteEmployeeApi(employeeId);
-      return employeeId; 
+      return employeeId;
     } catch (error) {
       return rejectWithValue(error);
     }

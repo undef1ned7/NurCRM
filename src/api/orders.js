@@ -2,10 +2,10 @@ import api from './index';
 
 export const fetchOrdersApi = async (params = {}) => {
   try {
-    console.log('sraer');
+    // console.log('sraer');
     
     const response = await api.get('/main/orders/'); 
-    console.log(response, 'response from fetchOrdersApi');
+    // console.log(response, 'response from fetchOrdersApi');
     
     return response.data;
   } catch (error) {

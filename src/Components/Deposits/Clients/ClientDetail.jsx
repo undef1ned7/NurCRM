@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
@@ -6,6 +6,7 @@ import {
   createDeals,
   getClientDeals,
   getItemClient,
+  updateClientAsync,
 } from "../../../store/creators/clientCreators";
 import { useClient } from "../../../store/slices/ClientSlice";
 
@@ -150,6 +151,23 @@ const ClientDetail = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: client?.full_name || "",
+    phone: client?.phone || "",
+    status: client?.status || "",
+    price: client?.price || "",
+  });
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   // console.log(id);
   const statusOptions = [
     { value: "all", label: "Все" },
@@ -177,6 +195,18 @@ const ClientDetail = () => {
     prepayment: "Предоплата",
   };
 
+  const onFormSubmit = async () => {
+    try {
+      await dispatch(
+        updateClientAsync({ clientId: client?.id, updatedData: formData })
+      ).unwrap();
+      setIsEditing(false);
+      dispatch(getItemClient(id));
+    } catch {
+      alert("Ошибка обновления клиента");
+    }
+  };
+
   useEffect(() => {
     dispatch(getItemClient(id));
     dispatch(getClientDeals(id));
@@ -184,9 +214,14 @@ const ClientDetail = () => {
   return (
     <div className="clientDetail">
       <div className="clientDetail__back">
-        <p style={{ cursor: "pointer" }} onClick={() => navigate(-1)}>
+        <button
+          onClick={() => navigate(-1)}
+          className="clientDetail__back-button"
+        >
+          <ArrowLeft />
           Назад
-        </p>
+        </button>
+
         <button
           className="clientDetail__add-deal"
           onClick={() => setShowModal(true)}
@@ -204,28 +239,85 @@ const ClientDetail = () => {
           <div className="clientDetail__data-item">
             <div>
               <p className="clientDetail__data-label">ФИО:</p>
-              <p className="clientDetail__data-value">{client?.full_name}</p>
+              {isEditing ? (
+                <input
+                  type="text"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={onChange}
+                />
+              ) : (
+                <p className="clientDetail__data-value">{client?.full_name}</p>
+              )}
             </div>
           </div>
+
           <div className="clientDetail__data-item">
             <div>
               <p className="clientDetail__data-label">Телефон:</p>
-              <p className="clientDetail__data-value">{client?.phone}</p>
+              {isEditing ? (
+                <input
+                  type="text"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={onChange}
+                />
+              ) : (
+                <p className="clientDetail__data-value">{client?.phone}</p>
+              )}
             </div>
           </div>
+
           <div className="clientDetail__data-item">
             <div>
               <p className="clientDetail__data-label">Статус:</p>
-              <p className="clientDetail__data-value">
-                {getStatusLabel(client?.status)}
-              </p>
+              {isEditing ? (
+                <input
+                  type="text"
+                  name="status"
+                  value={getStatusLabel(client?.status)}
+                  onChange={onChange}
+                />
+              ) : (
+                <p className="clientDetail__data-value">
+                  {getStatusLabel(client?.status)}
+                </p>
+              )}
             </div>
           </div>
+
           <div className="clientDetail__data-item">
             <div>
               <p className="clientDetail__data-label">Сумма покупки:</p>
-              <p className="clientDetail__data-value">{client?.price} сом</p>
+              {isEditing ? (
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={onChange}
+                />
+              ) : (
+                <p className="clientDetail__data-value">{client?.price} сом</p>
+              )}
             </div>
+            <button
+              className="clientDetail__data-button"
+              onClick={() => {
+                setIsEditing((prev) => !prev);
+                if (isEditing) {
+                  onFormSubmit();
+                } else {
+                  setFormData({
+                    full_name: client?.full_name || "",
+                    phone: client?.phone || "",
+                    status: client?.status || "",
+                    price: client?.price || "",
+                  });
+                }
+              }}
+            >
+              {isEditing ? "Сохранить" : "Редактировать"}
+            </button>
           </div>
         </div>
         <div className="clientDetail__status">

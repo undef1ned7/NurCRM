@@ -245,8 +245,8 @@ const Department = () => {
             setLoading(false);
         }
     };
-console.log(departments);
-console.log(profile,'sdfds');
+// console.log(departments);
+// console.log(profile,'sdfds');
 
     // Обработчик для перехода на страницу деталей отдела
     const handleViewDepartmentDetails = (department) => {

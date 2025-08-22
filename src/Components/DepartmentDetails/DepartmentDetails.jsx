@@ -118,7 +118,7 @@ const DepartmentDetails = () => {
       }
 
       const data = await response.json();
-      console.log("Department Data:", data);
+      // console.log("Department Data:", data);
       setDepartment(data);
 
       // Преобразуем каждого сотрудника: из булевых полей доступов делаем массив строк-меток
@@ -398,7 +398,7 @@ const DepartmentDetails = () => {
         throw new Error(errorMessage);
       }
 
-      console.log(`Отдел "${department.name}" успешно удален.`);
+      // console.log(`Отдел "${department.name}" успешно удален.`);
       navigate("/crm/departments");
     } catch (err) {
       console.error("Ошибка при удалении отдела:", err);

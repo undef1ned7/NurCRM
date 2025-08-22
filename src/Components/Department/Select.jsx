@@ -2,7 +2,7 @@ import React from 'react';
 import styles from './Department.module.scss';
 
 const Select = ({ label, name, value, onChange, options, multiple = false, ...props }) => {
-    console.log(options);
+    // console.log(options);
     
     return (
         <div className={styles.formGroup}>

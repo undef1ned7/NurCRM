@@ -1,4 +1,3 @@
-
 .App {
   display: flex;
   position: relative;
@@ -19,9 +18,13 @@
   padding: 0 20px 20px 20px;
   position: relative;
   transition: transform 0.3s ease-in-out;
-
+  background-repeat: no-repeat;
+  // background: no-repeat;
+  background-size: cover;
+  // background-attachment: fixed;
+  // background-position: ;
   @media (min-width: 769px) {
-    margin-left: 255px;
+    margin-left: 250px;
   }
 
   .content_image1 {
@@ -44,5 +47,22 @@
     bottom: 0;
     right: 0;
     z-index: -1;
+  }
+  // .content_image4 {
+  //   position: absolute;
+  //   top: 0;
+  //   left: 0;
+  //   width: 100%;
+  //   height: 100%;
+  //   object-fit: cover;
+  //   z-index: -1;
+  //   opacity: 0.1;
+  // }
+}
+
+.app-ky {
+  .header {
+    border-radius: 0 0 10px 10px;
+    background-color: #ffffff66 !important;
   }
 }

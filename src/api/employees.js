@@ -3,7 +3,7 @@ import api from './index';
 export const fetchEmployeesApi = async (params = {}) => {
   try {
     const response = await api.get('/users/employees/', { params }); 
-    console.log(response);
+    // console.log(response);
     
     return response.data;
   } catch (error) {

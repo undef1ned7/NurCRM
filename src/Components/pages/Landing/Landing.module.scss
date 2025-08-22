@@ -1,5 +1,5 @@
 $black: #0c0c0c;
-$gold: #FFD700;
+$gold: #ffd700;
 $darkGold: #b8860b;
 $white: #ffffff;
 $gray: #cccccc;
@@ -7,7 +7,7 @@ $lightGray: #eeeeee; // Добавим для текста
 $darkGray: #333333; // Добавим для границ/фонов
 
 .landing {
-  font-family: 'Inter', sans-serif; // Изменим шрифт на Inter для современного вида
+  font-family: "Inter", sans-serif; // Изменим шрифт на Inter для современного вида
   background-color: $black;
   color: $white;
   padding: 40px;
@@ -17,6 +17,9 @@ $darkGray: #333333; // Добавим для границ/фонов
   display: flex;
   flex-direction: column;
   align-items: center; // Центрируем содержимое по горизонтали
+  background-image: url("../../Photo/background.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
 
   @media (max-width: 768px) {
     padding: 20px;
@@ -143,8 +146,10 @@ $darkGray: #333333; // Добавим для границ/фонов
   }
 }
 
-
-.about, .pricing, .contact, .features {
+.about,
+.pricing,
+.contact,
+.features {
   width: 100%;
   max-width: 1000px; // Ограничим ширину секций
   margin-bottom: 80px; // Увеличим отступы между секциями
@@ -164,7 +169,7 @@ $darkGray: #333333; // Добавим для границ/фонов
     padding-bottom: 10px; // Отступ для подчеркивания
 
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       bottom: 0;
       left: 50%;
@@ -184,7 +189,8 @@ $darkGray: #333333; // Добавим для границ/фонов
     }
   }
 
-  p, li {
+  p,
+  li {
     font-size: 17px; // Немного увеличим размер текста
     color: $lightGray; // Более светлый серый для лучшей читаемости
     line-height: 1.6; // Улучшим межстрочный интервал
@@ -203,7 +209,10 @@ $darkGray: #333333; // Добавим для границ/фонов
   padding-left: 0; // Уберем стандартный padding
   list-style: none;
   display: grid; // Используем Grid для лучшего расположения
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); // Адаптивная сетка
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(280px, 1fr)
+  ); // Адаптивная сетка
   gap: 20px; // Отступ между элементами
 
   li {
@@ -223,7 +232,7 @@ $darkGray: #333333; // Добавим для границ/фонов
   }
 
   li::before {
-    content: ''; // Уберем стандартный "✓"
+    content: ""; // Уберем стандартный "✓"
     // Вместо этого можно использовать иконки из React-icons, если хотите
   }
 }
@@ -332,7 +341,8 @@ $darkGray: #333333; // Добавим для границ/фонов
   right: -60px; // Сдвинем чуть правее
   width: 200px; // Увеличим размер узора
   height: 200px;
-  background: url('https://placehold.co/200x200/FFD700/0c0c0c?text=PATTERN') no-repeat center; // Используем placeholder
+  background: url("https://placehold.co/200x200/FFD700/0c0c0c?text=PATTERN")
+    no-repeat center; // Используем placeholder
   background-size: contain;
   opacity: 0.08; // Сделаем его менее заметным
   pointer-events: none;
@@ -352,11 +362,23 @@ $darkGray: #333333; // Добавим для границ/фонов
 
 /* Анимации */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

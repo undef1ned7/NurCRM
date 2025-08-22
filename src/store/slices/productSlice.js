@@ -60,7 +60,7 @@ const productSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchProductsAsync.fulfilled, (state, action) => {
-        console.log(action.payload);
+        // console.log(action.payload);
 
         state.loading = false;
         state.list = action.payload.results;

@@ -8,7 +8,7 @@ const SellDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { historyDetail: item } = useSale();
-  console.log(1, item);
+  // console.log(1, item);
 
   useEffect(() => {
     dispatch(historySellProductDetail(id));

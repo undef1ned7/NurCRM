@@ -1,15 +1,20 @@
-
-import { createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchOrdersApi, fetchOrderByIdApi,createOrderApi,deleteOrderApi,updateOrderApi } from '../../api/orders'; // Импортируем API-функции
+import { createAsyncThunk } from "@reduxjs/toolkit";
+import {
+  fetchOrdersApi,
+  fetchOrderByIdApi,
+  createOrderApi,
+  deleteOrderApi,
+  updateOrderApi,
+} from "../../api/orders"; // Импортируем API-функции
 
 export const fetchOrdersAsync = createAsyncThunk(
-  'orders/fetchOrders', 
+  "orders/fetchOrders",
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await fetchOrdersApi(params);
-      console.log(response,'response');
-      
-      return response; 
+      // console.log(response,'response');
+
+      return response;
     } catch (error) {
       return rejectWithValue(error);
     }
@@ -17,11 +22,11 @@ export const fetchOrdersAsync = createAsyncThunk(
 );
 
 export const fetchOrderByIdAsync = createAsyncThunk(
-  'orders/fetchOrderById',
+  "orders/fetchOrderById",
   async (orderId, { rejectWithValue }) => {
     try {
       const order = await fetchOrderByIdApi(orderId);
-      return order; 
+      return order;
     } catch (error) {
       return rejectWithValue(error);
     }
@@ -29,7 +34,7 @@ export const fetchOrderByIdAsync = createAsyncThunk(
 );
 
 export const createOrderAsync = createAsyncThunk(
-  'orders/createOrder', 
+  "orders/createOrder",
   async (orderData, { rejectWithValue }) => {
     try {
       const newOrder = await createOrderApi(orderData);
@@ -40,9 +45,8 @@ export const createOrderAsync = createAsyncThunk(
   }
 );
 
-
 export const deleteOrderAsync = createAsyncThunk(
-  'orders/deleteOrder', 
+  "orders/deleteOrder",
   async (orderId, { rejectWithValue }) => {
     try {
       await deleteOrderApi(orderId);
@@ -53,9 +57,8 @@ export const deleteOrderAsync = createAsyncThunk(
   }
 );
 
-
 export const updateOrderAsync = createAsyncThunk(
-  'orders/updateOrder', 
+  "orders/updateOrder",
   async ({ orderId, updatedData }, { rejectWithValue }) => {
     try {
       const updatedOrder = await updateOrderApi(orderId, updatedData);

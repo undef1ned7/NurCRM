@@ -28,12 +28,11 @@ const Register = () => {
     setSelectedSector(sectorId);
     handleSelectChange({
       target: {
-        name: 'company_sector_id',
+        name: "company_sector_id",
         value: sectorId,
       },
     });
   };
-
 
   useEffect(() => {
     dispatch(getIndustriesAsync());
@@ -53,7 +52,7 @@ const Register = () => {
     company_name: "",
   });
 
-  console.log("formdara", formData);
+  console.log("formData", formData);
 
   const handleSelectChange = (e) => {
     const { name, value } = e.target;
@@ -85,6 +84,7 @@ const Register = () => {
 
     dispatch(registerUserAsync({ formData, navigate }));
   };
+  console.log(industries);
 
   return (
     <div className="register">
@@ -164,68 +164,114 @@ const Register = () => {
           </div>
 
           <div className="register__field">
-      <label className="register__label" htmlFor="company_sector_id">
-        Выберите сферу деятельности компании
-      </label>
-
-      <div className="custom-dropdown" style={{ position: 'relative', border: '1px solid #ccc', padding: '10px', width: '100%', cursor: 'pointer' }}>
-        <div className="selected-option">
-          {selectedSector
-            ? industries
-                .flatMap((industry) =>
-                  industry.sectors?.map((s) => ({
-                    name: `${industry.name} — ${s.name}`,
-                    id: s.id,
-                  }))
-                )
-                .find((s) => s.id === selectedSector)?.name
-            : 'Выберите сферу деятельности'}
-        </div>
-
-        <ul className="industry-list" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {industries.map((industry) => (
-            <li
-              key={industry.id}
-              onMouseEnter={() => setHoveredIndustryId(industry.id)}
-              onMouseLeave={() => setHoveredIndustryId(null)}
-              style={{ position: 'relative', padding: '8px', background: '#f9f9f9' }}
-              className="industry-item"
+            <label className="register__label" htmlFor="company_sector_id">
+              Выберите сферу деятельности компании
+            </label>
+            <select
+              name="company_sector_id"
+              value={formData.company_sector_id}
+              id="company_sector_id"
+              onChange={handleSelectChange}
             >
-              {industry.name}
-
-              {hoveredIndustryId === industry.id && industry.sectors && (
-                <ul
-                  className="sector-sublist "
-                  style={{
-                    position: 'absolute',
-                    left: '100%',
-                    top: 0,
-                    background: 'white',
-                    border: '1px solid #ccc',
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: 0,
-                    zIndex: 10,
-                  }}
-                >
-                  {industry.sectors.map((sector) => (
-                    <li
-                      key={sector.id}
-                      onClick={() => handleSectorClick(industry.id, sector.id)}
-                      style={{ padding: '8px', whiteSpace: 'nowrap', background: '#fff' }}
-                      onMouseEnter={(e) => (e.target.style.background = '#eee')}
-                      onMouseLeave={(e) => (e.target.style.background = '#fff')}
+              <option value="" disabled>
+                Выберите сферу деятельности
+              </option>
+              {industries.length
+                ? industries.map((industry) => (
+                    <option
+                      key={industry.id}
+                      id={"subscription_plan_id"}
+                      value={industry.id}
                     >
-                      {sector.name}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+                      {industry.name}
+                    </option>
+                  ))
+                : null}
+            </select>
+            {/* <div
+              className="custom-dropdown"
+              style={{
+                position: "relative",
+                border: "1px solid #ccc",
+                padding: "10px",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <div className="selected-option">
+                {selectedSector
+                  ? industries
+                      .flatMap((industry) =>
+                        industry.sectors?.map((s) => ({
+                          name: `${industry.name} — ${s.name}`,
+                          id: s.id,
+                        }))
+                      )
+                      .find((s) => s.id === selectedSector)?.name
+                  : "Выберите сферу деятельности"}
+              </div>
+
+              <ul
+                className="industry-list"
+                style={{ listStyle: "none", padding: 0, margin: 0 }}
+              >
+                {industries.map((industry) => (
+                  <li
+                    key={industry.id}
+                    onMouseEnter={() => setHoveredIndustryId(industry.id)}
+                    onMouseLeave={() => setHoveredIndustryId(null)}
+                    style={{
+                      position: "relative",
+                      padding: "8px",
+                      background: "#f9f9f9",
+                    }}
+                    className="industry-item"
+                  >
+                    {industry.name}
+
+                    {hoveredIndustryId === industry.id && industry.sectors && (
+                      <ul
+                        className="sector-sublist "
+                        style={{
+                          position: "absolute",
+                          left: "100%",
+                          top: 0,
+                          background: "white",
+                          border: "1px solid #ccc",
+                          listStyle: "none",
+                          padding: 0,
+                          margin: 0,
+                          zIndex: 10,
+                        }}
+                      >
+                        {industry.sectors.map((sector) => (
+                          <li
+                            key={sector.id}
+                            onClick={() =>
+                              handleSectorClick(industry.id, sector.id)
+                            }
+                            style={{
+                              padding: "8px",
+                              whiteSpace: "nowrap",
+                              background: "#fff",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.target.style.background = "#eee")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.target.style.background = "#fff")
+                            }
+                          >
+                            {sector.name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div> */}
+          </div>
 
           <div className="register__field">
             <label className="register__label" htmlFor="last_name">
