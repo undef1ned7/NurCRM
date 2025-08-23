@@ -18,6 +18,7 @@ const initialState = {
   accessToken: localStorage.getItem("accessToken") || null,
   industries: [],
   subscriptionPlans: [],
+  userId: localStorage.getItem("userId") || "",
   tariff: "",
   sector: "",
   submitApplication: null,
@@ -34,6 +35,7 @@ const userSlice = createSlice({
       state.error = null;
       state.accessToken = null;
       localStorage.removeItem("accessToken");
+      localStorage.removeItem("userId");
     },
   },
   extraReducers: (builder) => {
@@ -64,6 +66,8 @@ const userSlice = createSlice({
         state.loading = false;
         state.currentUser = action.payload.user || action.payload;
         state.isAuthenticated = true;
+        state.userId = action.payload.user_id;
+        localStorage.setItem("userId", action.payload.user_id);
         if (action.payload.auth_token) {
           state.accessToken = action.payload.auth_token;
         }

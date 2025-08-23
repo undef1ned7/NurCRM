@@ -1,20 +1,19 @@
-import React from 'react';
-import styles from './Department.module.scss'; 
+import "./Department.scss";
 
 const Modal = ({ isOpen, onClose, title, children }) => {
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
-    return (
-        <div className={styles.modalOverlay} onClick={onClose}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-                <button className={styles.closeButton} onClick={onClose}>
-                    &times;
-                </button>
-                <h2>{title}</h2>
-                {children}
-            </div>
-        </div>
-    );
+  return (
+    <div className={"modalOverlay"} onClick={onClose}>
+      <div className={"modalContent"} onClick={(e) => e.stopPropagation()}>
+        <button className={"closeButton"} onClick={onClose}>
+          &times;
+        </button>
+        <h2>{title}</h2>
+        {children}
+      </div>
+    </div>
+  );
 };
 
 export default Modal;

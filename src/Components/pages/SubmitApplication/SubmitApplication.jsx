@@ -5,9 +5,9 @@ import { SubmitApplicationAsync } from "../../../store/creators/userCreators";
 const SubmitApplication = () => {
   const dispatch = useDispatch();
   const { 0: state, 1: setState } = useState({
-    fullName: "",
+    full_name: "",
     phone: "",
-    appeal: "",
+    text: "",
   });
 
   const onChange = (e) => {
@@ -49,16 +49,16 @@ const SubmitApplication = () => {
           )} */}
 
           <div className="login__field">
-            <label className="login__label" htmlFor="fullName">
+            <label className="login__label" htmlFor="full_name">
               ФИО
             </label>
             <input
               className="login__input"
               type="text"
-              id="fullName"
-              name="fullName"
+              id="full_name"
+              name="full_name"
               placeholder="Введите ФИО"
-              value={state.fullName}
+              value={state.full_name}
               onChange={onChange}
               required
             />
@@ -79,15 +79,15 @@ const SubmitApplication = () => {
             />
           </div>
           <div className="login__field">
-            <label className="login__label" htmlFor="appeal">
+            <label className="login__label" htmlFor="text">
               Обращение
             </label>
             <textarea
               className="login__input"
-              id="appeal"
-              name="appeal"
+              id="text"
+              name="text"
               placeholder="Введите ваше обращение"
-              value={state.appeal}
+              value={state.text}
               onChange={onChange}
               required
             ></textarea>

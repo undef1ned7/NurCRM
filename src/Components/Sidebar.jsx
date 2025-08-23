@@ -14,13 +14,20 @@ import {
   FaTags,
 } from "react-icons/fa";
 import { BsFileEarmarkPerson } from "react-icons/bs";
-import { Warehouse, Landmark, Users, Instagram } from "lucide-react";
+import {
+  Warehouse,
+  Landmark,
+  Users,
+  Instagram,
+  InstagramIcon,
+} from "lucide-react";
 import "./Sidebar.scss";
 
 import Logo from "./Photo/Logo.png";
 import arnament1 from "./Photo/Group 1203.png";
 import arnament2 from "./Photo/Group 1204 (1).png";
 import Lang from "./Lang/Lang";
+import { useUser } from "../store/slices/userSlice";
 
 // --- API Configuration ---
 const BASE_URL = "https://app.nurcrm.kg/api";
@@ -59,6 +66,7 @@ const ALL_ACCESS_TYPES_MAPPING = [
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [tariff, setTariff] = useState(null);
   const [sector, setSector] = useState(null);
+  const { user } = useUser();
 
   const [userAccesses, setUserAccesses] = useState({});
   const [loadingAccesses, setLoadingAccesses] = useState(true);
@@ -256,6 +264,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       implemented: true,
     },
     {
+      label: "Инстаграм",
+      to: "/crm/instagram",
+      icon: <InstagramIcon className="sidebar__menu-icon" />,
+      implemented: true,
+    },
+    {
       label: "Настройки",
       to: "/crm/set",
       icon: <FaCog className="sidebar__menu-icon" />,
@@ -264,6 +278,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   ];
 
   let dynamicFeatures = [...baseFeatures];
+  // console.log(dynamicFeatures);
 
   // Строительная компания
   if (sector === "Строительная компания") {
@@ -417,7 +432,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     );
   }
 
-  if (sector === "market") {
+  if (sector === "Магазин") {
     dynamicFeatures.push(
       {
         label: "Бар",
@@ -470,7 +485,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     );
   }
 
-  if (sector === "cafe") {
+  if (sector === "Кафе") {
     dynamicFeatures.push(
       {
         label: "Аналитика",
@@ -552,11 +567,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const filteredFeatures = dynamicFeatures.filter((feature) => {
     if (!feature.implemented) return false;
 
-    const isAllowedByTariff = availableByTariff.includes(feature.label);
-    if (!isAllowedByTariff) return false;
-
     const backendKey = getBackendKeyByLabel(feature.label);
+
     if (backendKey) {
+      const isAllowedByTariff = availableByTariff.includes(feature.label);
+      if (!isAllowedByTariff) return false;
+
       return !loadingAccesses && userAccesses[backendKey] === true;
     } else {
       return true;

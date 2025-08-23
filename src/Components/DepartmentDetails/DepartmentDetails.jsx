@@ -1,25 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import styles from "./DepartmentDetails.module.scss";
 import Modal from "./Modal";
 import Select from "./Select"; // Используется для выбора сотрудника и для выбора доступов в модалке
 import AccessList from "./AccessList"; // Используется только для отображения/редактирования доступов в таблице
-
+import "./DepartmentDetails.scss"; // Импортируем стили для DepartmentDetails
 // --- API Configuration ---
 const BASE_URL = "https://app.nurcrm.kg/api";
 const AUTH_TOKEN = localStorage.getItem("accessToken");
 
-// Список всех типов доступов с соответствующими ключами для бэкенда
-// const ALL_ACCESS_TYPES_MAPPING = [
-//   { value: "Обзор", label: "Обзор", backendKey: "can_view_dashboard" },
-//   { value: "Касса", label: "Касса", backendKey: "can_view_cashbox" },
-//   { value: "Отделы", label: "Отделы", backendKey: "can_view_departments" },
-//   { value: "Заказы", label: "Заказы", backendKey: "can_view_orders" },
-//   { value: "Аналитика", label: "Аналитика", backendKey: "can_view_analytics" },
-//   { value: "Товар", label: "Товар", backendKey: "can_view_products" },
-//   { value: "Бронирование", label: "Бронирование", backendKey: "can_view_booking" },
-//   // Добавьте другие доступы, если они есть
-// ];
 const ALL_ACCESS_TYPES_MAPPING = [
   { value: "Обзор", label: "Обзор", backendKey: "can_view_dashboard" },
   { value: "Касса", label: "Касса", backendKey: "can_view_cashbox" },
@@ -68,12 +56,9 @@ const DepartmentDetails = () => {
 
   const [employeeForm, setEmployeeForm] = useState({
     employee_id: "",
-    accesses: [], // Теперь это массив строк (для Select multiple)
+    accesses: [],
   });
 
-  // --- Вспомогательная функция: Преобразование объекта булевых значений в массив меток ---
-  // Используется для отображения доступов в таблице AccessList,
-  // а также для отображения списка доступов в текстовом виде.
   const convertBackendAccessesToLabels = useCallback((accessData) => {
     const labelsArray = [];
     ALL_ACCESS_TYPES_MAPPING.forEach((type) => {
@@ -84,8 +69,6 @@ const DepartmentDetails = () => {
     return labelsArray;
   }, []);
 
-  // --- Вспомогательная функция: Преобразование массива меток в объект булевых значений для бэкенда ---
-  // Используется для отправки данных на бэкенд (например, при добавлении или изменении доступов).
   const convertLabelsToBackendAccesses = useCallback((labelsArray) => {
     const backendAccessObject = {};
     ALL_ACCESS_TYPES_MAPPING.forEach((type) => {
@@ -94,7 +77,6 @@ const DepartmentDetails = () => {
     return backendAccessObject;
   }, []);
 
-  // --- Fetch Department Details and its Employees ---
   const fetchDepartmentDetails = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -118,15 +100,10 @@ const DepartmentDetails = () => {
       }
 
       const data = await response.json();
-      // console.log("Department Data:", data);
       setDepartment(data);
 
-      // Преобразуем каждого сотрудника: из булевых полей доступов делаем массив строк-меток
-      // для AccessList в таблице.
       const processedEmployees = (data.employees || []).map((employee) => ({
         ...employee,
-        // Создаем массив 'accesses' из булевых полей, чтобы передать его в AccessList
-        // Здесь employee - это полный объект сотрудника с булевыми полями доступов.
         accesses: convertBackendAccessesToLabels(employee),
       }));
       setEmployees(processedEmployees);
@@ -138,7 +115,6 @@ const DepartmentDetails = () => {
     }
   }, [departmentId, AUTH_TOKEN, convertBackendAccessesToLabels]);
 
-  // --- Fetch All Available Employees (for Add Employee dropdown) ---
   const fetchAllAvailableEmployees = useCallback(async () => {
     try {
       const response = await fetch(`${BASE_URL}/users/employees/`, {
@@ -195,7 +171,6 @@ const DepartmentDetails = () => {
   }, [departmentId, fetchDepartmentDetails, fetchAllAvailableEmployees]);
 
   const handleOpenAddEmployeeModal = () => {
-    // Инициализируем accesses как пустой массив для Select multiple
     setEmployeeForm({ employee_id: "", accesses: [] });
     setIsAddEmployeeModalOpen(true);
   };
@@ -208,8 +183,7 @@ const DepartmentDetails = () => {
     setEditingEmployee(employee);
     setEmployeeForm({
       employee_id: employee.id,
-      // Здесь мы не инициализируем доступы, так как AccessList в таблице сам их берет
-      accesses: [], // Оставляем пустым, так как эта модалка не редактирует доступы
+      accesses: [],
     });
     setIsEditEmployeeModalOpen(true);
   };
@@ -224,9 +198,7 @@ const DepartmentDetails = () => {
     setEmployeeForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Этот обработчик будет вызываться компонентом Select в модалке добавления
   const handleAccessChangeForAddModal = (e) => {
-    // Получаем выбранные значения из <select multiple>
     const selectedOptions = Array.from(
       e.target.selectedOptions,
       (option) => option.value
@@ -234,20 +206,18 @@ const DepartmentDetails = () => {
     setEmployeeForm((prev) => ({ ...prev, accesses: selectedOptions }));
   };
 
-  // --- Assign Employee to Department (POST) ---
   const handleSubmitAddEmployee = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      // Преобразуем массив строк доступов (из Select) в объект булевых значений для бэкенда
       const accessesPayload = convertLabelsToBackendAccesses(
         employeeForm.accesses
       );
 
       const payload = {
         employee_id: employeeForm.employee_id,
-        ...accessesPayload, // Разворачиваем булевые поля доступов напрямую из преобразованного объекта
+        ...accessesPayload,
       };
 
       const response = await fetch(
@@ -281,7 +251,6 @@ const DepartmentDetails = () => {
     }
   };
 
-  // --- Edit Employee Accesses (PATCH/PUT) ---
   const handleSaveEmployeeAccesses = async (employeeId, newAccessesPayload) => {
     setLoading(true);
     setError(null);
@@ -316,7 +285,6 @@ const DepartmentDetails = () => {
     }
   };
 
-  // --- Remove Employee from Department (POST) ---
   const handleRemoveEmployee = async (employeeId) => {
     if (
       !window.confirm(
@@ -363,7 +331,6 @@ const DepartmentDetails = () => {
     }
   };
 
-  // --- Delete Department (DELETE) ---
   const handleDeleteDepartment = async () => {
     if (
       !window.confirm(
@@ -398,7 +365,6 @@ const DepartmentDetails = () => {
         throw new Error(errorMessage);
       }
 
-      // console.log(`Отдел "${department.name}" успешно удален.`);
       navigate("/crm/departments");
     } catch (err) {
       console.error("Ошибка при удалении отдела:", err);
@@ -409,32 +375,32 @@ const DepartmentDetails = () => {
   };
 
   if (loading && !department) {
-    return <div className={styles.container}>Загрузка данных отдела...</div>;
+    return <div className="container">Загрузка данных отдела...</div>;
   }
 
   if (error) {
     return (
-      <div className={styles.container} style={{ color: "red" }}>
+      <div className="container" style={{ color: "red" }}>
         Ошибка: {error}
       </div>
     );
   }
 
   if (!department) {
-    return <div className={styles.container}>Отдел не найден.</div>;
+    return <div className="container">Отдел не найден.</div>;
   }
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.departmentHeader}>
+    <div className="container">
+      <header className="header">
+        <div className="departmentHeader">
           <h2>Отдел {department.name}</h2>
         </div>
-        <div className={styles.userSection}>
+        <div className="userSection">
           {profile?.role === "owner" || profile?.role === "admin" ? (
             <>
               <button
-                className={styles.addEmployeeButton}
+                className="addEmployeeButton"
                 onClick={handleDeleteDepartment}
                 disabled={loading}
               >
@@ -442,7 +408,7 @@ const DepartmentDetails = () => {
               </button>
 
               <button
-                className={styles.addEmployeeButton}
+                className="addEmployeeButton"
                 onClick={handleOpenAddEmployeeModal}
               >
                 Добавить сотрудника
@@ -463,8 +429,8 @@ const DepartmentDetails = () => {
         </div>
       )}
 
-      <div className={styles.employeeTableContainer}>
-        <table className={styles.employeeTable}>
+      <div className="employeeTableContainer">
+        <table className="employeeTable">
           <thead>
             <tr>
               <th>№</th>
@@ -501,7 +467,7 @@ const DepartmentDetails = () => {
                   </td>
                   <td>
                     <button
-                      className={styles.actionDots}
+                      className="actionDots"
                       onClick={() => handleOpenEditEmployeeModal(employee)}
                     >
                       <i className="fa fa-ellipsis-h"></i>
@@ -517,7 +483,7 @@ const DepartmentDetails = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="4" className={styles.noEmployees}>
+                <td colSpan="4" className="noEmployees">
                   Сотрудники не найдены в этом отделе.
                 </td>
               </tr>
@@ -526,11 +492,11 @@ const DepartmentDetails = () => {
         </table>
       </div>
 
-      <footer className={styles.footer}>
+      <footer className="footer">
         <span>1-8 из {employees.length}</span>
-        <div className={styles.pagination}>
-          <span className={styles.arrow}>&larr;</span>
-          <span className={styles.arrow}>&rarr;</span>
+        <div className="pagination">
+          <span className="arrow">&larr;</span>
+          <span className="arrow">&rarr;</span>
         </div>
       </footer>
 
@@ -539,7 +505,7 @@ const DepartmentDetails = () => {
         onClose={handleCloseAddEmployeeModal}
         title="Добавить сотрудника"
       >
-        <form onSubmit={handleSubmitAddEmployee} className={styles.form}>
+        <form onSubmit={handleSubmitAddEmployee} className="form">
           <Select
             label="Выбрать существующего сотрудника"
             name="employee_id"
@@ -567,15 +533,15 @@ const DepartmentDetails = () => {
             }))}
             multiple
           />
-          <div className={styles.modalActions}>
+          <div className="modalActions">
             <button
               type="button"
               onClick={handleCloseAddEmployeeModal}
-              className={styles.cancelButton}
+              className="cancelButton"
             >
               Отмена
             </button>
-            <button type="submit" className={styles.submitButton}>
+            <button type="submit" className="submitButton">
               Добавить
             </button>
           </div>
@@ -594,7 +560,7 @@ const DepartmentDetails = () => {
             e.preventDefault();
             handleCloseEditEmployeeModal();
           }}
-          className={styles.form}
+          className="form"
         >
           <p>
             <strong>Имя:</strong> {editingEmployee?.first_name}
@@ -603,15 +569,15 @@ const DepartmentDetails = () => {
             <strong>Фамилия:</strong> {editingEmployee?.last_name}
           </p>
 
-          <div className={styles.modalActions}>
+          <div className="modalActions">
             <button
               type="button"
               onClick={handleCloseEditEmployeeModal}
-              className={styles.cancelButton}
+              className="cancelButton"
             >
               Отмена
             </button>
-            <button type="submit" className={styles.submitButton}>
+            <button type="submit" className="submitButton">
               Сохранить
             </button>
           </div>

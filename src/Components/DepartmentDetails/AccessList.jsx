@@ -1,7 +1,6 @@
 // AccessList.jsx
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FaCheckCircle, FaRegCircle } from "react-icons/fa";
-import styles from "./DepartmentDetails.module.scss"; // Стили общие
 
 // Обновленный список всех типов доступов с соответствующими ключами для бэкенда
 const ALL_ACCESS_TYPES = [
@@ -100,9 +99,10 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
   };
 
   return (
-    <div className={styles.accessList} style={{ position: "relative" }}>
+    <div className={"accessList"} style={{ position: "relative" }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        className={"accessButton"}
         style={{
           width: "100%",
           padding: "8px 12px",
@@ -154,7 +154,7 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
 
           <button
             onClick={handleSave}
-            className={styles.saveButton}
+            className={"saveButton"}
             style={{
               marginTop: "10px",
               width: "100%",

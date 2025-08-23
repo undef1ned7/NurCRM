@@ -63,6 +63,75 @@
 .app-ky {
   .header {
     border-radius: 0 0 10px 10px;
+    border: none !important;
     background-color: #ffffff66 !important;
+  }
+  .obzor__panel,
+  .obzor__card,
+  .vitrina__search-wrapper,
+  .vitrina__table thead,
+  .vitrina__table tbody,
+  .zakaz__search-wrapper,
+  .sklad__table,
+  .table-wrapper,
+  .fc .fc-view-harness,
+  .tabs,
+  .tabs__item--active,
+  .settings__content,
+  .general__left,
+  .general__right,
+  .security__box,
+  .users,
+  .funnels-page__stage,
+  .analytics,
+  .filterSection,
+  .dataSection,
+  .funnels-page__sidebar,
+  .noDataMessage,
+  .chartCard,
+  .add-modal__content,
+  .vitrina__modal,
+  .departmentCard,
+  .modalContent {
+    border-radius: 10px;
+    background: #ffffff66 !important;
+  }
+  .vitrina__search,
+  .summaryCard,
+  .company,
+  .zakaz__search,
+  .sklad__search,
+  .employee__search-wrapper,
+  .general__menu-item,
+  .general__input,
+  .general__select,
+  .users__content,
+  .ordersByStatusCard,
+  .users__sidebar,
+  .funnels-page__content,
+  .employee__search-input {
+    background-color: transparent !important;
+  }
+  .fc-theme-standard th,
+  .employeeTable th,
+  .employeeTable td,
+  .edit-modal__content {
+    background-color: #ffffff66 !important;
+  }
+  .company__input,
+  .selectInput,
+  .dateInput,
+  .add-modal__content select,
+  .add-modal__input,
+  .vitrina__modal-input,
+  .accessButton,
+  .formGroup select,
+  .edit-modal__section input {
+    border: 1px solid #fff !important;
+    background-color: transparent !important;
+  }
+  .accessButton {
+    background-color: #ffffff66 !important;
+    color: #fff !important;
   }
 }

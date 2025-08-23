@@ -1,6 +1,6 @@
 .employee {
   padding: 24px;
-  background: white;
+  // background: white;
   position: relative;
 
   &__top {
@@ -146,7 +146,7 @@
 }
 
 .edit-modal {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 
   &__overlay {
     position: fixed;
@@ -256,7 +256,7 @@
 }
 
 .filter-modal {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 
   &__overlay {
     position: fixed;
@@ -364,7 +364,7 @@
 }
 
 .add-modal {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 
   &__overlay {
     position: fixed;

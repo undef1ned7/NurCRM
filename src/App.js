@@ -22,6 +22,7 @@ import Zakaz from "./Components/Deposits/Zakaz/Zakaz";
 import Layout from "./Components/Layout/Layout";
 import Analytics from "./Components/pages/Analytics/Analytics";
 // import History from "./Components/pages/History/History";
+import Instagram from "./Components/Instagram/Instagram";
 import Set from "./Components/pages/Info/Settings/Settings";
 import Landing from "./Components/pages/Landing/Landing";
 import Registration from "./Components/pages/Registration/Registration";
@@ -34,29 +35,6 @@ import BarberHistory from "./Components/Sectors/Barber/History/History";
 import Masters from "./Components/Sectors/Barber/Masters/Masters";
 import Recorda from "./Components/Sectors/Barber/Recorda/Recorda";
 import BarberServices from "./Components/Sectors/Barber/Services/Services";
-import HostelAnalytics from "./Components/Sectors/Hostel/Analytics/Analytics";
-import HostelBar from "./Components/Sectors/Hostel/Bar/Bar";
-import HostelBookings from "./Components/Sectors/Hostel/Bookings/Bookings";
-import HostelDocuments from "./Components/Sectors/Hostel/Documents/Documents";
-import RoomsHalls from "./Components/Sectors/Hostel/RoomsHalls/RoomsHalls";
-import HostelWarehouse from "./Components/Sectors/Hostel/Warehouse/Warehouse";
-import SchoolCoursesGroups from "./Components/Sectors/School/CoursesGroups/CoursesGroups";
-import SchoolDocuments from "./Components/Sectors/School/Documents/Documents";
-import SchoolInvoices from "./Components/Sectors/School/Invoices/Invoices";
-import SchoolLeads from "./Components/Sectors/School/Leads/Leads";
-import SchoolLessonsRooms from "./Components/Sectors/School/LessonsRooms/LessonsRooms";
-import SchoolStudents from "./Components/Sectors/School/Students/Students";
-import SchoolTeachers from "./Components/Sectors/School/Teachers/Teachers";
-import SectorSelect from "./Components/Sectors/SectorSelect";
-import store from "./store";
-import MarketBar from "./Components/Sectors/Market/Bar/Bar";
-import MarketWarehouse from "./Components/Sectors/Market/Warehouse/Warehouse";
-import MarketCategories from "./Components/Sectors/Market/Categories/Categories";
-import MarketClients from "./Components/Sectors/Market/Clients/Clients";
-import MarketClientDetails from "./Components/Sectors/Market/ClientDetails/ClientDetails";
-import MarketHistory from "./Components/Sectors/Market/History/History";
-import MarketDocuments from "./Components/Sectors/Market/Documents/Documents";
-import MarketAnalytics from "./Components/Sectors/Market/Analytics/Analytics";
 import CafeAnalytics from "./Components/Sectors/cafe/Analytics/Analytics";
 import CafeDocuments from "./Components/Sectors/cafe/Documents/Documents";
 import CafeMenu from "./Components/Sectors/cafe/Menu/Menu";
@@ -68,6 +46,29 @@ import CafeReservations from "./Components/Sectors/cafe/Reservations/Reservation
 import CafeStaff from "./Components/Sectors/cafe/Staff/Staff";
 import CafeStock from "./Components/Sectors/cafe/Stock/Stock";
 import CafeTables from "./Components/Sectors/cafe/Tables/Tables";
+import HostelAnalytics from "./Components/Sectors/Hostel/Analytics/Analytics";
+import HostelBar from "./Components/Sectors/Hostel/Bar/Bar";
+import HostelBookings from "./Components/Sectors/Hostel/Bookings/Bookings";
+import HostelDocuments from "./Components/Sectors/Hostel/Documents/Documents";
+import RoomsHalls from "./Components/Sectors/Hostel/RoomsHalls/RoomsHalls";
+import HostelWarehouse from "./Components/Sectors/Hostel/Warehouse/Warehouse";
+import MarketAnalytics from "./Components/Sectors/Market/Analytics/Analytics";
+import MarketBar from "./Components/Sectors/Market/Bar/Bar";
+import MarketCategories from "./Components/Sectors/Market/Categories/Categories";
+import MarketClientDetails from "./Components/Sectors/Market/ClientDetails/ClientDetails";
+import MarketClients from "./Components/Sectors/Market/Clients/Clients";
+import MarketDocuments from "./Components/Sectors/Market/Documents/Documents";
+import MarketHistory from "./Components/Sectors/Market/History/History";
+import MarketWarehouse from "./Components/Sectors/Market/Warehouse/Warehouse";
+import SchoolCoursesGroups from "./Components/Sectors/School/CoursesGroups/CoursesGroups";
+import SchoolDocuments from "./Components/Sectors/School/Documents/Documents";
+import SchoolInvoices from "./Components/Sectors/School/Invoices/Invoices";
+import SchoolLeads from "./Components/Sectors/School/Leads/Leads";
+import SchoolLessonsRooms from "./Components/Sectors/School/LessonsRooms/LessonsRooms";
+import SchoolStudents from "./Components/Sectors/School/Students/Students";
+import SchoolTeachers from "./Components/Sectors/School/Teachers/Teachers";
+import SectorSelect from "./Components/Sectors/SectorSelect";
+import store from "./store";
 
 function App() {
   const [profile, setProfile] = useState(null);
@@ -195,7 +196,8 @@ function App() {
             <Route path="cafe/staff" element={<CafeStaff />} />
             <Route path="cafe/stock" element={<CafeStock />} />
             <Route path="cafe/tables" element={<CafeTables />} />
-
+            {/* instagram */}
+            <Route path="instagram" element={<Instagram />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -87,7 +87,7 @@ export const SubmitApplicationAsync = createAsyncThunk(
   "user/submitApplication",
   async (applicationData, { rejectWithValue }) => {
     try {
-      const response = await api.post("/users/applications/", applicationData);
+      const response = await api.post("/main/applications/", applicationData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

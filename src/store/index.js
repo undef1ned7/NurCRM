@@ -9,6 +9,7 @@ import analyticsReucer from "./slices/analyticsSlice";
 import departmentReducer from "./slices/departmentSlice"; // Импортируем редюсер для департаментов
 import clientReducer from "./slices/ClientSlice"; // Импортируем редюсер для клиентов
 import saleReducer from "./slices/saleSlice";
+import instagramReducer from "./slices/InstagramSlice";
 const store = configureStore({
   reducer: {
     user: userReducer,
@@ -21,6 +22,7 @@ const store = configureStore({
     departments: departmentReducer,
     client: clientReducer,
     sale: saleReducer,
+    instagram: instagramReducer,
   },
 });
 

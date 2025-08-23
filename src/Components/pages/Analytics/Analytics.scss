@@ -1,6 +1,7 @@
 .analytics {
+  margin-top: 20px;
   padding: 30px;
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   color: #333;
   background-color: #f0f2f5;
   min-height: 100vh;
@@ -13,6 +14,9 @@
     height: auto;
   }
 }
+/* YourStyles.module.scss */
+
+/* Вложение для appKy */
 
 .pageTitle {
   font-size: 2.5em;

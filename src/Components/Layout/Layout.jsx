@@ -7,6 +7,7 @@ import arnament2 from "../Photo/Group 1204.png";
 import arnament3 from "../Photo/Group 1215.png";
 import arnament4 from "../Photo/gory.jpg";
 import "./Layout.scss";
+// import { style } from "../pages/Analytics/Analytics.module.scss";
 
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
