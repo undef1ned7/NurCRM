@@ -6,9 +6,11 @@ import {
   getIndustriesAsync,
   getSubscriptionPlansAsync,
   getCompany,
-  SubmitApplicationAsync,
+  getApplicationList,
+  submitApplicationAsync,
 } from "../creators/userCreators";
 import { useSelector } from "react-redux";
+import ApplicationList from "../../Components/pages/SubmitApplication/ApplicationList";
 
 const initialState = {
   currentUser: null,
@@ -22,6 +24,7 @@ const initialState = {
   tariff: "",
   sector: "",
   submitApplication: null,
+  applicationList: [],
 };
 
 const userSlice = createSlice({
@@ -114,15 +117,27 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = payload;
       })
-      .addCase(SubmitApplicationAsync.pending, (state) => {
+      .addCase(submitApplicationAsync.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(SubmitApplicationAsync.fulfilled, (state, { payload }) => {
+      .addCase(submitApplicationAsync.fulfilled, (state, { payload }) => {
         state.loading = false;
         state.submitApplication = payload;
       })
-      .addCase(SubmitApplicationAsync.rejected, (state, { payload }) => {
+      .addCase(submitApplicationAsync.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
+      })
+      .addCase(getApplicationList.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getApplicationList.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.applicationList = payload.results;
+      })
+      .addCase(getApplicationList.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
       });

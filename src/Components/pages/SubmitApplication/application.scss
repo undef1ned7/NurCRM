@@ -1,0 +1,53 @@
+.application {
+  .container {
+    max-width: 1140px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  &-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #ccc;
+  }
+  .status-select {
+    display: flex;
+    align-items: center;
+    b {
+      margin-right: 10px;
+    }
+    select {
+      // padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      cursor: pointer;
+    }
+  }
+  &__button {
+    background: #ffc107;
+    color: #1c2526;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 7px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+
+    &:hover {
+      background: #ffb300;
+    }
+  }
+  .filter {
+    select {
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      cursor: pointer;
+      outline: none;
+    }
+  }
+}

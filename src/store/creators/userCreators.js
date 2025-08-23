@@ -83,7 +83,7 @@ export const getCompany = createAsyncThunk(
   }
 );
 
-export const SubmitApplicationAsync = createAsyncThunk(
+export const submitApplicationAsync = createAsyncThunk(
   "user/submitApplication",
   async (applicationData, { rejectWithValue }) => {
     try {
@@ -91,6 +91,33 @@ export const SubmitApplicationAsync = createAsyncThunk(
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const getApplicationList = createAsyncThunk(
+  "user/getApplicationList",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get("/main/applications/");
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const updateApplication = createAsyncThunk(
+  "user/updateApplication",
+  async ({ id, updatedData }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.patch(
+        `/main/applications/${id}/`,
+        updatedData
+      );
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
     }
   }
 );

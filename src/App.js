@@ -69,6 +69,7 @@ import SchoolStudents from "./Components/Sectors/School/Students/Students";
 import SchoolTeachers from "./Components/Sectors/School/Teachers/Teachers";
 import SectorSelect from "./Components/Sectors/SectorSelect";
 import store from "./store";
+import ApplicationList from "./Components/pages/SubmitApplication/ApplicationList";
 
 function App() {
   const [profile, setProfile] = useState(null);
@@ -111,6 +112,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/register" element={<Register />} />
           <Route path="/submit-application" element={<SubmitApplication />} />
+          <Route path="/get-application-list" element={<ApplicationList />} />
 
           <Route path="/crm" element={<Layout />}>
             <Route path="set" element={<Set />} />

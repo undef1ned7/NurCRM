@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { SubmitApplicationAsync } from "../../../store/creators/userCreators";
+import { getApplicationList } from "../../../store/creators/userCreators";
+import { useNavigate } from "react-router-dom";
 
 const SubmitApplication = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { 0: state, 1: setState } = useState({
     full_name: "",
     phone: "",
@@ -18,9 +20,18 @@ const SubmitApplication = () => {
     }));
   };
 
-  const onFormSubmit = (e) => {
+  const onFormSubmit = async (e) => {
     e.preventDefault();
-    dispatch(SubmitApplicationAsync(state));
+
+    try {
+      const response = await dispatch(getApplicationList(state)).unwrap();
+      alert("Заявка успешно отправлена");
+      // onClose();
+      navigate(`/`);
+      // console.log(response);
+    } catch {
+      alert("Ошибка при оставлении запроса");
+    }
   };
 
   return (
@@ -28,26 +39,6 @@ const SubmitApplication = () => {
       <div className="login__container">
         <h2 className="login__title">Оставить заявку в NurCRM</h2>
         <form className="login__form" onSubmit={onFormSubmit}>
-          {/* {isAuthenticated && currentUser && (
-            <p className="login__message login__message--success">
-              Добро пожаловать, **
-              {currentUser.email ||
-                (currentUser.user && currentUser.user.email)}
-              **!
-              <button onClick={handleLogout} className="login__logout-button">
-                Выйти
-              </button>
-            </p>
-          )}
-          {error && (
-            <p className="login__message login__message--error">
-              Ошибка входа:{" "}
-              {error.message ||
-                (error.non_field_errors && error.non_field_errors[0]) ||
-                JSON.stringify(error)}
-            </p>
-          )} */}
-
           <div className="login__field">
             <label className="login__label" htmlFor="full_name">
               ФИО
