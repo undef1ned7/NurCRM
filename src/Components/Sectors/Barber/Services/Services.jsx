@@ -1,7 +1,7 @@
 // src/components/Services/Services.jsx
 import React, { useEffect, useMemo, useState } from "react";
 
-import styles from "./Services.module.scss";
+import "./Services.scss";
 import { FaPlus, FaEdit, FaTimes, FaSearch, FaTrash } from "react-icons/fa";
 import api from "../../../../api";
 
@@ -143,22 +143,22 @@ const BarberServices = () => {
   };
 
   return (
-    <div className={styles.services}>
+    <div className="services">
       {/* Заголовок */}
-      <div className={styles.header}>
-        <div className={styles.titleGroup}>
-          <h2 className={styles.title}>Услуги</h2>
-          <span className={styles.subtitle}>
+      <div className="header">
+        <div className="titleGroup">
+          <h2 className="title">Услуги</h2>
+          <span className="subtitle">
             {loading ? "Загрузка…" : `${services.length} позиций`}
           </span>
         </div>
 
-        <div className={styles.actions}>
+        <div className="actions">
           {/* Поиск */}
-          <div className={styles.search}>
-            <FaSearch className={styles.searchIcon} />
+          <div className="search">
+            <FaSearch className="searchIcon" />
             <input
-              className={styles.searchInput}
+              className="searchInput"
               type="text"
               placeholder="Поиск по названию или цене"
               value={search}
@@ -167,36 +167,33 @@ const BarberServices = () => {
           </div>
 
           {/* Кнопка добавления */}
-          <button
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            onClick={() => openModal()}
-          >
+          <button className="btn btnPrimary" onClick={() => openModal()}>
             <FaPlus /> <span>Добавить</span>
           </button>
         </div>
       </div>
 
       {/* Ошибка */}
-      {error && <div className={styles.error}>{error}</div>}
+      {error && <div className="error">{error}</div>}
 
       {/* Список */}
       {loading ? (
-        <div className={styles.skeletonList}>
+        <div className="skeletonList">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className={styles.skeletonCard} />
+            <div key={i} className="skeletonCard" />
           ))}
         </div>
       ) : (
-        <div className={styles.list}>
+        <div className="list">
           {filtered.map((s) => (
-            <article key={s.id} className={styles.card}>
-              <div className={styles.info}>
-                <h4 className={styles.name}>{s.name}</h4>
-                <div className={styles.meta}>
-                  <span className={styles.price}>{s.price}</span>
+            <article key={s.id} className="card">
+              <div className="info">
+                <h4 className="name">{s.name}</h4>
+                <div className="meta">
+                  <span className="price">{s.price}</span>
                   <span
-                    className={`${styles.badge} ${
-                      s.active ? styles.badgeActive : styles.badgeInactive
+                    className={`badge ${
+                      s.active ? "badgeActive" : "badgeInactive"
                     }`}
                   >
                     {s.active ? "Активна" : "Неактивна"}
@@ -204,9 +201,9 @@ const BarberServices = () => {
                 </div>
               </div>
 
-              <div className={styles.cardActions}>
+              <div className="cardActions">
                 <button
-                  className={`${styles.btn} ${styles.btnSecondary}`}
+                  className="btn btnSecondary"
                   onClick={() => openModal(s)}
                 >
                   <FaEdit /> <span>Редактировать</span>
@@ -219,28 +216,28 @@ const BarberServices = () => {
 
       {/* Модалка */}
       {modalOpen && (
-        <div className={styles.modalOverlay} onClick={closeModal}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>
+        <div className="modalOverlay" onClick={closeModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <h3 className="modalTitle">
                 {currentService ? "Редактировать услугу" : "Новая услуга"}
               </h3>
-              <button className={styles.iconBtn} onClick={closeModal}>
+              <button className="iconBtn" onClick={closeModal}>
                 <FaTimes />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <div className={styles.formGrid}>
+            <form onSubmit={handleSubmit} className="form">
+              <div className="formGrid">
                 {/* Название */}
-                <div className={styles.field}>
-                  <label htmlFor="name" className={styles.label}>
-                    Название <span className={styles.req}>*</span>
+                <div className="field">
+                  <label htmlFor="name" className="label">
+                    Название <span className="req">*</span>
                   </label>
                   <input
                     id="name"
                     name="name"
-                    className={styles.input}
+                    className="input"
                     defaultValue={currentService?.name || ""}
                     placeholder="Например: Стрижка"
                     required
@@ -248,14 +245,14 @@ const BarberServices = () => {
                 </div>
 
                 {/* Цена */}
-                <div className={styles.field}>
-                  <label htmlFor="price" className={styles.label}>
-                    Цена <span className={styles.req}>*</span>
+                <div className="field">
+                  <label htmlFor="price" className="label">
+                    Цена <span className="req">*</span>
                   </label>
                   <input
                     id="price"
                     name="price"
-                    className={styles.input}
+                    className="input"
                     defaultValue={currentService?.price ?? ""}
                     placeholder="0"
                     type="number"
@@ -266,25 +263,25 @@ const BarberServices = () => {
                 </div>
 
                 {/* Активность */}
-                <div className={`${styles.field} ${styles.fieldSwitch}`}>
-                  <label className={styles.label}>Активна</label>
-                  <label className={styles.switch}>
+                <div className="field fieldSwitch">
+                  <label className="label">Активна</label>
+                  <label className="switch">
                     <input
                       type="checkbox"
                       name="active"
                       defaultChecked={currentService?.active ?? true}
                     />
-                    <span className={styles.slider} />
+                    <span className="slider" />
                   </label>
                 </div>
               </div>
 
               {/* Кнопки */}
-              <div className={styles.formActions}>
+              <div className="formActions">
                 {currentService?.id ? (
                   <button
                     type="button"
-                    className={`${styles.btn} ${styles.btnDanger}`}
+                    className="btn btnDanger"
                     onClick={handleDelete}
                     disabled={deleting || saving}
                     title="Удалить услугу"
@@ -292,13 +289,13 @@ const BarberServices = () => {
                     <FaTrash /> {deleting ? "Удаление…" : "Удалить"}
                   </button>
                 ) : (
-                  <span className={styles.actionsSpacer} />
+                  <span className="actionsSpacer" />
                 )}
 
-                <div className={styles.actionsRight}>
+                <div className="actionsRight">
                   <button
                     type="button"
-                    className={`${styles.btn} ${styles.btnSecondary}`}
+                    className="btn btnSecondary"
                     onClick={closeModal}
                     disabled={saving || deleting}
                   >
@@ -307,7 +304,7 @@ const BarberServices = () => {
                   <button
                     type="submit"
                     disabled={saving || deleting}
-                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    className="btn btnPrimary"
                   >
                     {saving ? "Сохранение…" : "Сохранить"}
                   </button>

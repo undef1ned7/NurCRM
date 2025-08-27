@@ -1,7 +1,7 @@
 // src/components/History/History.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../api";
-import styles from "./History.module.scss";
+import styles from "./History.scss";
 import { FaFileCsv } from "react-icons/fa";
 
 // Имя из разных возможных полей
@@ -115,11 +115,11 @@ const BarberHistory = () => {
   };
 
   return (
-    <div className={styles.services}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>История</h2>
+    <div className="services">
+      <div className="header">
+        <h2 className="title">История</h2>
         <button
-          className={`${styles.btn} ${styles.btnPrimary}`}
+          className="btn btnPrimary"
           onClick={exportCSV}
           disabled={loading || filtered.length === 0}
         >
@@ -127,15 +127,15 @@ const BarberHistory = () => {
         </button>
       </div>
 
-      <div className={styles.filters}>
+      <div className="filters">
         <input
-          className={styles.input}
+          className="input"
           type="date"
           value={filterDate}
           onChange={(e) => setFilterDate(e.target.value)}
         />
         <select
-          className={styles.input}
+          className="input"
           value={filterClient}
           onChange={(e) => setFilterClient(e.target.value)}
         >
@@ -147,7 +147,7 @@ const BarberHistory = () => {
           ))}
         </select>
         <select
-          className={styles.input}
+          className="input"
           value={filterMaster}
           onChange={(e) => setFilterMaster(e.target.value)}
         >
@@ -160,10 +160,10 @@ const BarberHistory = () => {
         </select>
       </div>
 
-      {error && <div className={styles.alert}>{error}</div>}
+      {error && <div className="alert">{error}</div>}
 
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
+      <div className="tableWrapper">
+        <table className="table">
           <thead>
             <tr>
               <th>Клиент</th>
@@ -174,13 +174,13 @@ const BarberHistory = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="3" className={styles.loading}>
+                <td colSpan="3" className="loading">
                   Загрузка...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan="3" className={styles.loading}>
+                <td colSpan="3" className="loading">
                   Нет данных
                 </td>
               </tr>

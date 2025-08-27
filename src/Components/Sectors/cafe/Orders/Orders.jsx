@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import styles from "./Orders.module.scss";
+import "./Orders.scss";
 import {
   FaSearch,
   FaPlus,
@@ -398,22 +398,22 @@ export default function CafeOrders() {
   const waiterName = (id) => waitersMap.get(id)?.name || "—";
 
   return (
-    <section className={styles.orders}>
+    <section className="orders">
       {/* Header */}
-      <div className={styles.orders__header}>
+      <div className="orders__header">
         <div>
-          <h2 className={styles.orders__title}>Заказы</h2>
-          <div className={styles.orders__subtitle}>
+          <h2 className="orders__title">Заказы</h2>
+          <div className="orders__subtitle">
             Выбор стола, официанта и блюд. Списание ингредиентов — из склада по
             рецептам.
           </div>
         </div>
 
-        <div className={styles.orders__actions}>
-          <div className={styles.orders__search}>
-            <FaSearch className={styles["orders__search-icon"]} />
+        <div className="orders__actions">
+          <div className="orders__search">
+            <FaSearch className="orders__search-icon" />
             <input
-              className={styles["orders__search-input"]}
+              className="orders__search-input"
               placeholder="Поиск: стол (номер), официант, гости…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -421,7 +421,7 @@ export default function CafeOrders() {
           </div>
 
           <button
-            className={`${styles.orders__btn} ${styles["orders__btn--primary"]}`}
+            className="orders__btn orders__btn--primary"
             onClick={openCreate}
             title={!tables.length ? "Сначала добавьте столы" : ""}
           >
@@ -431,65 +431,65 @@ export default function CafeOrders() {
       </div>
 
       {/* List */}
-      <div className={styles.orders__list}>
-        {loading && <div className={styles.orders__alert}>Загрузка…</div>}
+      <div className="orders__list">
+        {loading && <div className="orders__alert">Загрузка…</div>}
 
         {!loading &&
           filtered.map((o) => {
             const t = tablesMap.get(o.table);
             const totals = calcTotals(o);
             return (
-              <article key={o.id} className={styles.orders__card}>
-                <div className={styles["orders__card-left"]}>
-                  <div className={styles.orders__avatar}>
+              <article key={o.id} className="orders__card">
+                <div className="orders__card-left">
+                  <div className="orders__avatar">
                     <FaClipboardList />
                   </div>
                   <div>
-                    <h3 className={styles.orders__name}>
+                    <h3 className="orders__name">
                       Заказ • {t ? tableLabel(t) : "Стол —"}
                     </h3>
-                    <div className={styles.orders__meta}>
-                      <span className={styles.orders__muted}>
+                    <div className="orders__meta">
+                      <span className="orders__muted">
                         <FaChair />
                         &nbsp;{t ? tableLabel(t) : "Стол —"}
                       </span>
-                      <span className={styles.orders__muted}>
+                      <span className="orders__muted">
                         <FaUser />
                         &nbsp;Гостей: {o.guests ?? 0}
                       </span>
-                      <span className={styles.orders__muted}>
+                      <span className="orders__muted">
                         Официант: {waiterName(o.waiter)}
                       </span>
-                      <span className={styles.orders__muted}>
+                      <span className="orders__muted">
                         Позиций: {totals.count}
                       </span>
-                      <span className={styles.orders__muted}>
+                      <span className="orders__muted">
                         Сумма: {fmtMoney(totals.total)} сом
                       </span>
                     </div>
 
                     {Array.isArray(o.items) && o.items.length > 0 && (
-                      <ul className={styles.orders__itemsMini}>
+                      <ul className="orders__itemsMini">
                         {o.items.slice(0, 4).map((it, i) => (
                           <li
                             key={it.id || it.menu_item || i}
-                            className={styles.orders__itemMini}
+                            className="orders__itemMini"
                           >
                             {it.menu_item_title || it.title || "Позиция"} ×{" "}
                             {it.quantity}
                           </li>
                         ))}
                         {o.items.length > 4 && (
-                          <li className={styles.orders__itemMini}>…</li>
+                          <li className="orders__itemMini">…</li>
                         )}
                       </ul>
                     )}
                   </div>
                 </div>
 
-                <div className={styles.orders__rowActions}>
+                <div className="orders__rowActions">
                   <button
-                    className={`${styles.orders__btn} ${styles["orders__btn--danger"]}`}
+                    className="orders__btn orders__btn--danger"
                     onClick={() => deleteOrder(o.id)}
                     title="Удалить заказ"
                   >
@@ -501,26 +501,21 @@ export default function CafeOrders() {
           })}
 
         {!loading && !filtered.length && (
-          <div className={styles.orders__alert}>
-            Ничего не найдено по «{query}».
-          </div>
+          <div className="orders__alert">Ничего не найдено по «{query}».</div>
         )}
       </div>
 
       {/* Modal */}
       {modalOpen && (
         <div
-          className={styles["orders__modal-overlay"]}
+          className="orders__modal-overlay"
           onClick={() => !saving && setModalOpen(false)}
         >
-          <div
-            className={styles.orders__modal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles["orders__modal-header"]}>
-              <h3 className={styles["orders__modal-title"]}>Новый заказ</h3>
+          <div className="orders__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="orders__modal-header">
+              <h3 className="orders__modal-title">Новый заказ</h3>
               <button
-                className={styles["orders__icon-btn"]}
+                className="orders__icon-btn"
                 onClick={() => !saving && setModalOpen(false)}
                 disabled={saving}
                 title={saving ? "Сохранение…" : "Закрыть"}
@@ -529,12 +524,12 @@ export default function CafeOrders() {
               </button>
             </div>
 
-            <form className={styles.orders__form} onSubmit={saveOrder}>
-              <div className={styles["orders__form-grid"]}>
-                <div className={styles.orders__field}>
-                  <label className={styles.orders__label}>Стол</label>
+            <form className="orders__form" onSubmit={saveOrder}>
+              <div className="orders__form-grid">
+                <div className="orders__field">
+                  <label className="orders__label">Стол</label>
                   <select
-                    className={styles.orders__input}
+                    className="orders__input"
                     value={form.table}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, table: e.target.value }))
@@ -552,12 +547,12 @@ export default function CafeOrders() {
                   </select>
                 </div>
 
-                <div className={styles.orders__field}>
-                  <label className={styles.orders__label}>Гостей</label>
+                <div className="orders__field">
+                  <label className="orders__label">Гостей</label>
                   <input
                     type="number"
                     min={0}
-                    className={styles.orders__input}
+                    className="orders__input"
                     value={form.guests}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -569,10 +564,10 @@ export default function CafeOrders() {
                   />
                 </div>
 
-                <div className={styles.orders__field}>
-                  <label className={styles.orders__label}>Официант</label>
+                <div className="orders__field">
+                  <label className="orders__label">Официант</label>
                   <select
-                    className={styles.orders__input}
+                    className="orders__input"
                     value={form.waiter}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, waiter: e.target.value }))
@@ -595,23 +590,21 @@ export default function CafeOrders() {
                   </select>
                 </div>
 
-                <div
-                  className={`${styles.orders__field} ${styles["orders__field--full"]}`}
-                >
-                  <div className={styles.orders__subtitle}>
+                <div className="orders__field orders__field--full">
+                  <div className="orders__subtitle">
                     Статус при создании = <b>Открыт</b>.
                   </div>
                 </div>
               </div>
 
-              <div className={styles["orders__itemsBlock"]}>
-                <h4 className={styles.orders__subtitle}>Позиции заказа</h4>
+              <div className="orders__itemsBlock">
+                <h4 className="orders__subtitle">Позиции заказа</h4>
 
-                <div className={styles["orders__form-grid"]}>
-                  <div className={styles.orders__field}>
-                    <label className={styles.orders__label}>Позиция меню</label>
+                <div className="orders__form-grid">
+                  <div className="orders__field">
+                    <label className="orders__label">Позиция меню</label>
                     <select
-                      className={styles.orders__input}
+                      className="orders__input"
                       value={addingId}
                       onChange={(e) => setAddingId(e.target.value)}
                       onFocus={ensureMenu}
@@ -626,12 +619,12 @@ export default function CafeOrders() {
                     </select>
                   </div>
 
-                  <div className={styles.orders__field}>
-                    <label className={styles.orders__label}>Кол-во</label>
+                  <div className="orders__field">
+                    <label className="orders__label">Кол-во</label>
                     <input
                       type="number"
                       min={1}
-                      className={styles.orders__input}
+                      className="orders__input"
                       value={addingQty}
                       onChange={(e) =>
                         setAddingQty(Math.max(1, Number(e.target.value) || 1))
@@ -640,11 +633,11 @@ export default function CafeOrders() {
                     />
                   </div>
 
-                  <div className={styles.orders__field}>
-                    <label className={styles.orders__label}>&nbsp;</label>
+                  <div className="orders__field">
+                    <label className="orders__label">&nbsp;</label>
                     <button
                       type="button"
-                      className={`${styles.orders__btn} ${styles["orders__btn--primary"]}`}
+                      className="orders__btn orders__btn--primary"
                       onClick={addItem}
                       disabled={!addingId || saving}
                     >
@@ -654,8 +647,8 @@ export default function CafeOrders() {
                 </div>
 
                 {form.items.length ? (
-                  <div className={styles.orders__tableWrap}>
-                    <table className={styles.orders__table}>
+                  <div className="orders__tableWrap">
+                    <table className="orders__table">
                       <thead>
                         <tr>
                           <th>Блюдо</th>
@@ -674,7 +667,7 @@ export default function CafeOrders() {
                               <input
                                 type="number"
                                 min={1}
-                                className={styles.orders__input}
+                                className="orders__input"
                                 value={it.quantity}
                                 onChange={(e) =>
                                   changeItemQty(it.menu_item, e.target.value)
@@ -686,7 +679,7 @@ export default function CafeOrders() {
                             <td>
                               <button
                                 type="button"
-                                className={`${styles.orders__btn} ${styles["orders__btn--danger"]}`}
+                                className="orders__btn orders__btn--danger"
                                 onClick={() => removeItem(it.menu_item)}
                                 title="Удалить позицию"
                                 disabled={saving}
@@ -729,16 +722,14 @@ export default function CafeOrders() {
                     </table>
                   </div>
                 ) : (
-                  <div className={styles.orders__alert}>
-                    Добавьте блюдо из меню.
-                  </div>
+                  <div className="orders__alert">Добавьте блюдо из меню.</div>
                 )}
               </div>
 
-              <div className={styles["orders__form-actions"]}>
+              <div className="orders__form-actions">
                 <button
                   type="submit"
-                  className={`${styles.orders__btn} ${styles["orders__btn--primary"]}`}
+                  className="orders__btn orders__btn--primary"
                   disabled={saving || !form.table || !form.items.length}
                 >
                   {saving ? "Сохраняем…" : "Добавить"}

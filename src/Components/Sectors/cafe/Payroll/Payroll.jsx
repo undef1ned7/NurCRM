@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "./Payroll.module.scss";
-import { FaSearch, FaMoneyBillWave, FaSync, FaCheckCircle } from "react-icons/fa";
+import "./Payroll.scss";
+import {
+  FaSearch,
+  FaMoneyBillWave,
+  FaSync,
+  FaCheckCircle,
+} from "react-icons/fa";
 import api from "../../../../api";
 
 /**
@@ -11,7 +16,7 @@ import api from "../../../../api";
  */
 
 // ===== настройки расчёта
-const COMMISSION_RATE = 0.10; // 10%
+const COMMISSION_RATE = 0.1; // 10%
 
 // ===== оффлайн-хранилище выплат (fallback)
 const LS_KEY_PAYOUTS = "local_payouts_v1";
@@ -74,7 +79,7 @@ export default function CafePayroll() {
   const [month, setMonth] = useState(nowMonth);
 
   // каталоги
-  const [staff, setStaff] = useState([]);   // {id, name, role, is_active}
+  const [staff, setStaff] = useState([]); // {id, name, role, is_active}
   const [orders, setOrders] = useState([]); // заказы с items
 
   // выплаты (серверные + локальные)
@@ -110,7 +115,9 @@ export default function CafePayroll() {
   const fetchPayouts = async (ym) => {
     let server = [];
     try {
-      const r = await api.get(`/cafe/payroll-payouts/?month=${encodeURIComponent(ym)}`);
+      const r = await api.get(
+        `/cafe/payroll-payouts/?month=${encodeURIComponent(ym)}`
+      );
       server = listFrom(r);
     } catch {
       // сервер может быть недоступен
@@ -120,7 +127,9 @@ export default function CafePayroll() {
     const local = readLocalPayouts().filter((p) => p.month === ym);
     const seen = new Set();
     const keyOf = (p) =>
-      `${p.staff}|${p.month}|${p.orders_count}|${p.sales}|${p.salary}|${p.paid_at || ""}`;
+      `${p.staff}|${p.month}|${p.orders_count}|${p.sales}|${p.salary}|${
+        p.paid_at || ""
+      }`;
 
     const merged = [...local, ...server].filter((p) => {
       const k = keyOf(p);
@@ -207,7 +216,11 @@ export default function CafePayroll() {
     // превратим во «все сотрудники», и вычтем уже выплаченное
     const rows = staff.map((s) => {
       const a = agg.get(s.id) || { sales: 0, ordersCount: 0 };
-      const paid = paidAggByStaff.get(s.id) || { orders: 0, sales: 0, salary: 0 };
+      const paid = paidAggByStaff.get(s.id) || {
+        orders: 0,
+        sales: 0,
+        salary: 0,
+      };
 
       const ordersLeft = Math.max(0, (a.ordersCount || 0) - (paid.orders || 0));
       const salesLeft = Math.max(0, round2((a.sales || 0) - (paid.sales || 0)));
@@ -276,7 +289,10 @@ export default function CafePayroll() {
       };
 
       // Пытаемся сохранить на сервер
-      const { data: created } = await api.post("/cafe/payroll-payouts/", payload);
+      const { data: created } = await api.post(
+        "/cafe/payroll-payouts/",
+        payload
+      );
       setPayouts((prev) => [created, ...prev]); // успех: серверная запись
     } catch (e) {
       console.error("Ошибка выплаты, пишу в локальную аналитику:", e);
@@ -301,24 +317,25 @@ export default function CafePayroll() {
   };
 
   return (
-    <section className={styles.payroll}>
+    <section className="payroll">
       {/* Header */}
-      <div className={styles.payroll__header}>
+      <div className="payroll__header">
         <div>
-          <h2 className={styles.payroll__title}>Зарплата</h2>
-          <div className={styles.payroll__subtitle}>
+          <h2 className="payroll__title">Зарплата</h2>
+          <div className="payroll__subtitle">
             Авторасчёт по месяцам: ЗП = {Math.round(COMMISSION_RATE * 100)}% от
-            выручки заказов официанта за месяц. После «Оплатить» остаток по месяцу обнуляется,
-            а запись попадает в аналитику выплат (оффлайн — тоже).
+            выручки заказов официанта за месяц. После «Оплатить» остаток по
+            месяцу обнуляется, а запись попадает в аналитику выплат (оффлайн —
+            тоже).
           </div>
         </div>
 
-        <div className={styles.payroll__actions}>
+        <div className="payroll__actions">
           {/* Поиск */}
-          <div className={styles.payroll__search}>
-            <FaSearch className={styles["payroll__search-icon"]} />
+          <div className="payroll__search">
+            <FaSearch className="payroll__search-icon" />
             <input
-              className={styles["payroll__search-input"]}
+              className="payroll__search-input"
               placeholder="Поиск: сотрудник или роль…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -328,7 +345,7 @@ export default function CafePayroll() {
           {/* Месяц */}
           <input
             type="month"
-            className={styles.payroll__input}
+            className="payroll__input"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             title="Месяц расчёта"
@@ -336,7 +353,7 @@ export default function CafePayroll() {
 
           {/* Обновить */}
           <button
-            className={`${styles.payroll__btn} ${styles["payroll__btn--secondary"]}`}
+            className="payroll__btn payroll__btn--secondary"
             onClick={() => loadAll(month)}
             disabled={loading}
             title="Перезагрузить данные"
@@ -347,46 +364,58 @@ export default function CafePayroll() {
       </div>
 
       {/* List */}
-      <div className={styles.payroll__list}>
-        {loading && (
-          <div className={styles.payroll__alert}>Загрузка данных…</div>
-        )}
+      <div className="payroll__list">
+        {loading && <div className="payroll__alert">Загрузка данных…</div>}
 
         {!loading &&
           payrollRows.map((p) => {
             const canPay = p.salary > 0 && p.sales > 0 && !paying[p.staffId];
             return (
-              <article key={p.staffId} className={styles.payroll__card}>
-                <div className={styles["payroll__card-left"]}>
-                  <div className={styles.payroll__avatar}>
+              <article key={p.staffId} className="payroll__card">
+                <div className="payroll__card-left">
+                  <div className="payroll__avatar">
                     <FaMoneyBillWave />
                   </div>
                   <div>
-                    <h3 className={styles.payroll__name}>{p.staff}</h3>
-                    <div className={styles.payroll__meta}>
-                      <span className={styles.payroll__muted}>Месяц: {p.month}</span>
-                      {p.role && <span className={styles.payroll__muted}>Роль: {p.role}</span>}
-                      <span className={styles.payroll__muted}>Заказов: {p.ordersCount}</span>
-                      <span className={styles.payroll__muted}>Выручка: {fmtMoney(p.sales)} сом</span>
-                      <span className={styles.payroll__muted}>
+                    <h3 className="payroll__name">{p.staff}</h3>
+                    <div className="payroll__meta">
+                      <span className="payroll__muted">Месяц: {p.month}</span>
+                      {p.role && (
+                        <span className="payroll__muted">Роль: {p.role}</span>
+                      )}
+                      <span className="payroll__muted">
+                        Заказов: {p.ordersCount}
+                      </span>
+                      <span className="payroll__muted">
+                        Выручка: {fmtMoney(p.sales)} сом
+                      </span>
+                      <span className="payroll__muted">
                         <b>Зарплата: {fmtMoney(p.salary)} сом</b>
                       </span>
 
                       {(p.paidOrders > 0 || p.paidSales > 0) && (
-                        <span className={styles.payroll__paidBadge} title="Уже выплачено за этот месяц">
-                          выплачено: {p.paidOrders} / {fmtMoney(p.paidSales)} / {fmtMoney(p.paidSalary)}
+                        <span
+                          className="payroll__paidBadge"
+                          title="Уже выплачено за этот месяц"
+                        >
+                          выплачено: {p.paidOrders} / {fmtMoney(p.paidSales)} /{" "}
+                          {fmtMoney(p.paidSalary)}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className={styles.payroll__actionsRight}>
+                <div className="payroll__actionsRight">
                   <button
-                    className={styles.payroll__btn}
+                    className="payroll__btn"
                     disabled={!canPay}
                     onClick={() => handlePay(p)}
-                    title={canPay ? "Выплатить остаток за месяц" : "Нет остатка к выплате"}
+                    title={
+                      canPay
+                        ? "Выплатить остаток за месяц"
+                        : "Нет остатка к выплате"
+                    }
                   >
                     <FaCheckCircle /> Оплатить
                   </button>
@@ -396,9 +425,7 @@ export default function CafePayroll() {
           })}
 
         {!loading && payrollRows.length === 0 && (
-          <div className={styles.payroll__alert}>
-            Нет данных за выбранный месяц.
-          </div>
+          <div className="payroll__alert">Нет данных за выбранный месяц.</div>
         )}
       </div>
     </section>

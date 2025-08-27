@@ -1,7 +1,7 @@
 // src/components/CashReports/CashReports.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../api";
-import styles from "./CashReports.module.scss";
+import "./CashReports.scss";
 import { FaFileCsv } from "react-icons/fa";
 
 /* ===== Утилиты ===== */
@@ -200,11 +200,11 @@ const CashReports = () => {
   };
 
   return (
-    <div className={styles.services}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Касса</h2>
+    <div className="cashReports services">
+      <div className="header">
+        <h2 className="title">Касса</h2>
         <button
-          className={`${styles.btn} ${styles.btnPrimary}`}
+          className="btn btnPrimary"
           onClick={exportCSV}
           disabled={loading || filtered.length === 0}
           title="Экспортировать CSV"
@@ -213,32 +213,32 @@ const CashReports = () => {
         </button>
       </div>
 
-      <div className={styles.filters}>
-        <div className={styles.filterRow}>
-          <div className={styles.field}>
-            <label className={styles.label}>Дата от</label>
+      <div className="filters">
+        <div className="filterRow">
+          <div className="field">
+            <label className="label">Дата от</label>
             <input
               type="date"
-              className={styles.input}
+              className="input"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Дата до</label>
+          <div className="field">
+            <label className="label">Дата до</label>
             <input
               type="date"
-              className={styles.input}
+              className="input"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
             />
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Услуга</label>
+          <div className="field">
+            <label className="label">Услуга</label>
             <select
-              className={styles.input}
+              className="input"
               value={serviceId}
               onChange={(e) => setServiceId(e.target.value)}
             >
@@ -251,10 +251,10 @@ const CashReports = () => {
             </select>
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Мастер</label>
+          <div className="field">
+            <label className="label">Мастер</label>
             <select
-              className={styles.input}
+              className="input"
               value={masterId}
               onChange={(e) => setMasterId(e.target.value)}
             >
@@ -268,42 +268,42 @@ const CashReports = () => {
           </div>
         </div>
 
-        <div className={styles.presets}>
-          <button className={styles.chip} onClick={() => setPreset("today")}>
+        <div className="presets">
+          <button className="chip" onClick={() => setPreset("today")}>
             Сегодня
           </button>
-          <button className={styles.chip} onClick={() => setPreset("week")}>
+          <button className="chip" onClick={() => setPreset("week")}>
             Неделя
           </button>
-          <button className={styles.chip} onClick={() => setPreset("month")}>
+          <button className="chip" onClick={() => setPreset("month")}>
             Месяц
           </button>
         </div>
       </div>
 
-      {error && <div className={styles.alert}>{error}</div>}
+      {error && <div className="alert">{error}</div>}
 
-      <div className={styles.summary}>
-        <div className={styles.card}>
-          <span className={styles.cardLabel}>Выручка</span>
-          <span className={styles.cardValue}>{formatMoney(total)} сом</span>
+      <div className="summary">
+        <div className="card">
+          <span className="cardLabel">Выручка</span>
+          <span className="cardValue">{formatMoney(total)} сом</span>
         </div>
-        <div className={styles.card}>
-          <span className={styles.cardLabel}>Транзакций</span>
-          <span className={styles.cardValue}>{count}</span>
+        <div className="card">
+          <span className="cardLabel">Транзакций</span>
+          <span className="cardValue">{count}</span>
         </div>
-        <div className={styles.card}>
-          <span className={styles.cardLabel}>Средний чек</span>
-          <span className={styles.cardValue}>{formatMoney(avg)} сом</span>
+        <div className="card">
+          <span className="cardLabel">Средний чек</span>
+          <span className="cardValue">{formatMoney(avg)} сом</span>
         </div>
-        <div className={styles.card}>
-          <span className={styles.cardLabel}>Уникальных клиентов</span>
-          <span className={styles.cardValue}>{uniqueClients}</span>
+        <div className="card">
+          <span className="cardLabel">Уникальных клиентов</span>
+          <span className="cardValue">{uniqueClients}</span>
         </div>
       </div>
 
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
+      <div className="tableWrapper">
+        <table className="table">
           <thead>
             <tr>
               <th>Клиент</th>
@@ -314,13 +314,13 @@ const CashReports = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td className={styles.loading} colSpan="3">
+                <td className="loading" colSpan="3">
                   Загрузка...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td className={styles.loading} colSpan="3">
+                <td className="loading" colSpan="3">
                   Нет данных
                 </td>
               </tr>
@@ -343,44 +343,38 @@ const CashReports = () => {
         </table>
       </div>
 
-      <div className={styles.reports}>
-        <div className={styles.report}>
-          <h3 className={styles.h3}>По дням</h3>
-          <ul className={styles.ul}>
+      <div className="reports">
+        <div className="report">
+          <h3 className="h3">По дням</h3>
+          <ul className="ul">
             {Object.entries(byDate).map(([date, amount]) => (
-              <li key={date} className={styles.li}>
+              <li key={date} className="li">
                 <span>{date}</span>
-                <span className={styles.liAmount}>
-                  {formatMoney(amount)} сом
-                </span>
+                <span className="liAmount">{formatMoney(amount)} сом</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className={styles.report}>
-          <h3 className={styles.h3}>По услугам</h3>
-          <ul className={styles.ul}>
+        <div className="report">
+          <h3 className="h3">По услугам</h3>
+          <ul className="ul">
             {Object.entries(byService).map(([service, amount]) => (
-              <li key={service || "none"} className={styles.li}>
+              <li key={service || "none"} className="li">
                 <span>{service || "—"}</span>
-                <span className={styles.liAmount}>
-                  {formatMoney(amount)} сом
-                </span>
+                <span className="liAmount">{formatMoney(amount)} сом</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className={styles.report}>
-          <h3 className={styles.h3}>По мастерам</h3>
-          <ul className={styles.ul}>
+        <div className="report">
+          <h3 className="h3">По мастерам</h3>
+          <ul className="ul">
             {Object.entries(byMaster).map(([master, amount]) => (
-              <li key={master || "none"} className={styles.li}>
+              <li key={master || "none"} className="li">
                 <span>{master || "—"}</span>
-                <span className={styles.liAmount}>
-                  {formatMoney(amount)} сом
-                </span>
+                <span className="liAmount">{formatMoney(amount)} сом</span>
               </li>
             ))}
           </ul>

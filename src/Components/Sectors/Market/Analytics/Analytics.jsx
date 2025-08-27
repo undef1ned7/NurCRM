@@ -1,7 +1,7 @@
 // src/components/Analytics/Analytics.jsx
-import React, { useEffect, useMemo, useState } from "react";
-import s from "./Analytics.module.scss";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../../../api";
+import "./Analytics.scss";
 
 /* ===== helpers ===== */
 const asArray = (data) =>
@@ -12,7 +12,8 @@ const num = (v) => {
   return Number.isFinite(n) ? n : 0;
 };
 const fmtMoney = (v) =>
-  (Number(v) || 0).toLocaleString(undefined, { minimumFractionDigits: 0 }) + " с";
+  (Number(v) || 0).toLocaleString(undefined, { minimumFractionDigits: 0 }) +
+  " с";
 
 const fmtDateTime = (iso) => {
   if (!iso) return "—";
@@ -36,7 +37,8 @@ const inRange = (iso, start, end) => {
 /* ===== нормализация ===== */
 const normalizeIncome = (x) => ({
   id: x.id || x.uuid || x.sale_id || String(Math.random()),
-  created_at: x.paid_at || x.created_at || x.created || x.timestamp || x.date || "",
+  created_at:
+    x.paid_at || x.created_at || x.created || x.timestamp || x.date || "",
   amount: num(x.total ?? x.amount ?? x.sum ?? 0),
   items_count: Number(
     x.items_count ??
@@ -88,44 +90,77 @@ function SaleModal({ id, onClose }) {
     }
   };
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => {
+    load();
+  }, [id]);
 
   return (
     <div
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, background: "rgba(15,23,42,.45)",
-        display: "grid", placeItems: "center", zIndex: 60
+        position: "fixed",
+        inset: 0,
+        background: "rgba(15,23,42,.45)",
+        display: "grid",
+        placeItems: "center",
+        zIndex: 60,
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "min(920px, 96vw)", background: "#fff", borderRadius: 12,
-          padding: 16, boxShadow: "0 8px 30px rgba(0,0,0,.12)", maxHeight: "90vh", overflow: "auto"
+          width: "min(920px, 96vw)",
+          background: "#fff",
+          borderRadius: 12,
+          padding: 16,
+          boxShadow: "0 8px 30px rgba(0,0,0,.12)",
+          maxHeight: "90vh",
+          overflow: "auto",
         }}
       >
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{fontWeight:800,fontSize:16}}>Продажа #{(id || "").slice(0,8)}…</div>
-          <button onClick={onClose} aria-label="Закрыть" style={{fontSize:20,lineHeight:1}}>×</button>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: 16 }}>
+            Продажа #{(id || "").slice(0, 8)}…
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Закрыть"
+            style={{ fontSize: 20, lineHeight: 1 }}
+          >
+            ×
+          </button>
         </div>
 
         {loading ? (
-          <div className={s.analytics__skeletonRow}>
-            <div className={s.analytics__skeleton} />
-            <div className={s.analytics__skeleton} />
-            <div className={s.analytics__skeleton} />
+          <div className="analytics__skeletonRow">
+            <div className="analytics__skeleton" />
+            <div className="analytics__skeleton" />
+            <div className="analytics__skeleton" />
           </div>
         ) : err ? (
-          <div className={s.analytics__error}>{err}</div>
+          <div className="analytics__error">{err}</div>
         ) : sale ? (
           <>
-            <div style={{display:"grid",gap:6,marginBottom:10}}>
-              <div><b>Создано:</b> {sale.createdAt ? new Date(sale.createdAt).toLocaleString() : "—"}</div>
-              <div><b>Итого:</b> {fmtMoney(sale.total)}</div>
+            <div style={{ display: "grid", gap: 6, marginBottom: 10 }}>
+              <div>
+                <b>Создано:</b>{" "}
+                {sale.createdAt
+                  ? new Date(sale.createdAt).toLocaleString()
+                  : "—"}
+              </div>
+              <div>
+                <b>Итого:</b> {fmtMoney(sale.total)}
+              </div>
             </div>
 
-            <div className={s.analytics__panel}>
+            <div className="analytics__panel">
               <div className="table">
                 <div className="table__head">
                   <span>Товар</span>
@@ -133,26 +168,37 @@ function SaleModal({ id, onClose }) {
                   <span>Сумма</span>
                 </div>
                 <div className="table__body">
-                  {sale.items.length ? sale.items.map((it) => (
-                    <div key={it.id} className="table__row">
-                      <span className="ellipsis" title={it.name}>
-                        {it.name} • {it.qty} шт × {fmtMoney(it.unit_price)}
-                      </span>
-                      <span className="ellipsis" title={it.barcode || "—"}>{it.barcode || "—"}</span>
-                      <span>{fmtMoney(it.line_total)}</span>
-                    </div>
-                  )) : (
+                  {sale.items.length ? (
+                    sale.items.map((it) => (
+                      <div key={it.id} className="table__row">
+                        <span className="ellipsis" title={it.name}>
+                          {it.name} • {it.qty} шт × {fmtMoney(it.unit_price)}
+                        </span>
+                        <span className="ellipsis" title={it.barcode || "—"}>
+                          {it.barcode || "—"}
+                        </span>
+                        <span>{fmtMoney(it.line_total)}</span>
+                      </div>
+                    ))
+                  ) : (
                     <div className="table__empty">Позиции отсутствуют</div>
                   )}
                 </div>
               </div>
             </div>
 
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-              <button className={`${s.analytics__btn} ${s["analytics__btn--secondary"]}`} onClick={load}>
+            <div
+              style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}
+            >
+              <button
+                className="analytics__btn analytics__btn--secondary"
+                onClick={load}
+              >
                 Обновить
               </button>
-              <button className={`${s.analytics__btn}`} onClick={onClose}>Закрыть</button>
+              <button className="analytics__btn" onClick={onClose}>
+                Закрыть
+              </button>
             </div>
           </>
         ) : null}
@@ -164,7 +210,7 @@ function SaleModal({ id, onClose }) {
 /* ===== основной компонент ===== */
 export default function MarketAnalytics() {
   const [status, setStatus] = useState(""); // статус чеков: '', new, paid, canceled
-  const [from, setFrom] = useState("");     // YYYY-MM-DD
+  const [from, setFrom] = useState(""); // YYYY-MM-DD
   const [to, setTo] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -186,7 +232,9 @@ export default function MarketAnalytics() {
 
       let incomeRaw = [];
       try {
-        const { data } = await api.get(`/main/pos/sales/${q.toString() ? `?${q}` : ""}`);
+        const { data } = await api.get(
+          `/main/pos/sales/${q.toString() ? `?${q}` : ""}`
+        );
         incomeRaw = asArray(data);
       } catch {
         const { data } = await api.get("/main/pos/sales/");
@@ -202,11 +250,18 @@ export default function MarketAnalytics() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   // фильтрация по датам/статусу (дополнительно к серверному фильтру)
   const incomesFiltered = useMemo(
-    () => incomes.filter((x) => inRange(x.created_at, from, to) && (status ? x.status === status : true)),
+    () =>
+      incomes.filter(
+        (x) =>
+          inRange(x.created_at, from, to) &&
+          (status ? x.status === status : true)
+      ),
     [incomes, from, to, status]
   );
 
@@ -219,17 +274,19 @@ export default function MarketAnalytics() {
   }, [incomesFiltered]);
 
   return (
-    <section className={s.analytics}>
+    <section className="analytics">
       {/* Заголовок + фильтры */}
-      <header className={s.analytics__header}>
+      <header className="analytics__header">
         <div>
-          <h2 className={s.analytics__title}>Аналитика</h2>
-          <p className={s.analytics__subtitle}>Приход (чеки) за выбранный период</p>
+          <h2 className="analytics__title">Аналитика</h2>
+          <p className="analytics__subtitle">
+            Приход (чеки) за выбранный период
+          </p>
         </div>
 
-        <div className={s.analytics__actions} style={{ flexWrap: "wrap" }}>
+        <div className="analytics__actions" style={{ flexWrap: "wrap" }}>
           <select
-            className={s.analytics__select}
+            className="analytics__select"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             title="Статус чеков"
@@ -242,7 +299,7 @@ export default function MarketAnalytics() {
 
           <input
             type="date"
-            className={s.analytics__select}
+            className="analytics__select"
             value={from}
             max={to || undefined}
             onChange={(e) => setFrom(e.target.value)}
@@ -250,7 +307,7 @@ export default function MarketAnalytics() {
           />
           <input
             type="date"
-            className={s.analytics__select}
+            className="analytics__select"
             value={to}
             min={from || undefined}
             onChange={(e) => setTo(e.target.value)}
@@ -258,7 +315,7 @@ export default function MarketAnalytics() {
           />
 
           <button
-            className={`${s.analytics__btn} ${s["analytics__btn--secondary"]}`}
+            className="analytics__btn analytics__btn--secondary"
             onClick={load}
             disabled={loading}
           >
@@ -267,35 +324,35 @@ export default function MarketAnalytics() {
         </div>
       </header>
 
-      {err && <div className={s.analytics__error}>{err}</div>}
+      {err && <div className="analytics__error">{err}</div>}
 
       {/* Сводка (только приход) */}
       {loading ? (
-        <div className={s.analytics__skeletonRow}>
+        <div className="analytics__skeletonRow">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className={s.analytics__skeleton} />
+            <div key={i} className="analytics__skeleton" />
           ))}
         </div>
       ) : (
-        <div className={s.analytics__summary}>
-          <div className={s.analytics__card}>
-            <div className={s.analytics__value}>{fmtMoney(totals.incSum)}</div>
-            <div className={s.analytics__label}>Приход</div>
+        <div className="analytics__summary">
+          <div className="analytics__card">
+            <div className="analytics__value">{fmtMoney(totals.incSum)}</div>
+            <div className="analytics__label">Приход</div>
           </div>
-          <div className={s.analytics__card}>
-            <div className={s.analytics__value}>{totals.count}</div>
-            <div className={s.analytics__label}>Чеков</div>
+          <div className="analytics__card">
+            <div className="analytics__value">{totals.count}</div>
+            <div className="analytics__label">Чеков</div>
           </div>
-          <div className={s.analytics__card}>
-            <div className={s.analytics__value}>{fmtMoney(totals.avg)}</div>
-            <div className={s.analytics__label}>Средний чек</div>
+          <div className="analytics__card">
+            <div className="analytics__value">{fmtMoney(totals.avg)}</div>
+            <div className="analytics__label">Средний чек</div>
           </div>
         </div>
       )}
 
       {/* Список: Приход (чеки) */}
-      <section className={s.analytics__panel}>
-        <div className={s.analytics__head}>Приход (чеки)</div>
+      <section className="analytics__panel">
+        <div className="analytics__head">Приход (чеки)</div>
         <div className="table">
           <div className="table__head">
             <span>Дата</span>
@@ -313,7 +370,9 @@ export default function MarketAnalytics() {
                   role="button"
                   tabIndex={0}
                   onClick={() => setOpenId(r.id)}
-                  onKeyDown={(e) => (e.key === "Enter" ? setOpenId(r.id) : null)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" ? setOpenId(r.id) : null
+                  }
                   style={{ cursor: "pointer" }}
                   title="Открыть детали"
                 >

@@ -20,6 +20,8 @@ import {
   Users,
   Instagram,
   InstagramIcon,
+  Contact,
+  ScaleIcon,
 } from "lucide-react";
 import "./Sidebar.scss";
 
@@ -28,6 +30,7 @@ import arnament1 from "./Photo/Group 1203.png";
 import arnament2 from "./Photo/Group 1204 (1).png";
 import Lang from "./Lang/Lang";
 import { useUser } from "../store/slices/userSlice";
+import { MdDocumentScanner } from "react-icons/md";
 
 // --- API Configuration ---
 const BASE_URL = "https://app.nurcrm.kg/api";
@@ -84,7 +87,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     Стандарт: [
       "Бренд,Категория",
       "Клиенты",
-      "Обзор",
+      // "Обзор",
       "Регистрация",
       "Заказы",
       "Аналитика",
@@ -99,7 +102,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     Прайм: [
       "Бренд,Категория",
       "Клиенты",
-      "Обзор",
+      // "Обзор",
       "Регистрация",
       "Заказы",
       "Аналитика",
@@ -116,7 +119,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     ],
     Индивидуальный: [
       "Клиенты",
-      "Обзор",
+      // "Обзор",
       "Регистрация",
       "Заказы",
       "Аналитика",
@@ -200,7 +203,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     {
       label: "Продажа",
       to: "/crm/sell",
-      icon: <FaRegListAlt className="sidebar__menu-icon" />,
+      icon: <ScaleIcon className="sidebar__menu-icon" />,
       implemented: true,
     },
     {
@@ -269,6 +272,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: <InstagramIcon className="sidebar__menu-icon" />,
       implemented: true,
     },
+    // {
+    //   label: "Контакты",
+    //   to: "/crm/contact",
+    //   icon: <Contact className="sidebar__menu-icon" />,
+    //   implemented: true,
+    // },
+    {
+      label: "Документы",
+      to: "/crm/documents",
+      icon: <MdDocumentScanner className="sidebar__menu-icon" />,
+      implemented: true,
+    },
     {
       label: "Настройки",
       to: "/crm/set",
@@ -302,7 +317,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   // Барбершоп
   if (sector === "Барбершоп") {
-    dynamicFeatures.push(
+    dynamicFeatures.splice(
+      1,
+      0,
       {
         label: "Услуги",
         to: "/crm/barber/services",
@@ -322,12 +339,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         implemented: true,
       },
       {
-        label: "Документы",
-        to: "/crm/barber/documents",
-        icon: <FaRegListAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
         label: "Записи",
         to: "/crm/barber/records",
         icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
@@ -344,7 +355,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   // Гостиница
   if (sector === "Гостиница") {
-    dynamicFeatures.push(
+    dynamicFeatures.splice(
+      1,
+      0,
       {
         label: "Комнаты",
         to: "/crm/hostel/rooms",
@@ -362,31 +375,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         to: "/crm/hostel/bar",
         icon: <FaRegClipboard className="sidebar__menu-icon" />,
         implemented: true,
-      },
-      {
-        label: "Документы",
-        to: "/crm/hostel/documents",
-        icon: <FaRegListAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Склад",
-        to: "/crm/hostel/warehouse",
-        icon: <Warehouse className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Аналитика",
-        to: "/crm/hostel/analytics",
-        icon: <FaRegChartBar className="sidebar__menu-icon" />,
-        implemented: true,
       }
     );
   }
 
   // Школа
   if (sector === "Школа") {
-    dynamicFeatures.push(
+    dynamicFeatures.splice(
+      1,
+      0,
       {
         label: "Ученики",
         to: "/crm/school/students",
@@ -422,135 +419,97 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         to: "/crm/school/invoices",
         icon: <FaRegClipboard className="sidebar__menu-icon" />,
         implemented: true,
-      },
-      {
-        label: "Документы",
-        to: "/crm/school/documents",
-        icon: <FaRegListAlt className="sidebar__menu-icon" />,
-        implemented: true,
       }
     );
   }
 
   if (sector === "Магазин") {
-    dynamicFeatures.push(
+    dynamicFeatures.splice(
+      1,
+      0,
       {
         label: "Бар",
         to: "/crm/market/bar",
-        icon: <FaRegListAlt />,
+        icon: <FaRegListAlt className="sidebar__menu-icon" />,
         implemented: true,
       },
-      {
-        label: "Склад",
-        to: "/crm/market/warehouse",
-        icon: <FaRegChartBar />,
-        implemented: true,
-      },
-      {
-        label: "Категории",
-        to: "/crm/market/categories",
-        icon: <FaTags />,
-        implemented: true,
-      },
-      {
-        label: "Клиенты",
-        to: "/crm/market/clients",
-        icon: <BsFileEarmarkPerson />,
-        implemented: true,
-      },
-      {
-        label: "Клиент детали",
-        to: "/crm/market/clients/:id",
-        icon: <BsFileEarmarkPerson />,
-        implemented: false,
-      }, // детальный вид, может быть неактивен в меню
       {
         label: "История",
         to: "/crm/market/history",
-        icon: <FaRegClipboard />,
-        implemented: true,
-      },
-      {
-        label: "Документы",
-        to: "/crm/market/documents",
-        icon: <FaRegClipboard />,
+        icon: <FaRegClipboard className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Аналитика",
         to: "/crm/market/analytics",
-        icon: <FaRegChartBar />,
+        icon: <FaRegChartBar className="sidebar__menu-icon" />,
         implemented: true,
       }
     );
   }
 
   if (sector === "Кафе") {
-    dynamicFeatures.push(
+    dynamicFeatures.splice(
+      1,
+      0,
       {
         label: "Аналитика",
         to: "/crm/cafe/analytics",
-        icon: <FaRegChartBar />,
-        implemented: true,
-      },
-      {
-        label: "Документы",
-        to: "/crm/cafe/documents",
-        icon: <FaRegClipboard />,
+        icon: <FaRegChartBar className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Меню",
         to: "/crm/cafe/menu",
-        icon: <FaRegListAlt />,
+        icon: <FaRegListAlt className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Заказы",
         to: "/crm/cafe/orders",
-        icon: <FaRegListAlt />,
+        icon: <FaRegListAlt className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Зарплата",
         to: "/crm/cafe/payroll",
-        icon: <FaRegUser />,
+        icon: <FaRegUser className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Закупки",
         to: "/crm/cafe/purchasing",
-        icon: <FaRegChartBar />,
+        icon: <FaRegChartBar className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Отчёты",
         to: "/crm/cafe/reports",
-        icon: <FaRegChartBar />,
+        icon: <FaRegChartBar className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Бронирования",
         to: "/crm/cafe/reservations",
-        icon: <FaRegCalendarAlt />,
+        icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Сотрудники",
         to: "/crm/cafe/staff",
-        icon: <FaRegUser />,
+        icon: <FaRegUser className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Склад",
         to: "/crm/cafe/stock",
-        icon: <FaRegChartBar />,
+        icon: <FaRegChartBar className="sidebar__menu-icon" />,
         implemented: true,
       },
       {
         label: "Столы",
         to: "/crm/cafe/tables",
-        icon: <FaRegListAlt />,
+        icon: <FaRegListAlt className="sidebar__menu-icon" />,
         implemented: true,
       }
     );

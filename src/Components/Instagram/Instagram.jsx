@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "../../store/slices/userSlice";
-
+import "./instagram.scss";
 // утилы
 const fmt = (iso) => {
   try {
@@ -297,12 +297,12 @@ export default function Instagram() {
   }, []);
 
   return (
-    <div className="app">
+    <div className="instagram">
       {/* Список тредов */}
       <div className="panel">
         <div className="toolbar">
           <h2>Диалоги</h2>
-          <div className="row">
+          <div className="row1">
             {/* <input
               className="input"
               placeholder="Account UUID"
@@ -349,7 +349,7 @@ export default function Instagram() {
             </button>
           </div>
         </div>
-        <div className="list">
+        <div className="list1">
           {threads.map((t) => {
             const isSel = selected === t.thread_id;
             const count = unread[t.thread_id] || 0;
@@ -445,29 +445,6 @@ export default function Instagram() {
       </div>
 
       {/* немножко стилей прямо тут */}
-      <style>{`
-        .app { display:flex; gap:16px; padding:16px; font-family:ui-sans-serif,system-ui; }
-        .panel { flex:1; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
-        .toolbar { padding:10px 12px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; }
-        .row { display:flex; gap:8px; align-items:center; }
-        .input { border:1px solid #cbd5e1; border-radius:10px; padding:8px 10px; outline:none; }
-        .btn { background:#2563eb; color:white; border:none; border-radius:10px; padding:8px 12px; cursor:pointer; }
-        .btn.secondary { background:#0ea5e9; }
-        .btn:disabled { opacity:.6; cursor:not-allowed; }
-        .list { padding:8px; display:flex; flex-direction:column; gap:6px; overflow:auto; height:60vh; }
-        .thread { text-align:left; border:1px solid #e2e8f0; border-radius:12px; padding:8px 10px; background:white; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
-        .thread.active { border-color:#2563eb; box-shadow:0 0 0 2px rgba(37,99,235,.15) inset; }
-        .t-title { font-weight:600; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%; }
-        .t-meta { display:flex; gap:8px; align-items:center; }
-        .t-time { color:#64748b; font-size:12px; }
-        .badge { background:#ef4444; color:white; font-size:12px; border-radius:999px; padding:2px 7px; }
-        .status { color:#64748b; font-size:12px; }
-        .messages { padding:12px; display:flex; flex-direction:column; gap:8px; overflow:auto; height:60vh; }
-        .bubble { max-width:70%; border:1px solid #e2e8f0; border-radius:12px; padding:8px 10px; background:white; }
-        .bubble.me { margin-left:auto; background:#e0f2fe; border-color:#bae6fd; }
-        .meta { color:#64748b; font-size:12px; margin-bottom:4px; }
-        .composer { border-top:1px solid #e2e8f0; padding:10px; display:flex; gap:8px; }
-      `}</style>
     </div>
   );
 }

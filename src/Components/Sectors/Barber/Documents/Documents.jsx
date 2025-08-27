@@ -1,6 +1,6 @@
 // src/components/Documents/Documents.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import styles from "./Documents.module.scss";
+import "./Documents.scss";
 import api from "../../../../api";
 
 /* ===== helpers ===== */
@@ -426,30 +426,24 @@ export default function BarberDocuments() {
 
   /* ===== RENDER ===== */
   return (
-    <div className={styles["docs"]}>
+    <div className="docs">
       {/* Header */}
-      <div className={styles["docs__header"]}>
+      <div className="docs__header">
         <div>
-          <h3 className={styles["docs__title"]}>Документы и папки</h3>
-          <div className={styles["docs__subtitle"]}>
-            Управляйте папками и файлами
-          </div>
+          <h3 className="docs__title">Документы и папки</h3>
+          <div className="docs__subtitle">Управляйте папками и файлами</div>
         </div>
 
-        <div className={styles["docs__actions"]}>
-          <div className={styles["docs__tabs"]}>
+        <div className="docs__actions">
+          <div className="docs__tabs">
             <button
-              className={`${styles["tab"]} ${
-                tab === "folders" ? styles["tab--active"] : ""
-              }`}
+              className={`tab ${tab === "folders" ? "tab--active" : ""}`}
               onClick={() => setTab("folders")}
             >
               Папки
             </button>
             <button
-              className={`${styles["tab"]} ${
-                tab === "docs" ? styles["tab--active"] : ""
-              }`}
+              className={`tab ${tab === "docs" ? "tab--active" : ""}`}
               onClick={() => setTab("docs")}
             >
               Документы
@@ -461,29 +455,27 @@ export default function BarberDocuments() {
       {/* ===== FOLDERS TAB ===== */}
       {tab === "folders" && (
         <>
-          <div className={styles["docs__serverBar"]}>
-            <div className={styles["docs__search"]}>
-              <span className={styles["docs__searchIcon"]}>🔎</span>
+          <div className="docs__serverBar">
+            <div className="docs__search">
+              <span className="docs__searchIcon">🔎</span>
               <input
-                className={styles["docs__searchInput"]}
+                className="docs__searchInput"
                 placeholder="Поиск по папкам…"
                 value={folderQ}
                 onChange={(e) => setFolderQ(e.target.value)}
               />
             </div>
-            {foldErr ? (
-              <span className={styles["docs__error"]}>{foldErr}</span>
-            ) : null}
-            <div className={styles["docs__barActions"]}>
+            {foldErr ? <span className="docs__error">{foldErr}</span> : null}
+            <div className="docs__barActions">
               <button
-                className={styles["btn"]}
+                className="btn"
                 disabled={foldLoading}
                 onClick={() => loadFolders()}
               >
                 Обновить
               </button>
               <button
-                className={`${styles["btn"]} ${styles["btn--primary"]}`}
+                className="btn btn--primary"
                 onClick={() => {
                   setCreateFolderOpen(true);
                   setTimeout(() => nameRef.current?.focus(), 0);
@@ -494,46 +486,44 @@ export default function BarberDocuments() {
             </div>
           </div>
 
-          <div className={styles["docs__grid"]}>
+          <div className="docs__grid">
             {/* List */}
-            <section className={styles["docs__list"]}>
+            <section className="docs__list">
               {foldFiltered.length === 0 ? (
-                <div className={styles["docs__empty"]}>
+                <div className="docs__empty">
                   {foldLoading ? "Загрузка…" : "Ничего не найдено"}
                 </div>
               ) : (
                 <>
-                  <ul className={styles["docs__cards"]}>
+                  <ul className="docs__cards">
                     {foldFiltered.map((f) => (
                       <li
                         key={f.id}
-                        className={`${styles["docs__card"]} ${
-                          f.id === selectedFolderId
-                            ? styles["docs__card--active"]
-                            : ""
+                        className={`docs__card ${
+                          f.id === selectedFolderId ? "docs__card--active" : ""
                         }`}
                         onDoubleClick={() => setSelectedFolderId(f.id)}
                       >
-                        <div className={styles["docs__cardMain"]}>
-                          <div className={styles["docs__name"]}>
+                        <div className="docs__cardMain">
+                          <div className="docs__name">
                             📁 {f.name || "Без названия"}
                           </div>
                         </div>
-                        <div className={styles["docs__cardActions"]}>
+                        <div className="docs__cardActions">
                           <button
-                            className={`${styles["btn"]} ${styles["btn--secondary"]}`}
+                            className="btn btn--secondary"
                             onClick={() => setSelectedFolderId(f.id)}
                           >
                             Открыть
                           </button>
                           <button
-                            className={styles["btn"]}
+                            className="btn"
                             onClick={() => openEditFolder(f)}
                           >
                             Изменить
                           </button>
                           <button
-                            className={`${styles["btn"]} ${styles["btn--danger"]}`}
+                            className="btn btn--danger"
                             onClick={() => onDeleteFolder(f)}
                           >
                             Удалить
@@ -543,16 +533,16 @@ export default function BarberDocuments() {
                     ))}
                   </ul>
 
-                  <div className={styles["docs__pager"]}>
+                  <div className="docs__pager">
                     <button
-                      className={styles["btn"]}
+                      className="btn"
                       disabled={!foldPrev || foldLoading}
                       onClick={() => loadFolders(foldPrev)}
                     >
                       ← Назад
                     </button>
                     <button
-                      className={styles["btn"]}
+                      className="btn"
                       disabled={!foldNext || foldLoading}
                       onClick={() => loadFolders(foldNext)}
                     >
@@ -564,21 +554,17 @@ export default function BarberDocuments() {
             </section>
 
             {/* Viewer */}
-            <section className={styles["docs__viewer"]}>
+            <section className="docs__viewer">
               {!selectedFolderId ? (
-                <div className={styles["docs__placeholder"]}>
-                  Выберите папку
-                </div>
+                <div className="docs__placeholder">Выберите папку</div>
               ) : folderDetailLoading ? (
-                <div className={styles["docs__placeholder"]}>Загрузка…</div>
+                <div className="docs__placeholder">Загрузка…</div>
               ) : !folderDetail ? (
-                <div className={styles["docs__placeholder"]}>
-                  Данные недоступны
-                </div>
+                <div className="docs__placeholder">Данные недоступны</div>
               ) : (
-                <div className={styles["docs__previewWrap"]}>
-                  <div className={styles["docs__previewHeader"]}>
-                    <div className={styles["docs__previewTitle"]}>
+                <div className="docs__previewWrap">
+                  <div className="docs__previewHeader">
+                    <div className="docs__previewTitle">
                       📁 {folderDetail.name || "Без названия"}
                     </div>
                   </div>
@@ -589,12 +575,12 @@ export default function BarberDocuments() {
 
           {/* Create Folder Modal */}
           {createFolderOpen && (
-            <div className={styles["docs__modalOverlay"]}>
-              <div className={styles["docs__modal"]}>
-                <div className={styles["docs__modalHeader"]}>
-                  <div className={styles["docs__modalTitle"]}>Новая папка</div>
+            <div className="docs__modalOverlay">
+              <div className="docs__modal">
+                <div className="docs__modalHeader">
+                  <div className="docs__modalTitle">Новая папка</div>
                   <button
-                    className={styles["docs__iconBtn"]}
+                    className="docs__iconBtn"
                     onClick={() => setCreateFolderOpen(false)}
                     aria-label="Закрыть"
                   >
@@ -602,18 +588,15 @@ export default function BarberDocuments() {
                   </button>
                 </div>
 
-                <form
-                  className={styles["docs__form"]}
-                  onSubmit={onCreateFolder}
-                >
-                  <div className={styles["docs__formGrid"]}>
-                    <div className={styles["docs__field"]}>
-                      <label className={styles["docs__label"]}>
-                        Название <span className={styles["docs__req"]}>*</span>
+                <form className="docs__form" onSubmit={onCreateFolder}>
+                  <div className="docs__formGrid">
+                    <div className="docs__field">
+                      <label className="docs__label">
+                        Название <span className="docs__req">*</span>
                       </label>
                       <input
                         ref={nameRef}
-                        className={styles["docs__input"]}
+                        className="docs__input"
                         value={createFolderName}
                         onChange={(e) => setCreateFolderName(e.target.value)}
                         placeholder="Например: Договоры"
@@ -623,10 +606,10 @@ export default function BarberDocuments() {
                     </div>
                   </div>
 
-                  <div className={styles["docs__formActions"]}>
+                  <div className="docs__formActions">
                     <button
                       type="button"
-                      className={styles["btn"]}
+                      className="btn"
                       onClick={() => setCreateFolderOpen(false)}
                       disabled={createFolderBusy}
                     >
@@ -634,7 +617,7 @@ export default function BarberDocuments() {
                     </button>
                     <button
                       type="submit"
-                      className={`${styles["btn"]} ${styles["btn--primary"]}`}
+                      className="btn btn--primary"
                       disabled={createFolderBusy || !createFolderName.trim()}
                     >
                       Создать
@@ -647,14 +630,12 @@ export default function BarberDocuments() {
 
           {/* Edit Folder Modal */}
           {editFolderOpen && (
-            <div className={styles["docs__modalOverlay"]}>
-              <div className={styles["docs__modal"]}>
-                <div className={styles["docs__modalHeader"]}>
-                  <div className={styles["docs__modalTitle"]}>
-                    Изменить папку
-                  </div>
+            <div className="docs__modalOverlay">
+              <div className="docs__modal">
+                <div className="docs__modalHeader">
+                  <div className="docs__modalTitle">Изменить папку</div>
                   <button
-                    className={styles["docs__iconBtn"]}
+                    className="docs__iconBtn"
                     onClick={() => setEditFolderOpen(false)}
                     aria-label="Закрыть"
                   >
@@ -662,15 +643,15 @@ export default function BarberDocuments() {
                   </button>
                 </div>
 
-                <form className={styles["docs__form"]} onSubmit={onEditFolder}>
-                  <div className={styles["docs__formGrid"]}>
-                    <div className={styles["docs__field"]}>
-                      <label className={styles["docs__label"]}>
-                        Название <span className={styles["docs__req"]}>*</span>
+                <form className="docs__form" onSubmit={onEditFolder}>
+                  <div className="docs__formGrid">
+                    <div className="docs__field">
+                      <label className="docs__label">
+                        Название <span className="docs__req">*</span>
                       </label>
                       <input
                         ref={nameRef}
-                        className={styles["docs__input"]}
+                        className="docs__input"
                         value={editFolderName}
                         onChange={(e) => setEditFolderName(e.target.value)}
                         placeholder="Например: Договоры"
@@ -680,10 +661,10 @@ export default function BarberDocuments() {
                     </div>
                   </div>
 
-                  <div className={styles["docs__formActions"]}>
+                  <div className="docs__formActions">
                     <button
                       type="button"
-                      className={styles["btn"]}
+                      className="btn"
                       onClick={() => setEditFolderOpen(false)}
                       disabled={editFolderBusy}
                     >
@@ -691,7 +672,7 @@ export default function BarberDocuments() {
                     </button>
                     <button
                       type="submit"
-                      className={`${styles["btn"]} ${styles["btn--primary"]}`}
+                      className="btn btn--primary"
                       disabled={editFolderBusy || !editFolderName.trim()}
                     >
                       Сохранить
@@ -707,21 +688,21 @@ export default function BarberDocuments() {
       {/* ===== DOCUMENTS TAB ===== */}
       {tab === "docs" && (
         <>
-          <div className={styles["docs__serverBar"]}>
-            <div className={styles["docs__search"]}>
-              <span className={styles["docs__searchIcon"]}>🔎</span>
+          <div className="docs__serverBar">
+            <div className="docs__search">
+              <span className="docs__searchIcon">🔎</span>
               <input
-                className={styles["docs__searchInput"]}
+                className="docs__searchInput"
                 placeholder="Поиск по документам…"
                 value={docQ}
                 onChange={(e) => setDocQ(e.target.value)}
               />
             </div>
 
-            <div className={styles["docs__filter"]}>
-              <label className={styles["docs__filterLabel"]}>Папка</label>
+            <div className="docs__filter">
+              <label className="docs__filterLabel">Папка</label>
               <select
-                className={styles["docs__select"]}
+                className="docs__select"
                 value={docFolderFilter}
                 onChange={(e) => setDocFolderFilter(e.target.value)}
               >
@@ -734,20 +715,18 @@ export default function BarberDocuments() {
               </select>
             </div>
 
-            {docErr ? (
-              <span className={styles["docs__error"]}>{docErr}</span>
-            ) : null}
+            {docErr ? <span className="docs__error">{docErr}</span> : null}
 
-            <div className={styles["docs__barActions"]}>
+            <div className="docs__barActions">
               <button
-                className={styles["btn"]}
+                className="btn"
                 disabled={docLoading}
                 onClick={() => loadDocs()}
               >
                 Обновить
               </button>
               <button
-                className={`${styles["btn"]} ${styles["btn--primary"]}`}
+                className="btn btn--primary"
                 onClick={() => {
                   setCreateDocOpen(true);
                   setCreateDocFolder(docFolderFilter || selectedFolderId || "");
@@ -760,77 +739,72 @@ export default function BarberDocuments() {
             </div>
           </div>
 
-          <div className={styles["docs__grid"]}>
+          <div className="docs__grid">
             {/* List */}
-            <section className={styles["docs__list"]}>
+            <section className="docs__list">
               {docFiltered.length === 0 ? (
-                <div className={styles["docs__empty"]}>
+                <div className="docs__empty">
                   {docLoading ? "Загрузка…" : "Ничего не найдено"}
                 </div>
               ) : (
                 <>
-                  <ul className={styles["docs__cards"]}>
+                  <ul className="docs__cards">
                     {docFiltered.map((d) => {
                       const fileName = (d.file || "").split("/").pop() || "";
                       const mime = guessMime(d.file);
                       return (
                         <li
                           key={d.id}
-                          className={`${styles["docs__card"]} ${
-                            d.id === selectedDocId
-                              ? styles["docs__card--active"]
-                              : ""
+                          className={`docs__card ${
+                            d.id === selectedDocId ? "docs__card--active" : ""
                           }`}
                           onDoubleClick={() => onSelectDoc(d)}
                         >
-                          <div className={styles["docs__cardMain"]}>
-                            <div className={styles["docs__name"]}>
-                              <span className={styles["docs__emoji"]}>
+                          <div className="docs__cardMain">
+                            <div className="docs__name">
+                              <span className="docs__emoji">
                                 {fileEmoji(mime, d.file)}
                               </span>
                               {d.name || "Без названия"}
                             </div>
 
-                            <div className={styles["docs__meta"]}>
-                              <span
-                                className={styles["docs__filename"]}
-                                title={fileName}
-                              >
+                            <div className="docs__meta">
+                              <span className="docs__filename" title={fileName}>
                                 {fileName || "—"}
                               </span>
                               <span>•</span>
                               <span>{d.folder_name || "—"}</span>
                             </div>
 
-                            <div className={styles["docs__meta"]}>
+                            <div className="docs__meta">
                               <span>Создан: {fmtISO(d.created_at)}</span>
                               <span>•</span>
                               <span>Изменён: {fmtISO(d.updated_at)}</span>
                             </div>
                           </div>
 
-                          <div className={styles["docs__cardActions"]}>
+                          <div className="docs__cardActions">
                             <button
-                              className={`${styles["btn"]} ${styles["btn--secondary"]}`}
+                              className="btn btn--secondary"
                               onClick={() => onSelectDoc(d)}
                             >
                               Открыть
                             </button>
                             <button
-                              className={styles["btn"]}
+                              className="btn"
                               onClick={() => openEditDoc(d)}
                             >
                               Изменить
                             </button>
                             <button
-                              className={`${styles["btn"]} ${styles["btn--danger"]}`}
+                              className="btn btn--danger"
                               onClick={() => onDeleteDoc(d)}
                             >
                               Удалить
                             </button>
                             {d.file ? (
                               <a
-                                className={`${styles["btn"]} ${styles["btn--secondary"]}`}
+                                className="btn btn--secondary"
                                 href={d.file}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -844,16 +818,16 @@ export default function BarberDocuments() {
                     })}
                   </ul>
 
-                  <div className={styles["docs__pager"]}>
+                  <div className="docs__pager">
                     <button
-                      className={styles["btn"]}
+                      className="btn"
                       disabled={!docPrev || docLoading}
                       onClick={() => loadDocs(docPrev)}
                     >
                       ← Назад
                     </button>
                     <button
-                      className={styles["btn"]}
+                      className="btn"
                       disabled={!docNext || docLoading}
                       onClick={() => loadDocs(docNext)}
                     >
@@ -865,11 +839,9 @@ export default function BarberDocuments() {
             </section>
 
             {/* Viewer */}
-            <section className={styles["docs__viewer"]}>
+            <section className="docs__viewer">
               {!currentDoc ? (
-                <div className={styles["docs__placeholder"]}>
-                  Выберите документ
-                </div>
+                <div className="docs__placeholder">Выберите документ</div>
               ) : docViewerUrl ? (
                 <Preview
                   url={docViewerUrl}
@@ -877,23 +849,19 @@ export default function BarberDocuments() {
                   folderName={currentDoc.folder_name}
                 />
               ) : (
-                <div className={styles["docs__placeholder"]}>
-                  Файл не прикреплён
-                </div>
+                <div className="docs__placeholder">Файл не прикреплён</div>
               )}
             </section>
           </div>
 
           {/* Create Document Modal */}
           {createDocOpen && (
-            <div className={styles["docs__modalOverlay"]}>
-              <div className={styles["docs__modal"]}>
-                <div className={styles["docs__modalHeader"]}>
-                  <div className={styles["docs__modalTitle"]}>
-                    Новый документ
-                  </div>
+            <div className="docs__modalOverlay">
+              <div className="docs__modal">
+                <div className="docs__modalHeader">
+                  <div className="docs__modalTitle">Новый документ</div>
                   <button
-                    className={styles["docs__iconBtn"]}
+                    className="docs__iconBtn"
                     onClick={() => setCreateDocOpen(false)}
                     aria-label="Закрыть"
                   >
@@ -901,12 +869,12 @@ export default function BarberDocuments() {
                   </button>
                 </div>
 
-                <form className={styles["docs__form"]} onSubmit={onCreateDoc}>
-                  <div className={styles["docs__formGrid"]}>
-                    <div className={styles["docs__field"]}>
-                      <label className={styles["docs__label"]}>Название</label>
+                <form className="docs__form" onSubmit={onCreateDoc}>
+                  <div className="docs__formGrid">
+                    <div className="docs__field">
+                      <label className="docs__label">Название</label>
                       <input
-                        className={styles["docs__input"]}
+                        className="docs__input"
                         value={createDocName}
                         onChange={(e) => setCreateDocName(e.target.value)}
                         placeholder="Например: Договор №12"
@@ -914,12 +882,12 @@ export default function BarberDocuments() {
                       />
                     </div>
 
-                    <div className={styles["docs__field"]}>
-                      <label className={styles["docs__label"]}>
-                        Папка <span className={styles["docs__req"]}>*</span>
+                    <div className="docs__field">
+                      <label className="docs__label">
+                        Папка <span className="docs__req">*</span>
                       </label>
                       <select
-                        className={styles["docs__select"]}
+                        className="docs__select"
                         value={createDocFolder}
                         onChange={(e) => setCreateDocFolder(e.target.value)}
                         required
@@ -933,12 +901,12 @@ export default function BarberDocuments() {
                       </select>
                     </div>
 
-                    <div className={styles["docs__field"]}>
-                      <label className={styles["docs__label"]}>
-                        Файл <span className={styles["docs__req"]}>*</span>
+                    <div className="docs__field">
+                      <label className="docs__label">
+                        Файл <span className="docs__req">*</span>
                       </label>
                       <input
-                        className={styles["docs__input"]}
+                        className="docs__input"
                         type="file"
                         onChange={(e) =>
                           setCreateDocFile(e.target.files?.[0] || null)
@@ -948,10 +916,10 @@ export default function BarberDocuments() {
                     </div>
                   </div>
 
-                  <div className={styles["docs__formActions"]}>
+                  <div className="docs__formActions">
                     <button
                       type="button"
-                      className={styles["btn"]}
+                      className="btn"
                       onClick={() => setCreateDocOpen(false)}
                       disabled={createDocBusy}
                     >
@@ -959,7 +927,7 @@ export default function BarberDocuments() {
                     </button>
                     <button
                       type="submit"
-                      className={`${styles["btn"]} ${styles["btn--primary"]}`}
+                      className="btn btn--primary"
                       disabled={
                         createDocBusy ||
                         !createDocFolder.trim() ||
@@ -976,14 +944,12 @@ export default function BarberDocuments() {
 
           {/* Edit Document Modal */}
           {editDocOpen && (
-            <div className={styles["docs__modalOverlay"]}>
-              <div className={styles["docs__modal"]}>
-                <div className={styles["docs__modalHeader"]}>
-                  <div className={styles["docs__modalTitle"]}>
-                    Изменить документ
-                  </div>
+            <div className="docs__modalOverlay">
+              <div className="docs__modal">
+                <div className="docs__modalHeader">
+                  <div className="docs__modalTitle">Изменить документ</div>
                   <button
-                    className={styles["docs__iconBtn"]}
+                    className="docs__iconBtn"
                     onClick={() => setEditDocOpen(false)}
                     aria-label="Закрыть"
                   >
@@ -991,12 +957,12 @@ export default function BarberDocuments() {
                   </button>
                 </div>
 
-                <form className={styles["docs__form"]} onSubmit={onEditDoc}>
-                  <div className={styles["docs__formGrid"]}>
-                    <div className={styles["docs__field"]}>
-                      <label className={styles["docs__label"]}>Название</label>
+                <form className="docs__form" onSubmit={onEditDoc}>
+                  <div className="docs__formGrid">
+                    <div className="docs__field">
+                      <label className="docs__label">Название</label>
                       <input
-                        className={styles["docs__input"]}
+                        className="docs__input"
                         value={editDocName}
                         onChange={(e) => setEditDocName(e.target.value)}
                         placeholder="Например: Договор №12"
@@ -1004,12 +970,12 @@ export default function BarberDocuments() {
                       />
                     </div>
 
-                    <div className={styles["docs__field"]}>
-                      <label className={styles["docs__label"]}>
-                        Папка <span className={styles["docs__req"]}>*</span>
+                    <div className="docs__field">
+                      <label className="docs__label">
+                        Папка <span className="docs__req">*</span>
                       </label>
                       <select
-                        className={styles["docs__select"]}
+                        className="docs__select"
                         value={editDocFolder}
                         onChange={(e) => setEditDocFolder(e.target.value)}
                         required
@@ -1023,12 +989,12 @@ export default function BarberDocuments() {
                       </select>
                     </div>
 
-                    <div className={styles["docs__field"]}>
-                      <label className={styles["docs__label"]}>
+                    <div className="docs__field">
+                      <label className="docs__label">
                         Заменить файл (необязательно)
                       </label>
                       <input
-                        className={styles["docs__input"]}
+                        className="docs__input"
                         type="file"
                         onChange={(e) =>
                           setEditDocFile(e.target.files?.[0] || null)
@@ -1037,10 +1003,10 @@ export default function BarberDocuments() {
                     </div>
                   </div>
 
-                  <div className={styles["docs__formActions"]}>
+                  <div className="docs__formActions">
                     <button
                       type="button"
-                      className={styles["btn"]}
+                      className="btn"
                       onClick={() => setEditDocOpen(false)}
                       disabled={editDocBusy}
                     >
@@ -1048,7 +1014,7 @@ export default function BarberDocuments() {
                     </button>
                     <button
                       type="submit"
-                      className={`${styles["btn"]} ${styles["btn--primary"]}`}
+                      className="btn btn--primary"
                       disabled={editDocBusy || !editDocFolder.trim()}
                     >
                       Сохранить
@@ -1071,35 +1037,27 @@ function Preview({ url, name, folderName }) {
   const isPdf = mime === "application/pdf";
 
   return (
-    <div className={styles["docs__previewWrap"]}>
-      <div className={styles["docs__previewHeader"]}>
-        <div className={styles["docs__previewTitle"]}>
-          {name || "Без названия"}
-        </div>
-        <div className={styles["docs__previewSub"]}>
+    <div className="docs__previewWrap">
+      <div className="docs__previewHeader">
+        <div className="docs__previewTitle">{name || "Без названия"}</div>
+        <div className="docs__previewSub">
           {folderName || "—"} • {mime || "—"}
         </div>
       </div>
 
       {isImg ? (
-        <img src={url} alt="" className={styles["docs__previewMedia"]} />
+        <img src={url} alt="" className="docs__previewMedia" />
       ) : isPdf ? (
-        <iframe
-          src={url}
-          title="preview"
-          className={styles["docs__previewFrame"]}
-        />
+        <iframe src={url} title="preview" className="docs__previewFrame" />
       ) : url ? (
-        <div className={styles["docs__placeholder"]}>
+        <div className="docs__placeholder">
           Предпросмотр недоступен.{" "}
           <a href={url} target="_blank" rel="noreferrer">
             Открыть в новой вкладке
           </a>
         </div>
       ) : (
-        <div className={styles["docs__placeholder"]}>
-          Нет файла для предпросмотра
-        </div>
+        <div className="docs__placeholder">Нет файла для предпросмотра</div>
       )}
     </div>
   );

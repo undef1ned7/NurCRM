@@ -9,14 +9,14 @@ import {
   FaEdit,
   FaTrash,
 } from "react-icons/fa";
-import s from "./LessonsRooms.module.scss";
+import "./LessonsRooms.scss";
 import api from "../../../../api";
 
 /* ===== constants ===== */
 const LS = { ATT: "attendance" };
 
-const LESSONS_EP  = "/education/lessons/";
-const GROUPS_EP   = "/education/groups/";
+const LESSONS_EP = "/education/lessons/";
+const GROUPS_EP = "/education/groups/";
 const STUDENTS_EP = "/education/students/";
 const TEACHERS_EP = "/education/teachers/";
 
@@ -30,7 +30,8 @@ const toMin = (t) => {
   return h * 60 + m;
 };
 const overlap = (aS, aD, bS, bD) => {
-  const aE = aS + aD, bE = bS + bD;
+  const aE = aS + aD,
+    bE = bS + bD;
   return aS < bE && bS < aE;
 };
 
@@ -46,7 +47,7 @@ const normalizeLesson = (l = {}) => ({
   teacherId: l.teacher ?? "",
   teacher: l.teacher_name ?? "",
 });
-const normalizeGroup   = (g = {}) => ({ id: g.id, name: g.name ?? "" });
+const normalizeGroup = (g = {}) => ({ id: g.id, name: g.name ?? "" });
 const normalizeStudent = (s = {}) => ({
   id: s.id,
   name: s.name ?? "",
@@ -58,21 +59,24 @@ const normalizeTeacher = (t = {}) => ({ id: t.id, name: t.name ?? "" });
 /* ===== component ===== */
 function SchoolLessonsRooms() {
   /* server data */
-  const [lessons,  setLessons]  = useState([]);
-  const [groups,   setGroups]   = useState([]);
+  const [lessons, setLessons] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
 
   /* ui state */
-  const [error, setError]       = useState("");
-  const [saving, setSaving]     = useState(false);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [deletingIds, setDeletingIds] = useState(new Set());
-  const [query, setQuery]       = useState("");
+  const [query, setQuery] = useState("");
 
   /* attendance (local only) */
   const [attendance, setAttendance] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(LS.ATT) || "[]"); }
-    catch { return []; }
+    try {
+      return JSON.parse(localStorage.getItem(LS.ATT) || "[]");
+    } catch {
+      return [];
+    }
   });
   useEffect(() => {
     localStorage.setItem(LS.ATT, JSON.stringify(attendance));
@@ -98,7 +102,9 @@ function SchoolLessonsRooms() {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   /* search */
   const filtered = useMemo(() => {
@@ -106,7 +112,9 @@ function SchoolLessonsRooms() {
     if (!t) return lessons;
     return lessons.filter((r) =>
       [r.date, r.time, r.room, r.teacher, r.groupName].some((v) =>
-        String(v || "").toLowerCase().includes(t)
+        String(v || "")
+          .toLowerCase()
+          .includes(t)
       )
     );
   }, [lessons, query]);
@@ -137,11 +145,11 @@ function SchoolLessonsRooms() {
     setMode("edit");
     setEditingId(lesson.id);
     setForm({
-      groupId:  lesson.groupId || "",
-      date:     lesson.date || "",
-      time:     lesson.time || "",
+      groupId: lesson.groupId || "",
+      date: lesson.date || "",
+      time: lesson.time || "",
       duration: Number(lesson.duration || 0) || 90,
-      room:     lesson.room || "",
+      room: lesson.room || "",
       teacherId: lesson.teacherId || "",
     });
     setModal(true);
@@ -158,18 +166,25 @@ function SchoolLessonsRooms() {
     const cDate = candidate.date;
     const cRoom = (candidate.room || "").trim();
     const cIsOnline = ["онлайн", "online"].includes(cRoom.toLowerCase());
-    const cS = toMin(candidate.time), cD = Number(candidate.duration || 0);
+    const cS = toMin(candidate.time),
+      cD = Number(candidate.duration || 0);
 
     const list = [];
     lessons.forEach((x) => {
       if (excludeId && String(x.id) === String(excludeId)) return;
       if (x.date !== cDate) return;
 
-      const xS = toMin(x.time), xD = Number(x.duration || 0);
+      const xS = toMin(x.time),
+        xD = Number(x.duration || 0);
       const xRoom = (x.room || "").trim();
       const xIsOnline = ["онлайн", "online"].includes(xRoom.toLowerCase());
 
-      if (!cIsOnline && !xIsOnline && xRoom === cRoom && overlap(xS, xD, cS, cD)) {
+      if (
+        !cIsOnline &&
+        !xIsOnline &&
+        xRoom === cRoom &&
+        overlap(xS, xD, cS, cD)
+      ) {
         list.push({ type: "room", with: x });
       }
       if (
@@ -190,24 +205,27 @@ function SchoolLessonsRooms() {
     if (!form.groupId || !form.date || !form.time) return;
 
     const candidate = {
-      id:        editingId || "tmp",
-      groupId:   form.groupId,
-      groupName: groups.find((g) => String(g.id) === String(form.groupId))?.name || "",
-      date:      form.date,
-      time:      form.time,
-      duration:  Number(form.duration || 0),
-      room:      (form.room || "").trim(),
+      id: editingId || "tmp",
+      groupId: form.groupId,
+      groupName:
+        groups.find((g) => String(g.id) === String(form.groupId))?.name || "",
+      date: form.date,
+      time: form.time,
+      duration: Number(form.duration || 0),
+      room: (form.room || "").trim(),
       teacherId: form.teacherId || "",
-      teacher:   teachers.find((t) => String(t.id) === String(form.teacherId))?.name || "",
+      teacher:
+        teachers.find((t) => String(t.id) === String(form.teacherId))?.name ||
+        "",
     };
     const conf = conflicts(candidate, mode === "edit" ? editingId : null);
 
     const payload = {
-      group:     form.groupId,
-      teacher:   form.teacherId || null,
-      date:      form.date,
-      time:      form.time,
-      duration:  Number(form.duration || 0),
+      group: form.groupId,
+      teacher: form.teacherId || null,
+      date: form.date,
+      time: form.time,
+      duration: Number(form.duration || 0),
       classroom: (form.room || "").trim(),
     };
 
@@ -225,7 +243,9 @@ function SchoolLessonsRooms() {
       } else {
         const { data } = await api.put(`${LESSONS_EP}${editingId}/`, payload);
         const updated = data && data.id ? normalizeLesson(data) : candidate;
-        setLessons((prev) => prev.map((x) => (x.id === editingId ? updated : x)));
+        setLessons((prev) =>
+          prev.map((x) => (x.id === editingId ? updated : x))
+        );
       }
       closeModal();
 
@@ -236,14 +256,20 @@ function SchoolLessonsRooms() {
               .map((c) =>
                 c.type === "room"
                   ? `Аудитория: ${c.with.room} ${c.with.date} ${c.with.time}`
-                  : `Преподаватель: ${c.with.teacher || "—"} ${c.with.date} ${c.with.time}`
+                  : `Преподаватель: ${c.with.teacher || "—"} ${c.with.date} ${
+                      c.with.time
+                    }`
               )
               .join("\n- ")
         );
       }
     } catch (err) {
       console.error("submitLesson error:", err);
-      setError(mode === "create" ? "Не удалось создать занятие." : "Не удалось обновить занятие.");
+      setError(
+        mode === "create"
+          ? "Не удалось создать занятие."
+          : "Не удалось обновить занятие."
+      );
     } finally {
       setSaving(false);
     }
@@ -262,18 +288,24 @@ function SchoolLessonsRooms() {
       setError("Не удалось удалить занятие.");
     } finally {
       setDeletingIds((prev) => {
-        const n = new Set(prev); n.delete(id); return n;
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
       });
     }
   };
 
   /* attendance ops */
   const studentsOfGroup = (groupId) =>
-    students.filter((s) => String(s.groupId) === String(groupId) && s.status === "active");
+    students.filter(
+      (s) => String(s.groupId) === String(groupId) && s.status === "active"
+    );
 
   const toggleAttendance = (lessonId, studentId) => {
     setAttendance((prev) => {
-      const exists = prev.find((a) => a.lessonId === lessonId && a.studentId === studentId);
+      const exists = prev.find(
+        (a) => a.lessonId === lessonId && a.studentId === studentId
+      );
       if (exists) {
         return prev.map((a) =>
           a.lessonId === lessonId && a.studentId === studentId
@@ -286,26 +318,28 @@ function SchoolLessonsRooms() {
   };
 
   const presentFor = (lessonId, studentId) => {
-    const rec = attendance.find((a) => a.lessonId === lessonId && a.studentId === studentId);
+    const rec = attendance.find(
+      (a) => a.lessonId === lessonId && a.studentId === studentId
+    );
     return !!rec?.present;
   };
 
   return (
-    <div className={s.lr}>
+    <div className="lr">
       {/* Header */}
-      <div className={s.lr__header}>
+      <div className="lr__header">
         <div>
-          <h2 className={s.lr__title}>Уроки и помещения</h2>
-          <p className={s.lr__subtitle}>
+          <h2 className="lr__title">Уроки и помещения</h2>
+          <p className="lr__subtitle">
             Группа обязательна. Аудитория — текст. Отмечайте посещаемость.
           </p>
         </div>
 
-        <div className={s.lr__toolbar}>
-          <div className={s.lr__search}>
-            <FaSearch className={s["lr__search-icon"]} aria-hidden />
+        <div className="lr__toolbar">
+          <div className="lr__search">
+            <FaSearch className="lr__search-icon" aria-hidden />
             <input
-              className={s["lr__search-input"]}
+              className="lr__search-input"
               placeholder="Поиск по урокам…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -313,45 +347,49 @@ function SchoolLessonsRooms() {
             />
           </div>
 
-          <div className={s.lr__toolbarActions}>
-            <button className={`${s.lr__btn} ${s["lr__btn--primary"]}`} onClick={openCreate}>
+          <div className="lr__toolbarActions">
+            <button className="lr__btn lr__btn--primary" onClick={openCreate}>
               <FaPlus /> Создать
             </button>
           </div>
         </div>
       </div>
 
-      {!!error && <div className={s.lr__alert}>{error}</div>}
+      {!!error && <div className="lr__alert">{error}</div>}
 
       {/* List */}
-      <div className={s.lr__list}>
+      <div className="lr__list">
         {filtered.map((r) => {
           const initial = (r.groupName || "•").charAt(0).toUpperCase();
           const groupStudents = studentsOfGroup(r.groupId);
           const deleting = deletingIds.has(r.id);
 
           return (
-            <div key={r.id} className={s.lr__card}>
-              <div className={s["lr__card-left"]}>
-                <div className={s.lr__avatar} aria-hidden>{initial}</div>
+            <div key={r.id} className="lr__card">
+              <div className="lr__card-left">
+                <div className="lr__avatar" aria-hidden>
+                  {initial}
+                </div>
                 <div>
-                  <p className={s.lr__name}>{r.groupName || "Группа"}</p>
-                  <div className={s.lr__meta}>
-                    <span>{r.date} {r.time}</span>
+                  <p className="lr__name">{r.groupName || "Группа"}</p>
+                  <div className="lr__meta">
+                    <span>
+                      {r.date} {r.time}
+                    </span>
                     <span>Аудитория: {r.room || "—"}</span>
                     <span>Преподаватель: {r.teacher || "—"}</span>
                     <span>Длительность: {r.duration} мин</span>
                     <span>Студентов: {groupStudents.length}</span>
                   </div>
 
-                  <details className={s.lr__att}>
+                  <details className="lr__att">
                     <summary>
                       <FaClipboardCheck /> Посещаемость
                     </summary>
-                    <ul className={s.lr__attList}>
+                    <ul className="lr__attList">
                       {groupStudents.map((st) => (
-                        <li key={st.id} className={s.lr__attItem}>
-                          <label className={s.lr__attLabel}>
+                        <li key={st.id} className="lr__attItem">
+                          <label className="lr__attLabel">
                             <input
                               type="checkbox"
                               checked={presentFor(r.id, st.id)}
@@ -362,23 +400,25 @@ function SchoolLessonsRooms() {
                         </li>
                       ))}
                       {groupStudents.length === 0 && (
-                        <li className={s.lr__muted}>В группе нет активных студентов</li>
+                        <li className="lr__muted">
+                          В группе нет активных студентов
+                        </li>
                       )}
                     </ul>
                   </details>
                 </div>
               </div>
 
-              <div className={s.lr__rowActions}>
+              <div className="lr__rowActions">
                 <button
-                  className={`${s.lr__btn} ${s["lr__btn--secondary"]}`}
+                  className="lr__btn lr__btn--secondary"
                   onClick={() => openEdit(r)}
                   title="Изменить"
                 >
                   <FaEdit /> Изменить
                 </button>
                 <button
-                  className={`${s.lr__btn} ${s["lr__btn--danger"]}`}
+                  className="lr__btn lr__btn--danger"
                   onClick={() => removeLesson(r.id)}
                   disabled={deleting}
                   title="Удалить"
@@ -390,43 +430,57 @@ function SchoolLessonsRooms() {
           );
         })}
 
-        {filtered.length === 0 && <div className={s.lr__alert}>Ничего не найдено.</div>}
+        {filtered.length === 0 && (
+          <div className="lr__alert">Ничего не найдено.</div>
+        )}
       </div>
 
       {/* Modal */}
       {isModal && (
-        <div className={s["lr__modal-overlay"]} role="dialog" aria-modal="true">
-          <div className={s.lr__modal}>
-            <div className={s["lr__modal-header"]}>
-              <h3 className={s["lr__modal-title"]}>
+        <div className="lr__modal-overlay" role="dialog" aria-modal="true">
+          <div className="lr__modal">
+            <div className="lr__modal-header">
+              <h3 className="lr__modal-title">
                 {mode === "create" ? "Новое занятие" : "Изменить занятие"}
               </h3>
-              <button className={s["lr__icon-btn"]} onClick={closeModal} aria-label="Закрыть модал">
+              <button
+                className="lr__icon-btn"
+                onClick={closeModal}
+                aria-label="Закрыть модал"
+              >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={s.lr__form} onSubmit={submitLesson}>
-              <div className={s["lr__form-grid"]}>
-                <div className={s.lr__field}>
-                  <label className={s.lr__label}>Группа<span className={s.lr__req}>*</span></label>
+            <form className="lr__form" onSubmit={submitLesson}>
+              <div className="lr__form-grid">
+                <div className="lr__field">
+                  <label className="lr__label">
+                    Группа<span className="lr__req">*</span>
+                  </label>
                   <select
-                    className={s.lr__input}
+                    className="lr__input"
                     value={form.groupId}
-                    onChange={(e) => setForm({ ...form, groupId: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, groupId: e.target.value })
+                    }
                     required
                   >
                     <option value="">— выберите —</option>
                     {groups.map((g) => (
-                      <option key={g.id} value={g.id}>{g.name}</option>
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
                     ))}
                   </select>
                 </div>
 
-                <div className={s.lr__field}>
-                  <label className={s.lr__label}>Дата<span className={s.lr__req}>*</span></label>
+                <div className="lr__field">
+                  <label className="lr__label">
+                    Дата<span className="lr__req">*</span>
+                  </label>
                   <input
-                    className={s.lr__input}
+                    className="lr__input"
                     type="date"
                     value={form.date}
                     onChange={(e) => setForm({ ...form, date: e.target.value })}
@@ -434,10 +488,12 @@ function SchoolLessonsRooms() {
                   />
                 </div>
 
-                <div className={s.lr__field}>
-                  <label className={s.lr__label}>Время<span className={s.lr__req}>*</span></label>
+                <div className="lr__field">
+                  <label className="lr__label">
+                    Время<span className="lr__req">*</span>
+                  </label>
                   <input
-                    className={s.lr__input}
+                    className="lr__input"
                     type="time"
                     value={form.time}
                     onChange={(e) => setForm({ ...form, time: e.target.value })}
@@ -445,49 +501,55 @@ function SchoolLessonsRooms() {
                   />
                 </div>
 
-                <div className={s.lr__field}>
-                  <label className={s.lr__label}>Длительность (мин)</label>
+                <div className="lr__field">
+                  <label className="lr__label">Длительность (мин)</label>
                   <input
-                    className={s.lr__input}
+                    className="lr__input"
                     type="number"
                     min="10"
                     step="5"
                     value={form.duration}
-                    onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, duration: e.target.value })
+                    }
                   />
                 </div>
 
-                <div className={s.lr__field}>
-                  <label className={s.lr__label}>Аудитория (текст)</label>
+                <div className="lr__field">
+                  <label className="lr__label">Аудитория (текст)</label>
                   <input
-                    className={s.lr__input}
+                    className="lr__input"
                     placeholder="Онлайн / Каб. 204"
                     value={form.room}
                     onChange={(e) => setForm({ ...form, room: e.target.value })}
                   />
                 </div>
 
-                <div className={s.lr__field}>
-                  <label className={s.lr__label}>Преподаватель</label>
+                <div className="lr__field">
+                  <label className="lr__label">Преподаватель</label>
                   <select
-                    className={s.lr__input}
+                    className="lr__input"
                     value={form.teacherId}
-                    onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, teacherId: e.target.value })
+                    }
                   >
                     <option value="">— не указан —</option>
                     {teachers.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              <div className={s["lr__form-actions"]}>
-                <span className={s["lr__actions-spacer"]} />
-                <div className={s["lr__actions-right"]}>
+              <div className="lr__form-actions">
+                <span className="lr__actions-spacer" />
+                <div className="lr__actions-right">
                   <button
                     type="button"
-                    className={`${s.lr__btn} ${s["lr__btn--secondary"]}`}
+                    className="lr__btn lr__btn--secondary"
                     onClick={closeModal}
                     disabled={saving}
                   >
@@ -495,18 +557,22 @@ function SchoolLessonsRooms() {
                   </button>
                   <button
                     type="submit"
-                    className={`${s.lr__btn} ${s["lr__btn--primary"]}`}
+                    className="lr__btn lr__btn--primary"
                     disabled={saving}
                   >
                     {saving
-                      ? mode === "create" ? "Сохранение..." : "Обновление..."
-                      : mode === "create" ? "Сохранить" : "Сохранить изменения"}
+                      ? mode === "create"
+                        ? "Сохранение..."
+                        : "Обновление..."
+                      : mode === "create"
+                      ? "Сохранить"
+                      : "Сохранить изменения"}
                   </button>
                 </div>
               </div>
             </form>
 
-            <div className={s.lr__hint}>
+            <div className="lr__hint">
               <FaExclamationTriangle />
               Конфликты: аудитория/преподаватель на одно время в один день.
             </div>

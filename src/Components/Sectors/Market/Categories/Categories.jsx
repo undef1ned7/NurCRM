@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import styles from "./Categories.module.scss";
-import api from "../../../../api";// axios instance
+import api from "../../../../api"; // axios instance
 
 function toResults(payload) {
   if (!payload) return [];
@@ -87,7 +87,9 @@ function MarketCategories() {
         const { data: updated } = await api.patch(`${endpoint}${editingId}/`, {
           name: trimmed,
         });
-        setData((prev = []) => prev.map((x) => (x.id === editingId ? updated : x)));
+        setData((prev = []) =>
+          prev.map((x) => (x.id === editingId ? updated : x))
+        );
       }
       closeModal();
     } catch (e) {
@@ -119,13 +121,17 @@ function MarketCategories() {
       <header className={styles["cats__header"]}>
         <div className={styles["cats__tabs"]}>
           <button
-            className={`${styles["cats__tab"]} ${!isCats ? styles["cats__tab--active"] : ""}`}
+            className={`${styles["cats__tab"]} ${
+              !isCats ? styles["cats__tab--active"] : ""
+            }`}
             onClick={() => setTab("brands")}
           >
             Бренды
           </button>
           <button
-            className={`${styles["cats__tab"]} ${isCats ? styles["cats__tab--active"] : ""}`}
+            className={`${styles["cats__tab"]} ${
+              isCats ? styles["cats__tab--active"] : ""
+            }`}
             onClick={() => setTab("categories")}
           >
             Категории
@@ -216,12 +222,20 @@ function MarketCategories() {
 
             <div className={styles["cats__modalActions"]}>
               {editingId === "new" ? (
-                <button className={styles["cats__primary"]} onClick={save} disabled={!name.trim()}>
+                <button
+                  className={styles["cats__primary"]}
+                  onClick={save}
+                  disabled={!name.trim()}
+                >
                   Добавить
                 </button>
               ) : (
                 <>
-                  <button className={styles["cats__primary"]} onClick={save} disabled={!name.trim()}>
+                  <button
+                    className={styles["cats__primary"]}
+                    onClick={save}
+                    disabled={!name.trim()}
+                  >
                     Сохранить
                   </button>
                   <button className={styles["cats__danger"]} onClick={remove}>
@@ -229,7 +243,10 @@ function MarketCategories() {
                   </button>
                 </>
               )}
-              <button className={styles["cats__secondary"]} onClick={closeModal}>
+              <button
+                className={styles["cats__secondary"]}
+                onClick={closeModal}
+              >
                 Отмена
               </button>
             </div>

@@ -9,7 +9,7 @@ import {
   FaMapMarkedAlt,
 } from "react-icons/fa";
 import api from "../../../../api";
-import styles from "./Tables.module.scss";
+import "./Tables.scss";
 
 const STATUSES = [
   { value: "free", label: "Свободен" },
@@ -50,7 +50,8 @@ export default function CafeTables() {
 
   const zoneTitleByAny = (zoneField) => {
     if (!zoneField) return "";
-    if (typeof zoneField === "string") return zonesMap.get(zoneField) || zoneField;
+    if (typeof zoneField === "string")
+      return zonesMap.get(zoneField) || zoneField;
     return zoneField.title || zonesMap.get(zoneField.id) || "";
   };
 
@@ -113,7 +114,9 @@ export default function CafeTables() {
     try {
       if (zoneEditId) {
         const res = await api.put(`/cafe/zones/${zoneEditId}/`, payload);
-        setZones((prev) => prev.map((z) => (z.id === zoneEditId ? res.data : z)));
+        setZones((prev) =>
+          prev.map((z) => (z.id === zoneEditId ? res.data : z))
+        );
       } else {
         const res = await api.post("/cafe/zones/", payload);
         setZones((prev) => [...prev, res.data]);
@@ -131,7 +134,9 @@ export default function CafeTables() {
       setZones((prev) => prev.filter((z) => z.id !== id));
       // визуально поправим столы, если их зона удалена
       setTables((prev) =>
-        prev.map((t) => ((t.zone?.id || t.zone) === id ? { ...t, zone: id } : t))
+        prev.map((t) =>
+          (t.zone?.id || t.zone) === id ? { ...t, zone: id } : t
+        )
       );
     } catch (e) {
       console.error("Ошибка удаления зоны:", e);
@@ -167,14 +172,18 @@ export default function CafeTables() {
       number: Number(form.number) || 0,
       zone: form.zone,
       places: Math.max(1, Number(form.places) || 1),
-      status: STATUSES.some((s) => s.value === form.status) ? form.status : "free",
+      status: STATUSES.some((s) => s.value === form.status)
+        ? form.status
+        : "free",
     };
     if (!payload.number || !payload.zone) return;
 
     try {
       if (tableEditId) {
         const res = await api.put(`/cafe/tables/${tableEditId}/`, payload);
-        setTables((prev) => prev.map((t) => (t.id === tableEditId ? res.data : t)));
+        setTables((prev) =>
+          prev.map((t) => (t.id === tableEditId ? res.data : t))
+        );
       } else {
         const res = await api.post("/cafe/tables/", payload);
         setTables((prev) => [...prev, res.data]);
@@ -196,33 +205,33 @@ export default function CafeTables() {
   };
 
   return (
-    <section className={styles.tables}>
+    <section className="tables">
       {/* Заголовок */}
-      <div className={styles.tables__header}>
+      <div className="tables__header">
         <div>
-          <h2 className={styles.tables__title}>Зал кафе</h2>
-          <div className={styles.tables__subtitle}>
+          <h2 className="tables__title">Зал кафе</h2>
+          <div className="tables__subtitle">
             Сначала создайте <b>зоны</b>, затем добавляйте <b>столы</b>.
           </div>
         </div>
 
         {/* Табы-кнопки */}
-        <div className={styles.tables__actions}>
+        <div className="tables__actions">
           <button
-            className={`${styles.tables__btn} ${
+            className={`tables__btn ${
               activeTab === "tables"
-                ? styles["tables__btn--primary"]
-                : styles["tables__btn--secondary"]
+                ? "tables__btn--primary"
+                : "tables__btn--secondary"
             }`}
             onClick={() => setActiveTab("tables")}
           >
             <FaChair /> Столы
           </button>
           <button
-            className={`${styles.tables__btn} ${
+            className={`tables__btn ${
               activeTab === "zones"
-                ? styles["tables__btn--primary"]
-                : styles["tables__btn--secondary"]
+                ? "tables__btn--primary"
+                : "tables__btn--secondary"
             }`}
             onClick={() => setActiveTab("zones")}
           >
@@ -234,18 +243,18 @@ export default function CafeTables() {
       {/* ===== ВКЛАДКА: СТОЛЫ ===== */}
       {activeTab === "tables" && (
         <>
-          <div className={styles.tables__actions} style={{ marginTop: -6 }}>
-            <div className={styles.tables__search}>
-              <FaSearch className={styles["tables__search-icon"]} />
+          <div className="tables__actions" style={{ marginTop: -6 }}>
+            <div className="tables__search">
+              <FaSearch className="tables__search-icon" />
               <input
-                className={styles["tables__search-input"]}
+                className="tables__search-input"
                 placeholder="Поиск по столам: номер, зона, статус…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
             <button
-              className={`${styles.tables__btn} ${styles["tables__btn--primary"]}`}
+              className="tables__btn tables__btn--primary"
               onClick={openCreateTable}
               disabled={!zones.length}
               title={!zones.length ? "Сначала добавьте зону" : ""}
@@ -254,36 +263,36 @@ export default function CafeTables() {
             </button>
           </div>
 
-          <div className={styles.tables__list}>
+          <div className="tables__list">
             {filteredTables.map((t) => (
-              <article key={t.id} className={styles.tables__card}>
-                <div className={styles["tables__card-left"]}>
-                  <div className={styles.tables__avatar}>
+              <article key={t.id} className="tables__card">
+                <div className="tables__card-left">
+                  <div className="tables__avatar">
                     <FaChair />
                   </div>
                   <div>
-                    <h3 className={styles.tables__name}>Стол {t.number}</h3>
-                    <div className={styles.tables__meta}>
-                      <span className={styles.tables__muted}>
+                    <h3 className="tables__name">Стол {t.number}</h3>
+                    <div className="tables__meta">
+                      <span className="tables__muted">
                         Зона: {zoneTitleByAny(t.zone) || "—"}
                       </span>
-                      <span className={styles.tables__muted}>Мест: {t.places}</span>
-                      <span className={styles.tables__muted}>
+                      <span className="tables__muted">Мест: {t.places}</span>
+                      <span className="tables__muted">
                         Статус: {t.status === "free" ? "Свободен" : "Занят"}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className={styles.tables__rowActions}>
+                <div className="tables__rowActions">
                   <button
-                    className={`${styles.tables__btn} ${styles["tables__btn--secondary"]}`}
+                    className="tables__btn tables__btn--secondary"
                     onClick={() => openEditTable(t)}
                   >
                     <FaEdit /> Изменить
                   </button>
                   <button
-                    className={`${styles.tables__btn} ${styles["tables__btn--danger"]}`}
+                    className="tables__btn tables__btn--danger"
                     onClick={() => removeTable(t.id)}
                   >
                     <FaTrash /> Удалить
@@ -293,7 +302,7 @@ export default function CafeTables() {
             ))}
 
             {!filteredTables.length && (
-              <div className={styles.tables__alert}>
+              <div className="tables__alert">
                 Ничего не найдено по запросу «{query}».
               </div>
             )}
@@ -304,41 +313,39 @@ export default function CafeTables() {
       {/* ===== ВКЛАДКА: ЗОНЫ ===== */}
       {activeTab === "zones" && (
         <>
-          <div className={styles.tables__actions} style={{ marginTop: -6 }}>
+          <div className="tables__actions" style={{ marginTop: -6 }}>
             <button
-              className={`${styles.tables__btn} ${styles["tables__btn--success"]}`}
+              className="tables__btn tables__btn--success"
               onClick={openCreateZone}
             >
               <FaPlus /> Новая зона
             </button>
           </div>
 
-          <div className={styles.tables__list}>
+          <div className="tables__list">
             {zones.map((z) => (
-              <article key={z.id} className={styles.tables__card}>
-                <div className={styles["tables__card-left"]}>
-                  <div className={styles.tables__avatar}>
-                    {(z.title || "Z")[0]}
-                  </div>
+              <article key={z.id} className="tables__card">
+                <div className="tables__card-left">
+                  <div className="tables__avatar">{(z.title || "Z")[0]}</div>
                   <div>
-                    <h3 className={styles.tables__name}>{z.title}</h3>
-                    <div className={styles.tables__meta}>
-                      <span className={styles.tables__muted}>
+                    <h3 className="tables__name">{z.title}</h3>
+                    <div className="tables__meta">
+                      <span className="tables__muted">
                         Столов: {zoneCounts[z.id] || 0}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className={styles.tables__rowActions}>
+                <div className="tables__rowActions">
                   <button
-                    className={`${styles.tables__btn} ${styles["tables__btn--secondary"]}`}
+                    className="tables__btn tables__btn--secondary"
                     onClick={() => openEditZone(z)}
                   >
                     <FaEdit /> Изменить
                   </button>
                   <button
-                    className={`${styles.tables__btn} ${styles["tables__btn--danger"]}`}
+                    className="tables__btn tables__btn--danger"
                     onClick={() => removeZone(z.id)}
                   >
                     <FaTrash /> Удалить
@@ -348,7 +355,7 @@ export default function CafeTables() {
             ))}
 
             {!zones.length && (
-              <div className={styles.tables__alert}>Зон пока нет.</div>
+              <div className="tables__alert">Зон пока нет.</div>
             )}
           </div>
         </>
@@ -357,32 +364,27 @@ export default function CafeTables() {
       {/* MODAL: ЗОНА */}
       {zoneModalOpen && (
         <div
-          className={styles["tables__modal-overlay"]}
+          className="tables__modal-overlay"
           onClick={() => setZoneModalOpen(false)}
         >
-          <div
-            className={styles.tables__modal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles["tables__modal-header"]}>
-              <h3 className={styles["tables__modal-title"]}>
+          <div className="tables__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="tables__modal-header">
+              <h3 className="tables__modal-title">
                 {zoneEditId ? "Редактировать зону" : "Новая зона"}
               </h3>
               <button
-                className={styles["tables__icon-btn"]}
+                className="tables__icon-btn"
                 onClick={() => setZoneModalOpen(false)}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.tables__form} onSubmit={saveZone}>
-              <div
-                className={`${styles.tables__field} ${styles["tables__field--full"]}`}
-              >
-                <label className={styles.tables__label}>Название зоны</label>
+            <form className="tables__form" onSubmit={saveZone}>
+              <div className="tables__field tables__field--full">
+                <label className="tables__label">Название зоны</label>
                 <input
-                  className={styles.tables__input}
+                  className="tables__input"
                   value={zoneTitle}
                   onChange={(e) => setZoneTitle(e.target.value)}
                   placeholder="Например: этаж 1, VIP, Терраса"
@@ -391,17 +393,17 @@ export default function CafeTables() {
                 />
               </div>
 
-              <div className={styles["tables__form-actions"]}>
+              <div className="tables__form-actions">
                 <button
                   type="button"
-                  className={`${styles.tables__btn} ${styles["tables__btn--secondary"]}`}
+                  className="tables__btn tables__btn--secondary"
                   onClick={() => setZoneModalOpen(false)}
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className={`${styles.tables__btn} ${styles["tables__btn--primary"]}`}
+                  className="tables__btn tables__btn--primary"
                 >
                   Сохранить
                 </button>
@@ -414,32 +416,29 @@ export default function CafeTables() {
       {/* MODAL: СТОЛ */}
       {tableModalOpen && (
         <div
-          className={styles["tables__modal-overlay"]}
+          className="tables__modal-overlay"
           onClick={() => setTableModalOpen(false)}
         >
-          <div
-            className={styles.tables__modal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles["tables__modal-header"]}>
-              <h3 className={styles["tables__modal-title"]}>
+          <div className="tables__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="tables__modal-header">
+              <h3 className="tables__modal-title">
                 {tableEditId ? "Редактировать стол" : "Новый стол"}
               </h3>
               <button
-                className={styles["tables__icon-btn"]}
+                className="tables__icon-btn"
                 onClick={() => setTableModalOpen(false)}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.tables__form} onSubmit={saveTable}>
-              <div className={styles["tables__form-grid"]}>
-                <div className={styles.tables__field}>
-                  <label className={styles.tables__label}>Номер</label>
+            <form className="tables__form" onSubmit={saveTable}>
+              <div className="tables__form-grid">
+                <div className="tables__field">
+                  <label className="tables__label">Номер</label>
                   <input
                     type="number"
-                    className={styles.tables__input}
+                    className="tables__input"
                     value={form.number}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, number: Number(e.target.value) }))
@@ -448,10 +447,10 @@ export default function CafeTables() {
                   />
                 </div>
 
-                <div className={styles.tables__field}>
-                  <label className={styles.tables__label}>Зона</label>
+                <div className="tables__field">
+                  <label className="tables__label">Зона</label>
                   <select
-                    className={styles.tables__input}
+                    className="tables__input"
                     value={form.zone}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, zone: e.target.value }))
@@ -466,12 +465,12 @@ export default function CafeTables() {
                   </select>
                 </div>
 
-                <div className={styles.tables__field}>
-                  <label className={styles.tables__label}>Мест</label>
+                <div className="tables__field">
+                  <label className="tables__label">Мест</label>
                   <input
                     type="number"
                     min="1"
-                    className={styles.tables__input}
+                    className="tables__input"
                     value={form.places}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, places: Number(e.target.value) }))
@@ -480,10 +479,10 @@ export default function CafeTables() {
                   />
                 </div>
 
-                <div className={styles.tables__field}>
-                  <label className={styles.tables__label}>Статус</label>
+                <div className="tables__field">
+                  <label className="tables__label">Статус</label>
                   <select
-                    className={styles.tables__input}
+                    className="tables__input"
                     value={form.status}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, status: e.target.value }))
@@ -498,17 +497,17 @@ export default function CafeTables() {
                 </div>
               </div>
 
-              <div className={styles["tables__form-actions"]}>
+              <div className="tables__form-actions">
                 <button
                   type="button"
-                  className={`${styles.tables__btn} ${styles["tables__btn--secondary"]}`}
+                  className="tables__btn tables__btn--secondary"
                   onClick={() => setTableModalOpen(false)}
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className={`${styles.tables__btn} ${styles["tables__btn--primary"]}`}
+                  className="tables__btn tables__btn--primary"
                 >
                   Сохранить
                 </button>

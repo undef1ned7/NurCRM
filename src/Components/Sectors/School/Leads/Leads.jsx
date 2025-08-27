@@ -1,13 +1,20 @@
 // src/components/Education/Leads.jsx
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FaPlus, FaSearch, FaTimes, FaExchangeAlt, FaTrash, FaEdit } from "react-icons/fa";
-import s from "./Leads.module.scss";
+import {
+  FaPlus,
+  FaSearch,
+  FaTimes,
+  FaExchangeAlt,
+  FaTrash,
+  FaEdit,
+} from "react-icons/fa";
+import "./Leads.scss";
 import api from "../../../../api";
 
 /* ===== endpoints ===== */
-const LEADS_EP    = "/education/leads/";
-const COURSES_EP  = "/education/courses/";
-const GROUPS_EP   = "/education/groups/";
+const LEADS_EP = "/education/leads/";
+const COURSES_EP = "/education/courses/";
+const GROUPS_EP = "/education/groups/";
 const STUDENTS_EP = "/education/students/";
 
 /* ===== local storage keys ===== */
@@ -16,13 +23,13 @@ const LS = { INVOICES: "invoices" };
 /* ===== enums / options ===== */
 const SOURCE_OPTIONS = [
   { value: "instagram", label: "Instagram" },
-  { value: "whatsapp",  label: "WhatsApp"  },
-  { value: "telegram",  label: "Telegram"  },
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "telegram", label: "Telegram" },
 ];
 
 /* ===== helpers ===== */
 const asArray = (data) =>
-  Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
+  Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 
 const normalizeLead = (l = {}) => ({
   id: l.id,
@@ -45,40 +52,57 @@ const normalizeGroup = (g = {}) => ({
   courseId: g.course ?? "",
 });
 
-const decToString = (v) => String(v ?? "0").trim().replace(",", ".") || "0";
-const uid        = () => Date.now();
-const todayISO   = () => new Date().toISOString().slice(0, 10);
-const ym         = (iso = todayISO()) => iso.slice(0, 7);
+const decToString = (v) =>
+  String(v ?? "0")
+    .trim()
+    .replace(",", ".") || "0";
+const uid = () => Date.now();
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const ym = (iso = todayISO()) => iso.slice(0, 7);
 const invoiceNum = () => {
   const d = new Date();
   const y = String(d.getFullYear()).slice(-2);
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
-  return `INV-${y}${m}${dd}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  return `INV-${y}${m}${dd}-${Math.random()
+    .toString(36)
+    .slice(2, 6)
+    .toUpperCase()}`;
 };
 
 export default function SchoolLeads() {
   /* ===== data ===== */
-  const [leads,   setLeads]   = useState([]);
+  const [leads, setLeads] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [groups,  setGroups]  = useState([]);
+  const [groups, setGroups] = useState([]);
 
   /* ===== ui state ===== */
   const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
-  const [error,   setError]   = useState("");
-  const [query,   setQuery]   = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
   const [deletingIds, setDeletingIds] = useState(new Set());
 
   /* ===== modal: create / edit lead ===== */
-  const emptyForm = { id: null, name: "", phone: "", source: "instagram", note: "" };
+  const emptyForm = {
+    id: null,
+    name: "",
+    phone: "",
+    source: "instagram",
+    note: "",
+  };
   const [isModalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState("create"); // 'create' | 'edit'
   const [form, setForm] = useState(emptyForm);
 
   /* ===== modal: convert to student ===== */
   const [isConvertOpen, setConvertOpen] = useState(false);
-  const [convert, setConvert] = useState({ leadId: null, courseId: "", groupId: "", discount: 0 });
+  const [convert, setConvert] = useState({
+    leadId: null,
+    courseId: "",
+    groupId: "",
+    discount: 0,
+  });
 
   /* ===== load ===== */
   const fetchAll = useCallback(async () => {
@@ -101,19 +125,29 @@ export default function SchoolLeads() {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   /* ===== search ===== */
   const filtered = useMemo(() => {
     const t = query.toLowerCase().trim();
     if (!t) return leads;
     return leads.filter((x) =>
-      [x.name, x.phone, x.source, x.note].some((v) => String(v || "").toLowerCase().includes(t))
+      [x.name, x.phone, x.source, x.note].some((v) =>
+        String(v || "")
+          .toLowerCase()
+          .includes(t)
+      )
     );
   }, [leads, query]);
 
   /* ===== lead modal handlers ===== */
-  const openCreate = () => { setMode("create"); setForm(emptyForm); setModalOpen(true); };
+  const openCreate = () => {
+    setMode("create");
+    setForm(emptyForm);
+    setModalOpen(true);
+  };
   const openEdit = (lead) => {
     setMode("edit");
     setForm({
@@ -125,7 +159,10 @@ export default function SchoolLeads() {
     });
     setModalOpen(true);
   };
-  const closeModal = () => { setModalOpen(false); setForm(emptyForm); };
+  const closeModal = () => {
+    setModalOpen(false);
+    setForm(emptyForm);
+  };
 
   const submitLead = async (e) => {
     e.preventDefault();
@@ -141,21 +178,30 @@ export default function SchoolLeads() {
       };
 
       if (mode === "create") {
-        const payload = form.phone.trim() ? { ...base, phone: form.phone.trim() } : base;
+        const payload = form.phone.trim()
+          ? { ...base, phone: form.phone.trim() }
+          : base;
         const { data } = await api.post(LEADS_EP, payload);
         const created = normalizeLead(data || payload);
-        if (!created.id) await fetchAll(); else setLeads((prev) => [created, ...prev]);
+        if (!created.id) await fetchAll();
+        else setLeads((prev) => [created, ...prev]);
       } else {
         const payload = { ...base, phone: form.phone.trim() || "" };
         const { data } = await api.put(`${LEADS_EP}${form.id}/`, payload);
         const updated = normalizeLead(data || { id: form.id, ...payload });
-        setLeads((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+        setLeads((prev) =>
+          prev.map((x) => (x.id === updated.id ? updated : x))
+        );
       }
 
       closeModal();
     } catch (e) {
       console.error("lead submit error:", e);
-      setError(mode === "create" ? "Не удалось создать лид." : "Не удалось обновить лид.");
+      setError(
+        mode === "create"
+          ? "Не удалось создать лид."
+          : "Не удалось обновить лид."
+      );
     } finally {
       setSaving(false);
     }
@@ -173,7 +219,9 @@ export default function SchoolLeads() {
       setError("Не удалось удалить лид.");
     } finally {
       setDeletingIds((prev) => {
-        const n = new Set(prev); n.delete(id); return n;
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
       });
     }
   };
@@ -188,7 +236,10 @@ export default function SchoolLeads() {
     e.preventDefault();
     const lead = leads.find((l) => l.id === convert.leadId);
     if (!lead) return;
-    if (!convert.courseId || !convert.groupId) { alert("Выберите курс и группу"); return; }
+    if (!convert.courseId || !convert.groupId) {
+      alert("Выберите курс и группу");
+      return;
+    }
 
     try {
       // 1) создать студента
@@ -205,18 +256,30 @@ export default function SchoolLeads() {
       const studentName = stData?.name || lead.name;
 
       // 2) локальный счёт
-      const group  = groups.find((g) => String(g.id) === String(convert.groupId));
-      const course = courses.find((c) => String(c.id) === String(group?.courseId));
+      const group = groups.find(
+        (g) => String(g.id) === String(convert.groupId)
+      );
+      const course = courses.find(
+        (c) => String(c.id) === String(group?.courseId)
+      );
       if (studentId && course && course.price) {
         createMonthlyInvoiceForStudent(
-          { id: studentId, name: studentName, tuitionDiscount: Number(convert.discount || 0) },
+          {
+            id: studentId,
+            name: studentName,
+            tuitionDiscount: Number(convert.discount || 0),
+          },
           course,
           group
         );
       }
 
       // 3) удалить лид
-      try { await api.delete(`${LEADS_EP}${lead.id}/`); } catch (eDel) { console.warn("delete lead after convert fail", eDel); }
+      try {
+        await api.delete(`${LEADS_EP}${lead.id}/`);
+      } catch (eDel) {
+        console.warn("delete lead after convert fail", eDel);
+      }
       setLeads((prev) => prev.filter((x) => x.id !== lead.id));
       setConvertOpen(false);
     } catch (e) {
@@ -226,12 +289,23 @@ export default function SchoolLeads() {
   };
 
   /* ===== local invoices ===== */
-  const safeRead = (key) => { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; } };
+  const safeRead = (key) => {
+    try {
+      return JSON.parse(localStorage.getItem(key) || "[]");
+    } catch {
+      return [];
+    }
+  };
   const createMonthlyInvoiceForStudent = (student, course, group) => {
     const invoices = safeRead(LS.INVOICES);
-    const exists = invoices.some((inv) => inv.studentId === student.id && inv.period === ym(todayISO()));
+    const exists = invoices.some(
+      (inv) => inv.studentId === student.id && inv.period === ym(todayISO())
+    );
     if (exists) return;
-    const amount = Math.max(0, Number(course.price || 0) - Number(student.tuitionDiscount || 0));
+    const amount = Math.max(
+      0,
+      Number(course.price || 0) - Number(student.tuitionDiscount || 0)
+    );
     const next = {
       id: uid(),
       number: invoiceNum(),
@@ -244,8 +318,10 @@ export default function SchoolLeads() {
       price: Number(course.price || 0),
       months: 1,
       discount: Number(student.tuitionDiscount || 0),
-      amount, method: "",
-      date: todayISO(), dueDate: todayISO(),
+      amount,
+      method: "",
+      date: todayISO(),
+      dueDate: todayISO(),
       status: "unpaid",
       note: "Автосчёт при зачислении",
       period: ym(todayISO()),
@@ -255,20 +331,22 @@ export default function SchoolLeads() {
   };
 
   return (
-    <div className={s.leads}>
+    <div className="leads">
       {/* Header */}
-      <div className={s.leads__header}>
+      <div className="leads__header">
         <div>
-          <h2 className={s.leads__title}>Лиды</h2>
-          <p className={s.leads__subtitle}>Список обращений. Конвертируйте в студентов.</p>
+          <h2 className="leads__title">Лиды</h2>
+          <p className="leads__subtitle">
+            Список обращений. Конвертируйте в студентов.
+          </p>
         </div>
 
         {/* Toolbar: поиск + создать */}
-        <div className={s.leads__toolbar}>
-          <div className={s.leads__search}>
-            <FaSearch className={s["leads__search-icon"]} aria-hidden />
+        <div className="leads__toolbar">
+          <div className="leads__search">
+            <FaSearch className="leads__search-icon" aria-hidden />
             <input
-              className={s["leads__search-input"]}
+              className="leads__search-input"
               placeholder="Поиск по лидам..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -277,7 +355,7 @@ export default function SchoolLeads() {
           </div>
 
           <button
-            className={`${s.leads__btn} ${s["leads__btn--primary"]}`}
+            className="leads__btn leads__btn--primary"
             onClick={openCreate}
             type="button"
           >
@@ -287,35 +365,40 @@ export default function SchoolLeads() {
       </div>
 
       {/* States */}
-      {loading && <div className={s.leads__alert}>Загрузка…</div>}
-      {!!error && !loading && <div className={s.leads__alert}>{error}</div>}
+      {loading && <div className="leads__alert">Загрузка…</div>}
+      {!!error && !loading && <div className="leads__alert">{error}</div>}
 
       {/* List */}
       {!loading && !error && (
-        <div className={s.leads__list}>
+        <div className="leads__list">
           {filtered.map((l) => {
-            const initial  = (l.name || "•").charAt(0).toUpperCase();
+            const initial = (l.name || "•").charAt(0).toUpperCase();
             const deleting = deletingIds.has(l.id);
-            const srcLabel = SOURCE_OPTIONS.find((o) => o.value === l.source)?.label || l.source;
+            const srcLabel =
+              SOURCE_OPTIONS.find((o) => o.value === l.source)?.label ||
+              l.source;
 
             return (
-              <div key={l.id} className={s.leads__card}>
-                <div className={s["leads__card-left"]}>
-                  <div className={s.leads__avatar} aria-hidden>{initial}</div>
+              <div key={l.id} className="leads__card">
+                <div className="leads__card-left">
+                  <div className="leads__avatar" aria-hidden>
+                    {initial}
+                  </div>
                   <div>
-                    <p className={s.leads__name}>
-                      {l.name} <span className={s.leads__muted}>· {l.phone || "—"}</span>
+                    <p className="leads__name">
+                      {l.name}{" "}
+                      <span className="leads__muted">· {l.phone || "—"}</span>
                     </p>
-                    <div className={s.leads__meta}>
+                    <div className="leads__meta">
                       <span>Источник: {srcLabel}</span>
                       {l.note && <span>Заметка: {l.note}</span>}
                     </div>
                   </div>
                 </div>
 
-                <div className={s.leads__rowActions}>
+                <div className="leads__rowActions">
                   <button
-                    className={`${s.leads__btn} ${s["leads__btn--secondary"]}`}
+                    className="leads__btn leads__btn--secondary"
                     onClick={() => openEdit(l)}
                     title="Изменить"
                     type="button"
@@ -324,7 +407,7 @@ export default function SchoolLeads() {
                   </button>
 
                   <button
-                    className={`${s.leads__btn} ${s["leads__btn--secondary"]}`}
+                    className="leads__btn leads__btn--secondary"
                     onClick={() => openConvert(l)}
                     title="Конвертировать"
                     type="button"
@@ -333,7 +416,7 @@ export default function SchoolLeads() {
                   </button>
 
                   <button
-                    className={`${s.leads__btn} ${s["leads__btn--danger"]}`}
+                    className="leads__btn leads__btn--danger"
                     onClick={() => removeLead(l.id)}
                     disabled={deleting}
                     title="Удалить"
@@ -346,73 +429,87 @@ export default function SchoolLeads() {
             );
           })}
 
-          {filtered.length === 0 && <div className={s.leads__alert}>Ничего не найдено.</div>}
+          {filtered.length === 0 && (
+            <div className="leads__alert">Ничего не найдено.</div>
+          )}
         </div>
       )}
 
       {/* Create/Edit Lead */}
       {isModalOpen && (
-        <div className={s["leads__modal-overlay"]} role="dialog" aria-modal="true">
-          <div className={s.leads__modal}>
-            <div className={s["leads__modal-header"]}>
-              <h3 className={s["leads__modal-title"]}>
+        <div className="leads__modal-overlay" role="dialog" aria-modal="true">
+          <div className="leads__modal">
+            <div className="leads__modal-header">
+              <h3 className="leads__modal-title">
                 {mode === "create" ? "Новый лид" : "Изменить лид"}
               </h3>
-              <button className={s["leads__icon-btn"]} onClick={closeModal} type="button">
+              <button
+                className="leads__icon-btn"
+                onClick={closeModal}
+                type="button"
+              >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={s.leads__form} onSubmit={submitLead}>
-              <div className={s["leads__form-grid"]}>
-                <div className={s.leads__field}>
-                  <label className={s.leads__label}>Имя <span aria-hidden>*</span></label>
+            <form className="leads__form" onSubmit={submitLead}>
+              <div className="leads__form-grid">
+                <div className="leads__field">
+                  <label className="leads__label">
+                    Имя <span aria-hidden>*</span>
+                  </label>
                   <input
-                    className={s.leads__input}
+                    className="leads__input"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     required
                   />
                 </div>
 
-                <div className={s.leads__field}>
-                  <label className={s.leads__label}>Телефон</label>
+                <div className="leads__field">
+                  <label className="leads__label">Телефон</label>
                   <input
-                    className={s.leads__input}
+                    className="leads__input"
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, phone: e.target.value })
+                    }
                   />
                 </div>
 
-                <div className={s.leads__field}>
-                  <label className={s.leads__label}>Источник</label>
+                <div className="leads__field">
+                  <label className="leads__label">Источник</label>
                   <select
-                    className={s.leads__input}
+                    className="leads__input"
                     value={form.source}
-                    onChange={(e) => setForm({ ...form, source: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, source: e.target.value })
+                    }
                   >
                     {SOURCE_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
                     ))}
                   </select>
                 </div>
 
-                <div className={`${s.leads__field} ${s["leads__field--full"]}`}>
-                  <label className={s.leads__label}>Заметка</label>
+                <div className="leads__field leads__field--full">
+                  <label className="leads__label">Заметка</label>
                   <textarea
-                    className={s.leads__textarea}
+                    className="leads__textarea"
                     value={form.note}
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
                   />
                 </div>
               </div>
 
-              <div className={s["leads__form-actions"]}>
-                <span className={s["leads__actions-spacer"]} />
-                <div className={s["leads__actions-right"]}>
+              <div className="leads__form-actions">
+                <span className="leads__actions-spacer" />
+                <div className="leads__actions-right">
                   <button
                     type="button"
-                    className={`${s.leads__btn} ${s["leads__btn--secondary"]}`}
+                    className="leads__btn leads__btn--secondary"
                     onClick={closeModal}
                     disabled={saving}
                   >
@@ -420,7 +517,7 @@ export default function SchoolLeads() {
                   </button>
                   <button
                     type="submit"
-                    className={`${s.leads__btn} ${s["leads__btn--primary"]}`}
+                    className="leads__btn leads__btn--primary"
                     disabled={saving}
                   >
                     {saving
@@ -440,72 +537,100 @@ export default function SchoolLeads() {
 
       {/* Convert Lead -> Student */}
       {isConvertOpen && (
-        <div className={s["leads__modal-overlay"]} role="dialog" aria-modal="true">
-          <div className={s.leads__modal}>
-            <div className={s["leads__modal-header"]}>
-              <h3 className={s["leads__modal-title"]}>Конвертация в студента</h3>
-              <button className={s["leads__icon-btn"]} onClick={() => setConvertOpen(false)} type="button">
+        <div className="leads__modal-overlay" role="dialog" aria-modal="true">
+          <div className="leads__modal">
+            <div className="leads__modal-header">
+              <h3 className="leads__modal-title">Конвертация в студента</h3>
+              <button
+                className="leads__icon-btn"
+                onClick={() => setConvertOpen(false)}
+                type="button"
+              >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={s.leads__form} onSubmit={submitConvert}>
-              <div className={s["leads__form-grid"]}>
-                <div className={s.leads__field}>
-                  <label className={s.leads__label}>Курс <span aria-hidden>*</span></label>
+            <form className="leads__form" onSubmit={submitConvert}>
+              <div className="leads__form-grid">
+                <div className="leads__field">
+                  <label className="leads__label">
+                    Курс <span aria-hidden>*</span>
+                  </label>
                   <select
-                    className={s.leads__input}
+                    className="leads__input"
                     value={convert.courseId}
-                    onChange={(e) => setConvert({ ...convert, courseId: e.target.value, groupId: "" })}
+                    onChange={(e) =>
+                      setConvert({
+                        ...convert,
+                        courseId: e.target.value,
+                        groupId: "",
+                      })
+                    }
                     required
                   >
                     <option value="">— выберите —</option>
                     {courses.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 </div>
 
-                <div className={s.leads__field}>
-                  <label className={s.leads__label}>Группа (по курсу) <span aria-hidden>*</span></label>
+                <div className="leads__field">
+                  <label className="leads__label">
+                    Группа (по курсу) <span aria-hidden>*</span>
+                  </label>
                   <select
-                    className={s.leads__input}
+                    className="leads__input"
                     value={convert.groupId}
-                    onChange={(e) => setConvert({ ...convert, groupId: e.target.value })}
+                    onChange={(e) =>
+                      setConvert({ ...convert, groupId: e.target.value })
+                    }
                     required
                   >
                     <option value="">— выберите —</option>
                     {groups
-                      .filter((g) => String(g.courseId) === String(convert.courseId))
-                      .map((g) => <option key={g.id} value={g.id}>{g.name}</option>)
-                    }
+                      .filter(
+                        (g) => String(g.courseId) === String(convert.courseId)
+                      )
+                      .map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
 
-                <div className={s.leads__field}>
-                  <label className={s.leads__label}>Скидка (сом)</label>
+                <div className="leads__field">
+                  <label className="leads__label">Скидка (сом)</label>
                   <input
-                    className={s.leads__input}
+                    className="leads__input"
                     type="number"
                     min="0"
                     step="1"
                     value={convert.discount}
-                    onChange={(e) => setConvert({ ...convert, discount: e.target.value })}
+                    onChange={(e) =>
+                      setConvert({ ...convert, discount: e.target.value })
+                    }
                   />
                 </div>
               </div>
 
-              <div className={s["leads__form-actions"]}>
-                <span className={s["leads__actions-spacer"]} />
-                <div className={s["leads__actions-right"]}>
+              <div className="leads__form-actions">
+                <span className="leads__actions-spacer" />
+                <div className="leads__actions-right">
                   <button
                     type="button"
-                    className={`${s.leads__btn} ${s["leads__btn--secondary"]}`}
+                    className="leads__btn leads__btn--secondary"
                     onClick={() => setConvertOpen(false)}
                   >
                     Отмена
                   </button>
-                  <button type="submit" className={`${s.leads__btn} ${s["leads__btn--primary"]}`}>
+                  <button
+                    type="submit"
+                    className="leads__btn leads__btn--primary"
+                  >
                     Зачислить и выставить счёт
                   </button>
                 </div>

@@ -1,7 +1,7 @@
 // src/components/Education/Teachers.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { FaPlus, FaSearch, FaTimes, FaTrash, FaEdit } from "react-icons/fa";
-import s from "./Teachers.module.scss";
+import "./Teachers.scss";
 import api from "../../../../api";
 
 const ENDPOINT = "/education/teachers/";
@@ -149,22 +149,22 @@ function SchoolTeachers() {
   }, [items, query]);
 
   return (
-    <div className={s.teachers}>
+    <div className="teachers">
       {/* Header */}
-      <div className={s.teachers__header}>
+      <div className="teachers__header">
         <div>
-          <h2 className={s.teachers__title}>Преподаватели</h2>
-          <p className={s.teachers__subtitle}>
+          <h2 className="teachers__title">Преподаватели</h2>
+          <p className="teachers__subtitle">
             Справочник преподавателей (серверные CRUD)
           </p>
         </div>
 
         {/* toolbar */}
-        <div className={s.teachers__actions}>
-          <div className={s.teachers__search}>
-            <FaSearch className={s["teachers__search-icon"]} aria-hidden />
+        <div className="teachers__actions">
+          <div className="teachers__search">
+            <FaSearch className="teachers__search-icon" aria-hidden />
             <input
-              className={s["teachers__search-input"]}
+              className="teachers__search-input"
               placeholder="Поиск по имени / телефону / направлению…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -174,7 +174,7 @@ function SchoolTeachers() {
 
           <button
             type="button"
-            className={`${s.teachers__btn} ${s["teachers__btn--primary"]}`}
+            className="teachers__btn teachers__btn--primary"
             onClick={openCreate}
           >
             <FaPlus /> Добавить
@@ -183,34 +183,34 @@ function SchoolTeachers() {
       </div>
 
       {/* States */}
-      {loading && <div className={s.teachers__alert}>Загрузка…</div>}
-      {!!error && <div className={s.teachers__alert}>{error}</div>}
+      {loading && <div className="teachers__alert">Загрузка…</div>}
+      {!!error && <div className="teachers__alert">{error}</div>}
 
       {/* List */}
       {!loading && !error && (
-        <div className={s.teachers__list}>
+        <div className="teachers__list">
           {filtered.map((t) => {
             const initial = (t.name || "•").trim().charAt(0).toUpperCase();
             const deleting = deletingIds.has(t.id);
             return (
-              <div key={t.id} className={s.teachers__card}>
-                <div className={s["teachers__card-left"]}>
-                  <div className={s.teachers__avatar} aria-hidden>
+              <div key={t.id} className="teachers__card">
+                <div className="teachers__card-left">
+                  <div className="teachers__avatar" aria-hidden>
                     {initial}
                   </div>
                   <div>
-                    <p className={s.teachers__name}>{t.name || "Без имени"}</p>
-                    <div className={s.teachers__meta}>
+                    <p className="teachers__name">{t.name || "Без имени"}</p>
+                    <div className="teachers__meta">
                       <span>{t.phone || "—"}</span>
                       <span>{t.subject || "направление не указано"}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className={s["teachers__card-actions"]}>
+                <div className="teachers__card-actions">
                   <button
                     type="button"
-                    className={`${s.teachers__btn} ${s["teachers__btn--secondary"]}`}
+                    className="teachers__btn teachers__btn--secondary"
                     onClick={() => openEdit(t)}
                     title="Редактировать"
                   >
@@ -219,7 +219,7 @@ function SchoolTeachers() {
 
                   <button
                     type="button"
-                    className={`${s.teachers__btn} ${s["teachers__btn--danger"]}`}
+                    className="teachers__btn teachers__btn--danger"
                     onClick={() => removeTeacher(t.id)}
                     disabled={deleting}
                     title="Удалить"
@@ -232,7 +232,7 @@ function SchoolTeachers() {
           })}
 
           {filtered.length === 0 && (
-            <div className={s.teachers__alert}>Ничего не найдено.</div>
+            <div className="teachers__alert">Ничего не найдено.</div>
           )}
         </div>
       )}
@@ -240,20 +240,20 @@ function SchoolTeachers() {
       {/* Modal */}
       {isModalOpen && (
         <div
-          className={s["teachers__modal-overlay"]}
+          className="teachers__modal-overlay"
           role="dialog"
           aria-modal="true"
         >
-          <div className={s.teachers__modal}>
-            <div className={s["teachers__modal-header"]}>
-              <h3 className={s["teachers__modal-title"]}>
+          <div className="teachers__modal">
+            <div className="teachers__modal-header">
+              <h3 className="teachers__modal-title">
                 {mode === "create"
                   ? "Новый преподаватель"
                   : "Изменить преподавателя"}
               </h3>
               <button
                 type="button"
-                className={s["teachers__icon-btn"]}
+                className="teachers__icon-btn"
                 onClick={closeModal}
                 title="Закрыть"
                 aria-label="Закрыть"
@@ -262,14 +262,14 @@ function SchoolTeachers() {
               </button>
             </div>
 
-            <form className={s.teachers__form} onSubmit={submitTeacher}>
-              <div className={s["teachers__form-grid"]}>
-                <div className={s.teachers__field}>
-                  <label className={s.teachers__label}>
-                    Имя <span className={s.teachers__req}>*</span>
+            <form className="teachers__form" onSubmit={submitTeacher}>
+              <div className="teachers__form-grid">
+                <div className="teachers__field">
+                  <label className="teachers__label">
+                    Имя <span className="teachers__req">*</span>
                   </label>
                   <input
-                    className={s.teachers__input}
+                    className="teachers__input"
                     placeholder="Например, Алия"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -277,10 +277,10 @@ function SchoolTeachers() {
                   />
                 </div>
 
-                <div className={s.teachers__field}>
-                  <label className={s.teachers__label}>Телефон</label>
+                <div className="teachers__field">
+                  <label className="teachers__label">Телефон</label>
                   <input
-                    className={s.teachers__input}
+                    className="teachers__input"
                     placeholder="+996 …"
                     value={form.phone}
                     onChange={(e) =>
@@ -289,14 +289,12 @@ function SchoolTeachers() {
                   />
                 </div>
 
-                <div
-                  className={`${s.teachers__field} ${s["teachers__field--full"]}`}
-                >
-                  <label className={s.teachers__label}>
+                <div className="teachers__field teachers__field--full">
+                  <label className="teachers__label">
                     Направление / предмет
                   </label>
                   <input
-                    className={s.teachers__input}
+                    className="teachers__input"
                     placeholder="Например, Английский / Frontend"
                     value={form.subject}
                     onChange={(e) =>
@@ -306,12 +304,12 @@ function SchoolTeachers() {
                 </div>
               </div>
 
-              <div className={s["teachers__form-actions"]}>
-                <span className={s["teachers__actions-spacer"]} />
-                <div className={s["teachers__actions-right"]}>
+              <div className="teachers__form-actions">
+                <span className="teachers__actions-spacer" />
+                <div className="teachers__actions-right">
                   <button
                     type="button"
-                    className={`${s.teachers__btn} ${s["teachers__btn--secondary"]}`}
+                    className="teachers__btn teachers__btn--secondary"
                     onClick={closeModal}
                     disabled={saving}
                   >
@@ -319,7 +317,7 @@ function SchoolTeachers() {
                   </button>
                   <button
                     type="submit"
-                    className={`${s.teachers__btn} ${s["teachers__btn--primary"]}`}
+                    className="teachers__btn teachers__btn--primary"
                     disabled={saving}
                   >
                     {saving

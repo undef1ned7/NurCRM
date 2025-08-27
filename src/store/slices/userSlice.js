@@ -25,6 +25,7 @@ const initialState = {
   sector: "",
   submitApplication: null,
   applicationList: [],
+  company: null,
 };
 
 const userSlice = createSlice({
@@ -110,7 +111,7 @@ const userSlice = createSlice({
         state.sector = payload?.sector?.name;
         state.tariff = payload?.subscription_plan?.name;
         // console.log(payload);
-
+        state.company = payload;
         state.subscriptionPlans = payload;
       })
       .addCase(getCompany.rejected, (state, { payload }) => {

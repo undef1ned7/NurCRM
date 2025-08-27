@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "./Menu.module.scss";
+import "./Menu.scss";
 import {
   FaSearch,
   FaPlus,
@@ -266,31 +266,29 @@ export default function CafeMenu() {
   };
 
   return (
-    <section className={styles.menu}>
-      <div className={styles.menu__header}>
+    <section className="menu">
+      <div className="menu__header">
         <div>
-          <h2 className={styles.menu__title}>Меню</h2>
-          <div className={styles.menu__subtitle}>
-            Позиции, категории и рецептуры.
-          </div>
+          <h2 className="menu__title">Меню</h2>
+          <div className="menu__subtitle">Позиции, категории и рецептуры.</div>
         </div>
 
-        <div className={styles.menu__actions}>
+        <div className="menu__actions">
           <button
-            className={`${styles.menu__btn} ${
+            className={`menu__btn ${
               activeTab === "items"
-                ? styles["menu__btn--primary"]
-                : styles["menu__btn--secondary"]
+                ? "menu__btn--primary"
+                : "menu__btn--secondary"
             }`}
             onClick={() => setActiveTab("items")}
           >
             <FaUtensils /> Позиции
           </button>
           <button
-            className={`${styles.menu__btn} ${
+            className={`menu__btn ${
               activeTab === "categories"
-                ? styles["menu__btn--primary"]
-                : styles["menu__btn--secondary"]
+                ? "menu__btn--primary"
+                : "menu__btn--secondary"
             }`}
             onClick={() => setActiveTab("categories")}
           >
@@ -302,11 +300,11 @@ export default function CafeMenu() {
       {/* items tab */}
       {activeTab === "items" && (
         <>
-          <div className={styles.menu__actions} style={{ marginTop: -6 }}>
-            <div className={styles.menu__search}>
-              <FaSearch className={styles["menu__search-icon"]} />
+          <div className="menu__actions" style={{ marginTop: -6 }}>
+            <div className="menu__search">
+              <FaSearch className="menu__search-icon" />
               <input
-                className={styles["menu__search-input"]}
+                className="menu__search-input"
                 placeholder="Поиск: блюдо или категория…"
                 value={queryItems}
                 onChange={(e) => setQueryItems(e.target.value)}
@@ -314,7 +312,7 @@ export default function CafeMenu() {
             </div>
 
             <button
-              className={`${styles.menu__btn} ${styles["menu__btn--primary"]}`}
+              className="menu__btn menu__btn--primary"
               onClick={openCreate}
               disabled={!categories.length}
               title={!categories.length ? "Сначала добавьте категорию" : ""}
@@ -323,32 +321,30 @@ export default function CafeMenu() {
             </button>
           </div>
 
-          <div className={styles.menu__list}>
-            {loadingItems && (
-              <div className={styles.menu__alert}>Загрузка…</div>
-            )}
+          <div className="menu__list">
+            {loadingItems && <div className="menu__alert">Загрузка…</div>}
 
             {!loadingItems &&
               filteredItems.map((m) => (
-                <article key={m.id} className={styles.menu__card}>
-                  <div className={styles["menu__card-left"]}>
-                    <div className={styles.menu__avatar}>
+                <article key={m.id} className="menu__card">
+                  <div className="menu__card-left">
+                    <div className="menu__avatar">
                       <FaUtensils />
                     </div>
                     <div>
-                      <h3 className={styles.menu__name}>{m.title}</h3>
-                      <div className={styles.menu__meta}>
-                        <span className={styles.menu__muted}>
+                      <h3 className="menu__name">{m.title}</h3>
+                      <div className="menu__meta">
+                        <span className="menu__muted">
                           <FaTag /> &nbsp;{categoryTitle(m.category)}
                         </span>
-                        <span className={styles.menu__muted}>
+                        <span className="menu__muted">
                           Цена: {fmtMoney(m.price)} сом
                         </span>
                         <span
-                          className={`${styles.menu__status} ${
+                          className={`menu__status ${
                             m.is_active
-                              ? styles["menu__status--on"]
-                              : styles["menu__status--off"]
+                              ? "menu__status--on"
+                              : "menu__status--off"
                           }`}
                         >
                           {m.is_active ? "Активно" : "Скрыто"}
@@ -357,11 +353,11 @@ export default function CafeMenu() {
 
                       {Array.isArray(m.ingredients) &&
                         m.ingredients.length > 0 && (
-                          <ul className={styles.menu__recipeMini}>
+                          <ul className="menu__recipeMini">
                             {m.ingredients.slice(0, 4).map((ing, i) => (
                               <li
                                 key={`${ing.id || ing.product}-${i}`}
-                                className={styles.menu__muted}
+                                className="menu__muted"
                               >
                                 •{" "}
                                 {ing.product_title || productTitle(ing.product)}{" "}
@@ -370,22 +366,22 @@ export default function CafeMenu() {
                               </li>
                             ))}
                             {m.ingredients.length > 4 && (
-                              <li className={styles.menu__muted}>…</li>
+                              <li className="menu__muted">…</li>
                             )}
                           </ul>
                         )}
                     </div>
                   </div>
 
-                  <div className={styles.menu__rowActions}>
+                  <div className="menu__rowActions">
                     <button
-                      className={`${styles.menu__btn} ${styles["menu__btn--secondary"]}`}
+                      className="menu__btn menu__btn--secondary"
                       onClick={() => openEdit(m)}
                     >
                       <FaEdit /> Изменить
                     </button>
                     <button
-                      className={`${styles.menu__btn} ${styles["menu__btn--danger"]}`}
+                      className="menu__btn menu__btn--danger"
                       onClick={() => handleDelete(m.id)}
                     >
                       <FaTrash /> Удалить
@@ -395,7 +391,7 @@ export default function CafeMenu() {
               ))}
 
             {!loadingItems && !filteredItems.length && (
-              <div className={styles.menu__alert}>
+              <div className="menu__alert">
                 Ничего не найдено по «{queryItems}».
               </div>
             )}
@@ -406,11 +402,11 @@ export default function CafeMenu() {
       {/* categories tab */}
       {activeTab === "categories" && (
         <>
-          <div className={styles.menu__actions} style={{ marginTop: -6 }}>
-            <div className={styles.menu__search}>
-              <FaSearch className={styles["menu__search-icon"]} />
+          <div className="menu__actions" style={{ marginTop: -6 }}>
+            <div className="menu__search">
+              <FaSearch className="menu__search-icon" />
               <input
-                className={styles["menu__search-input"]}
+                className="menu__search-input"
                 placeholder="Поиск категории…"
                 value={queryCats}
                 onChange={(e) => setQueryCats(e.target.value)}
@@ -418,37 +414,37 @@ export default function CafeMenu() {
             </div>
 
             <button
-              className={`${styles.menu__btn} ${styles["menu__btn--primary"]}`}
+              className="menu__btn menu__btn--primary"
               onClick={openCreateCat}
             >
               <FaPlus /> Новая категория
             </button>
           </div>
 
-          <div className={styles.menu__list}>
-            {loadingCats && <div className={styles.menu__alert}>Загрузка…</div>}
+          <div className="menu__list">
+            {loadingCats && <div className="menu__alert">Загрузка…</div>}
 
             {!loadingCats &&
               filteredCats.map((c) => (
-                <article key={c.id} className={styles.menu__card}>
-                  <div className={styles["menu__card-left"]}>
-                    <div className={styles.menu__avatar}>
+                <article key={c.id} className="menu__card">
+                  <div className="menu__card-left">
+                    <div className="menu__avatar">
                       <FaTag />
                     </div>
                     <div>
-                      <h3 className={styles.menu__name}>{c.title}</h3>
+                      <h3 className="menu__name">{c.title}</h3>
                     </div>
                   </div>
 
-                  <div className={styles.menu__rowActions}>
+                  <div className="menu__rowActions">
                     <button
-                      className={`${styles.menu__btn} ${styles["menu__btn--secondary"]}`}
+                      className="menu__btn menu__btn--secondary"
                       onClick={() => openEditCat(c)}
                     >
                       <FaEdit /> Изменить
                     </button>
                     <button
-                      className={`${styles.menu__btn} ${styles["menu__btn--danger"]}`}
+                      className="menu__btn menu__btn--danger"
                       onClick={() => removeCat(c.id)}
                     >
                       <FaTrash /> Удалить
@@ -458,7 +454,7 @@ export default function CafeMenu() {
               ))}
 
             {!loadingCats && !filteredCats.length && (
-              <div className={styles.menu__alert}>
+              <div className="menu__alert">
                 Ничего не найдено по «{queryCats}».
               </div>
             )}
@@ -469,31 +465,28 @@ export default function CafeMenu() {
       {/* Модалка: блюдо */}
       {modalOpen && (
         <div
-          className={styles["menu__modal-overlay"]}
+          className="menu__modal-overlay"
           onClick={() => setModalOpen(false)}
         >
-          <div
-            className={styles.menu__modal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles["menu__modal-header"]}>
-              <h3 className={styles["menu__modal-title"]}>
+          <div className="menu__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="menu__modal-header">
+              <h3 className="menu__modal-title">
                 {editingId == null ? "Новая позиция" : "Изменить позицию"}
               </h3>
               <button
-                className={styles["menu__icon-btn"]}
+                className="menu__icon-btn"
                 onClick={() => setModalOpen(false)}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.menu__form} onSubmit={saveItem}>
-              <div className={styles["menu__form-grid"]}>
-                <div className={styles.menu__field}>
-                  <label className={styles.menu__label}>Название</label>
+            <form className="menu__form" onSubmit={saveItem}>
+              <div className="menu__form-grid">
+                <div className="menu__field">
+                  <label className="menu__label">Название</label>
                   <input
-                    className={styles.menu__input}
+                    className="menu__input"
                     value={form.title}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, title: e.target.value }))
@@ -503,10 +496,10 @@ export default function CafeMenu() {
                   />
                 </div>
 
-                <div className={styles.menu__field}>
-                  <label className={styles.menu__label}>Категория</label>
+                <div className="menu__field">
+                  <label className="menu__label">Категория</label>
                   <select
-                    className={styles.menu__input}
+                    className="menu__input"
                     value={form.category}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, category: e.target.value }))
@@ -521,12 +514,12 @@ export default function CafeMenu() {
                   </select>
                 </div>
 
-                <div className={styles.menu__field}>
-                  <label className={styles.menu__label}>Цена, сом</label>
+                <div className="menu__field">
+                  <label className="menu__label">Цена, сом</label>
                   <input
                     type="number"
                     min={0}
-                    className={styles.menu__input}
+                    className="menu__input"
                     value={form.price}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -538,10 +531,8 @@ export default function CafeMenu() {
                   />
                 </div>
 
-                <div
-                  className={`${styles.menu__field} ${styles["menu__field--full"]}`}
-                >
-                  <label className={styles.menu__label}>
+                <div className="menu__field menu__field--full">
+                  <label className="menu__label">
                     <input
                       type="checkbox"
                       checked={form.is_active}
@@ -555,19 +546,15 @@ export default function CafeMenu() {
                 </div>
               </div>
 
-              <div className={styles.menu__recipeBlock}>
-                <div className={styles.menu__subtitle}>
-                  Ингредиенты (на 1 блюдо)
-                </div>
+              <div className="menu__recipeBlock">
+                <div className="menu__subtitle">Ингредиенты (на 1 блюдо)</div>
 
                 {(form.ingredients || []).map((row, idx) => (
-                  <div key={idx} className={styles["menu__form-grid"]}>
-                    <div className={styles.menu__field}>
-                      <label className={styles.menu__label}>
-                        Товар со склада
-                      </label>
+                  <div key={idx} className="menu__form-grid">
+                    <div className="menu__field">
+                      <label className="menu__label">Товар со склада</label>
                       <select
-                        className={styles.menu__input}
+                        className="menu__input"
                         value={row.product || ""}
                         onChange={(e) =>
                           changeIngredientRow(idx, "product", e.target.value)
@@ -583,15 +570,15 @@ export default function CafeMenu() {
                       </select>
                     </div>
 
-                    <div className={styles.menu__field}>
-                      <label className={styles.menu__label}>
+                    <div className="menu__field">
+                      <label className="menu__label">
                         Норма (в ед. товара)
                       </label>
                       <input
                         type="number"
                         min={0}
                         step="any"
-                        className={styles.menu__input}
+                        className="menu__input"
                         value={row.amount ?? 0}
                         onChange={(e) =>
                           changeIngredientRow(idx, "amount", e.target.value)
@@ -600,11 +587,11 @@ export default function CafeMenu() {
                       />
                     </div>
 
-                    <div className={styles.menu__field}>
-                      <label className={styles.menu__label}>&nbsp;</label>
+                    <div className="menu__field">
+                      <label className="menu__label">&nbsp;</label>
                       <button
                         type="button"
-                        className={`${styles.menu__btn} ${styles["menu__btn--danger"]}`}
+                        className="menu__btn menu__btn--danger"
                         onClick={() => removeIngredientRow(idx)}
                       >
                         <FaTrash /> Удалить ингредиент
@@ -615,25 +602,22 @@ export default function CafeMenu() {
 
                 <button
                   type="button"
-                  className={`${styles.menu__btn} ${styles["menu__btn--secondary"]}`}
+                  className="menu__btn menu__btn--secondary"
                   onClick={addIngredientRow}
                 >
                   <FaPlus /> Добавить ингредиент
                 </button>
               </div>
 
-              <div className={styles["menu__form-actions"]}>
+              <div className="menu__form-actions">
                 <button
                   type="button"
-                  className={`${styles.menu__btn} ${styles["menu__btn--secondary"]}`}
+                  className="menu__btn menu__btn--secondary"
                   onClick={() => setModalOpen(false)}
                 >
                   Отмена
                 </button>
-                <button
-                  type="submit"
-                  className={`${styles.menu__btn} ${styles["menu__btn--primary"]}`}
-                >
+                <button type="submit" className="menu__btn menu__btn--primary">
                   Сохранить
                 </button>
               </div>
@@ -645,32 +629,27 @@ export default function CafeMenu() {
       {/* Модалка: категория */}
       {catModalOpen && (
         <div
-          className={styles["menu__modal-overlay"]}
+          className="menu__modal-overlay"
           onClick={() => setCatModalOpen(false)}
         >
-          <div
-            className={styles.menu__modal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles["menu__modal-header"]}>
-              <h3 className={styles["menu__modal-title"]}>
+          <div className="menu__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="menu__modal-header">
+              <h3 className="menu__modal-title">
                 {catEditId ? "Редактировать категорию" : "Новая категория"}
               </h3>
               <button
-                className={styles["menu__icon-btn"]}
+                className="menu__icon-btn"
                 onClick={() => setCatModalOpen(false)}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.menu__form} onSubmit={saveCat}>
-              <div
-                className={`${styles.menu__field} ${styles["menu__field--full"]}`}
-              >
-                <label className={styles.menu__label}>Название категории</label>
+            <form className="menu__form" onSubmit={saveCat}>
+              <div className="menu__field menu__field--full">
+                <label className="menu__label">Название категории</label>
                 <input
-                  className={styles.menu__input}
+                  className="menu__input"
                   value={catTitle}
                   onChange={(e) => setCatTitle(e.target.value)}
                   placeholder="Например: Горячее, Супы, Десерты"
@@ -679,18 +658,15 @@ export default function CafeMenu() {
                 />
               </div>
 
-              <div className={styles["menu__form-actions"]}>
+              <div className="menu__form-actions">
                 <button
                   type="button"
-                  className={`${styles.menu__btn} ${styles["menu__btn--secondary"]}`}
+                  className="menu__btn menu__btn--secondary"
                   onClick={() => setCatModalOpen(false)}
                 >
                   Отмена
                 </button>
-                <button
-                  type="submit"
-                  className={`${styles.menu__btn} ${styles["menu__btn--primary"]}`}
-                >
+                <button type="submit" className="menu__btn menu__btn--primary">
                   Сохранить
                 </button>
               </div>

@@ -1,0 +1,150 @@
+:root {
+  --primary: #f7d74f;
+  --primary-dark: #d4b800;
+  --text: #0f172a;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --surface: #ffffff;
+  --radius: 12px;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.services {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  border: 1px solid transparent;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btnPrimary {
+  background: var(--primary);
+  color: #111;
+}
+
+.btnPrimary:hover {
+  background: var(--primary-dark);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Alert */
+.alert {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.35);
+}
+
+/* Table */
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table {
+  display: table;
+  thead th {
+    text-align: left;
+    padding: 12px;
+    background: var(--primary);
+    color: #111;
+    font-size: 14px;
+    font-weight: 600;
+    width: 33.3%;
+  }
+  tbody {
+    td {
+      padding: 12px;
+      transition: all 0.5s;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    tr:hover td {
+      background: #f1f5f9;
+    }
+    .loading {
+      text-align: center;
+      color: var(--muted);
+      padding: 18px 0;
+    }
+  }
+}
+
+/* Inputs */
+.input {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .input {
+    width: 100%;
+  }
+}

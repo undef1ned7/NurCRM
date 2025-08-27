@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../api";
-import s from "./History.module.scss";
+import "./History.scss";
 
 const fmtMoney = (v) =>
   (Number(v) || 0).toLocaleString(undefined, { minimumFractionDigits: 0 }) +
@@ -91,18 +91,18 @@ export default function MarketHistory() {
   );
 
   return (
-    <section className={s.history}>
-      <header className={s.history__header}>
+    <section className="history">
+      <header className="history__header">
         <div>
-          <h2 className={s.history__title}>История продаж</h2>
-          <p className={s.history__subtitle}>Список чеков и их содержимое</p>
+          <h2 className="history__title">История продаж</h2>
+          <p className="history__subtitle">Список чеков и их содержимое</p>
         </div>
 
-        <div className={s.history__filters}>
-          <label className={s.history__filter}>
-            <span className={s.history__filterLabel}>Статус</span>
+        <div className="history__filters">
+          <label className="history__filter">
+            <span className="history__filterLabel">Статус</span>
             <select
-              className={s.history__input}
+              className="history__input"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
@@ -113,22 +113,22 @@ export default function MarketHistory() {
             </select>
           </label>
 
-          <label className={s.history__filter}>
-            <span className={s.history__filterLabel}>С</span>
+          <label className="history__filter">
+            <span className="history__filterLabel">С</span>
             <input
               type="date"
-              className={s.history__input}
+              className="history__input"
               value={start}
               max={end || undefined}
               onChange={(e) => setStart(e.target.value)}
             />
           </label>
 
-          <label className={s.history__filter}>
-            <span className={s.history__filterLabel}>По</span>
+          <label className="history__filter">
+            <span className="history__filterLabel">По</span>
             <input
               type="date"
-              className={s.history__input}
+              className="history__input"
               value={end}
               min={start || undefined}
               onChange={(e) => setEnd(e.target.value)}
@@ -136,7 +136,7 @@ export default function MarketHistory() {
           </label>
 
           <button
-            className={`${s.history__btn} ${s["history__btn--secondary"]}`}
+            className="history__btn history__btn--secondary"
             onClick={() => load()}
             disabled={loading}
           >
@@ -145,10 +145,10 @@ export default function MarketHistory() {
         </div>
       </header>
 
-      {err && <div className={s.history__error}>{err}</div>}
+      {err && <div className="history__error">{err}</div>}
 
-      <div className={s.history__tableWrap}>
-        <table className={s.history__table}>
+      <div className="history__tableWrap">
+        <table className="history__table">
           <thead>
             <tr>
               <th>Дата</th>
@@ -161,7 +161,7 @@ export default function MarketHistory() {
           <tbody>
             {loading && rows.length === 0 ? (
               <tr>
-                <td className={s.history__empty} colSpan={6}>
+                <td className="history__empty" colSpan={6}>
                   Загрузка…
                 </td>
               </tr>
@@ -177,7 +177,7 @@ export default function MarketHistory() {
                   <td className="ellipsis" title={r.id}></td>
                   <td>
                     <button
-                      className={`${s.history__btn} ${s["history__btn--primary"]}`}
+                      className="history__btn history__btn--primary"
                       onClick={() => onOpen(r.id)}
                     >
                       Открыть
@@ -187,7 +187,7 @@ export default function MarketHistory() {
               ))
             ) : (
               <tr>
-                <td className={s.history__empty} colSpan={6}>
+                <td className="history__empty" colSpan={6}>
                   Нет данных
                 </td>
               </tr>
@@ -209,7 +209,7 @@ export default function MarketHistory() {
       {nextUrl && (
         <div style={{ display: "flex", justifyContent: "center" }}>
           <button
-            className={s.history__btn}
+            className="history__btn"
             onClick={() => load(nextUrl)}
             disabled={loading}
           >
@@ -274,14 +274,14 @@ function SaleModal({ id, onClose }) {
   }, [id]);
 
   return (
-    <div className={s.history__modalOverlay} onClick={onClose}>
-      <div className={s.history__modal} onClick={(e) => e.stopPropagation()}>
-        <div className={s.history__modalHeader}>
-          <div className={s.history__modalTitle}>
+    <div className="history__modalOverlay" onClick={onClose}>
+      <div className="history__modal" onClick={(e) => e.stopPropagation()}>
+        <div className="history__modalHeader">
+          <div className="history__modalTitle">
             Продажа #{(id || "").slice(0, 8)}…
           </div>
           <button
-            className={s.history__iconBtn}
+            className="history__iconBtn"
             onClick={onClose}
             aria-label="Закрыть"
           >
@@ -290,17 +290,17 @@ function SaleModal({ id, onClose }) {
         </div>
 
         {loading ? (
-          <div className={s.history__skeletonRow}>
-            <div className={s.history__skeleton} />
-            <div className={s.history__skeleton} />
-            <div className={s.history__skeleton} />
+          <div className="history__skeletonRow">
+            <div className="history__skeleton" />
+            <div className="history__skeleton" />
+            <div className="history__skeleton" />
           </div>
         ) : err ? (
-          <div className={s.history__error}>{err}</div>
+          <div className="history__error">{err}</div>
         ) : sale ? (
           <>
             {/* Только создано, пользователь и итог */}
-            <div className={s.history__meta}>
+            <div className="history__meta">
               <div>
                 <strong>Создано:</strong>{" "}
                 {sale.createdAt
@@ -315,8 +315,8 @@ function SaleModal({ id, onClose }) {
               </div>
             </div>
 
-            <div className={s.history__tableWrap}>
-              <table className={s.history__table}>
+            <div className="history__tableWrap">
+              <table className="history__table">
                 <thead>
                   <tr>
                     <th>Товар</th>
@@ -343,7 +343,7 @@ function SaleModal({ id, onClose }) {
                     ))
                   ) : (
                     <tr>
-                      <td className={s.history__empty} colSpan={5}>
+                      <td className="history__empty" colSpan={5}>
                         Позиции отсутствуют
                       </td>
                     </tr>
@@ -361,15 +361,15 @@ function SaleModal({ id, onClose }) {
               </table>
             </div>
 
-            <div className={s.history__modalFooter}>
+            <div className="history__modalFooter">
               <button
-                className={`${s.history__btn} ${s["history__btn--secondary"]}`}
+                className="history__btn history__btn--secondary"
                 onClick={load}
               >
                 Обновить
               </button>
               <button
-                className={`${s.history__btn} ${s["history__btn--primary"]}`}
+                className="history__btn history__btn--primary"
                 onClick={onClose}
               >
                 Закрыть

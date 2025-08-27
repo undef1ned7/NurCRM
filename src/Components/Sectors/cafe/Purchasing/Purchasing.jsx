@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "./Purchasing.module.scss";
-import { FaSearch, FaPlus, FaTimes, FaTruck, FaEdit, FaTrash } from "react-icons/fa";
+import "./Purchasing.scss";
+import {
+  FaSearch,
+  FaPlus,
+  FaTimes,
+  FaTruck,
+  FaEdit,
+  FaTrash,
+} from "react-icons/fa";
 import api from "../../../../api";
 
 // Универсально достаём список из пагинированного/непагинированного ответа
@@ -15,9 +22,10 @@ const toNum = (x) => {
 
 // Формат суммы для вывода
 const fmtMoney = (n) =>
-  new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-    toNum(n)
-  );
+  new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(toNum(n));
 
 export default function CafePurchasing() {
   const [items, setItems] = useState([]);
@@ -93,7 +101,9 @@ export default function CafePurchasing() {
         setItems((prev) => [...prev, res.data]);
       } else {
         const res = await api.put(`/cafe/purchases/${editingId}/`, payload);
-        setItems((prev) => prev.map((p) => (p.id === editingId ? res.data : p)));
+        setItems((prev) =>
+          prev.map((p) => (p.id === editingId ? res.data : p))
+        );
       }
       setModalOpen(false);
     } catch (err) {
@@ -113,28 +123,28 @@ export default function CafePurchasing() {
 
   // ===== RENDER =====
   return (
-    <section className={styles.purchasing}>
-      <div className={styles.purchasing__header}>
+    <section className="purchasing">
+      <div className="purchasing__header">
         <div>
-          <h2 className={styles.purchasing__title}>Закупки</h2>
-          <div className={styles.purchasing__subtitle}>Заказы поставщикам.</div>
+          <h2 className="purchasing__title">Закупки</h2>
+          <div className="purchasing__subtitle">Заказы поставщикам.</div>
         </div>
 
-        <div className={styles.purchasing__actions}>
-          <div className={styles.purchasing__search}>
-            <FaSearch className={styles["purchasing__search-icon"]} />
+        <div className="purchasing__actions">
+          <div className="purchasing__search">
+            <FaSearch className="purchasing__search-icon" />
             <input
-              className={styles["purchasing__search-input"]}
+              className="purchasing__search-input"
               placeholder="Поиск: поставщик, позиции, сумма…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <button className={`${styles.purchasing__btn} ${styles["purchasing__btn--secondary"]}`}>
+          <button className="purchasing__btn purchasing__btn--secondary">
             Экспорт
           </button>
           <button
-            className={`${styles.purchasing__btn} ${styles["purchasing__btn--primary"]}`}
+            className="purchasing__btn purchasing__btn--primary"
             onClick={openCreate}
           >
             <FaPlus /> Новая закупка
@@ -142,39 +152,39 @@ export default function CafePurchasing() {
         </div>
       </div>
 
-      <div className={styles.purchasing__list}>
-        {loading && <div className={styles.purchasing__alert}>Загрузка…</div>}
+      <div className="purchasing__list">
+        {loading && <div className="purchasing__alert">Загрузка…</div>}
 
         {!loading &&
           filtered.map((p) => (
-            <article key={p.id} className={styles.purchasing__card}>
-              <div className={styles["purchasing__card-left"]}>
-                <div className={styles.purchasing__avatar}>
+            <article key={p.id} className="purchasing__card">
+              <div className="purchasing__card-left">
+                <div className="purchasing__avatar">
                   <FaTruck />
                 </div>
                 <div>
                   {/* Раньше был number/status — в API их нет, поэтому заголовок = поставщик */}
-                  <h3 className={styles.purchasing__name}>{p.supplier}</h3>
-                  <div className={styles.purchasing__meta}>
-                    <span className={styles.purchasing__muted}>
+                  <h3 className="purchasing__name">{p.supplier}</h3>
+                  <div className="purchasing__meta">
+                    <span className="purchasing__muted">
                       Позиций: {toNum(p.positions)}
                     </span>
-                    <span className={styles.purchasing__muted}>
+                    <span className="purchasing__muted">
                       Сумма: {fmtMoney(p.price)} сом
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className={styles.purchasing__rowActions}>
+              <div className="purchasing__rowActions">
                 <button
-                  className={`${styles.purchasing__btn} ${styles["purchasing__btn--secondary"]}`}
+                  className="purchasing__btn purchasing__btn--secondary"
                   onClick={() => openEdit(p)}
                 >
                   <FaEdit /> Изменить
                 </button>
                 <button
-                  className={`${styles.purchasing__btn} ${styles["purchasing__btn--danger"]}`}
+                  className="purchasing__btn purchasing__btn--danger"
                   onClick={() => handleDelete(p.id)}
                 >
                   <FaTrash /> Удалить
@@ -184,47 +194,54 @@ export default function CafePurchasing() {
           ))}
 
         {!loading && !filtered.length && (
-          <div className={styles.purchasing__alert}>Ничего не найдено по «{query}».</div>
+          <div className="purchasing__alert">
+            Ничего не найдено по «{query}».
+          </div>
         )}
       </div>
 
       {modalOpen && (
         <div
-          className={styles["purchasing__modal-overlay"]}
+          className="purchasing__modal-overlay"
           onClick={() => setModalOpen(false)}
         >
-          <div className={styles.purchasing__modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles["purchasing__modal-header"]}>
-              <h3 className={styles["purchasing__modal-title"]}>
+          <div
+            className="purchasing__modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="purchasing__modal-header">
+              <h3 className="purchasing__modal-title">
                 {editingId == null ? "Новая закупка" : "Изменить закупку"}
               </h3>
               <button
-                className={styles["purchasing__icon-btn"]}
+                className="purchasing__icon-btn"
                 onClick={() => setModalOpen(false)}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.purchasing__form} onSubmit={savePO}>
-              <div className={styles["purchasing__form-grid"]}>
-                <div className={styles.purchasing__field}>
-                  <label className={styles.purchasing__label}>Поставщик</label>
+            <form className="purchasing__form" onSubmit={savePO}>
+              <div className="purchasing__form-grid">
+                <div className="purchasing__field">
+                  <label className="purchasing__label">Поставщик</label>
                   <input
-                    className={styles.purchasing__input}
+                    className="purchasing__input"
                     value={form.supplier}
-                    onChange={(e) => setForm((f) => ({ ...f, supplier: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, supplier: e.target.value }))
+                    }
                     required
                     maxLength={255}
                   />
                 </div>
 
-                <div className={styles.purchasing__field}>
-                  <label className={styles.purchasing__label}>Позиций</label>
+                <div className="purchasing__field">
+                  <label className="purchasing__label">Позиций</label>
                   <input
                     type="number"
                     min={0}
-                    className={styles.purchasing__input}
+                    className="purchasing__input"
                     value={form.positions}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -236,32 +253,35 @@ export default function CafePurchasing() {
                   />
                 </div>
 
-                <div className={styles.purchasing__field}>
-                  <label className={styles.purchasing__label}>Сумма, сом</label>
+                <div className="purchasing__field">
+                  <label className="purchasing__label">Сумма, сом</label>
                   <input
                     type="number"
                     min={0}
-                    className={styles.purchasing__input}
+                    className="purchasing__input"
                     value={form.price}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, price: Math.max(0, Number(e.target.value) || 0) }))
+                      setForm((f) => ({
+                        ...f,
+                        price: Math.max(0, Number(e.target.value) || 0),
+                      }))
                     }
                     required
                   />
                 </div>
               </div>
 
-              <div className={styles["purchasing__form-actions"]}>
+              <div className="purchasing__form-actions">
                 <button
                   type="button"
-                  className={`${styles.purchasing__btn} ${styles["purchasing__btn--secondary"]}`}
+                  className="purchasing__btn purchasing__btn--secondary"
                   onClick={() => setModalOpen(false)}
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className={`${styles.purchasing__btn} ${styles["purchasing__btn--primary"]}`}
+                  className="purchasing__btn purchasing__btn--primary"
                 >
                   Сохранить
                 </button>

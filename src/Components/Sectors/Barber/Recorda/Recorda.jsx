@@ -1,7 +1,7 @@
 // src/components/Recorda/Recorda.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import api from "../../../../api";
-import styles from "./Recorda.module.scss";
+import "./Recorda.scss";
 import { FaPlus, FaEdit, FaTimes, FaSearch, FaTrash } from "react-icons/fa";
 
 /* ===== утилиты даты/времени ===== */
@@ -28,12 +28,9 @@ const STATUS_LABELS = {
 
 /* ===== уведомление ===== */
 const NotificationBanner = ({ appointment, onClose, lookup, index }) => (
-  <div
-    className={styles.notification}
-    style={{ bottom: `${20 + index * 120}px` }}
-  >
-    <div className={styles.notificationContent}>
-      <h4 className={styles.notificationTitle}>Напоминание о записи</h4>
+  <div className="notification" style={{ bottom: `${20 + index * 120}px` }}>
+    <div className="notificationContent">
+      <h4 className="notificationTitle">Напоминание о записи</h4>
       <p>
         Клиент: {appointment.client_name || lookup.client(appointment.client)}
         <br />
@@ -46,10 +43,7 @@ const NotificationBanner = ({ appointment, onClose, lookup, index }) => (
         <br />
         Время: {toDate(appointment.start_at)} {toTime(appointment.start_at)}
       </p>
-      <button
-        className={`${styles.btn} ${styles.btnSecondary}`}
-        onClick={onClose}
-      >
+      <button className="btn btnSecondary" onClick={onClose}>
         <FaTimes /> Закрыть
       </button>
     </div>
@@ -280,36 +274,33 @@ const Recorda = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
 
   return (
-    <div className={styles.services}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Записи</h2>
-        <div className={styles.actions}>
-          <div className={styles.search}>
-            <FaSearch className={styles.searchIcon} />
+    <div className="services">
+      <div className="header">
+        <h2 className="title">Записи</h2>
+        <div className="actions">
+          <div className="search">
+            <FaSearch className="searchIcon" />
             <input
               type="text"
-              className={styles.searchInput}
+              className="searchInput"
               placeholder="Поиск: клиент, мастер, услуга, статус"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <span className={styles.subtitle}>
+          <span className="subtitle">
             {loading ? "Загрузка..." : `${filtered.length} шт.`}
           </span>
-          <button
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            onClick={() => openModal()}
-          >
+          <button className="btn btnPrimary" onClick={() => openModal()}>
             <FaPlus /> Добавить
           </button>
         </div>
       </div>
 
-      {error && <div className={styles.alert}>{error}</div>}
+      {error && <div className="alert">{error}</div>}
 
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
+      <div className="tableWrapper">
+        <table className="table">
           <thead>
             <tr>
               <th>Клиент</th>
@@ -322,7 +313,7 @@ const Recorda = () => {
           <tbody>
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan="5" className={styles.loading}>
+                <td colSpan="5" className="loading">
                   Ничего не найдено
                 </td>
               </tr>
@@ -335,17 +326,13 @@ const Recorda = () => {
                   <td>{r.barber_name || lookup.barber(r.barber)}</td>
                   <td>{r.service_name || lookup.service(r.service)}</td>
                   <td>
-                    <span
-                      className={`${styles.badge} ${
-                        styles[`badge--${r.status}`]
-                      }`}
-                    >
+                    <span className={`badge badge--${r.status}`}>
                       {STATUS_LABELS[r.status] || r.status}
                     </span>
                   </td>
                   <td>
                     <button
-                      className={`${styles.btn} ${styles.btnSecondary}`}
+                      className="btn btnSecondary"
                       onClick={() => openModal(r)}
                     >
                       <FaEdit /> Ред.
@@ -356,7 +343,7 @@ const Recorda = () => {
 
             {loading && (
               <tr>
-                <td colSpan="5" className={styles.loading}>
+                <td colSpan="5" className="loading">
                   Загрузка...
                 </td>
               </tr>
@@ -366,14 +353,14 @@ const Recorda = () => {
       </div>
 
       {modalOpen && (
-        <div className={styles.modalOverlay} onClick={closeModal}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>
+        <div className="modalOverlay" onClick={closeModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <h3 className="modalTitle">
                 {current ? "Редактировать запись" : "Новая запись"}
               </h3>
               <button
-                className={styles.iconBtn}
+                className="iconBtn"
                 onClick={closeModal}
                 aria-label="Закрыть"
               >
@@ -381,13 +368,13 @@ const Recorda = () => {
               </button>
             </div>
 
-            <form className={styles.form} onSubmit={handleSubmit}>
-              <div className={styles.formGrid}>
-                <div className={styles.field}>
-                  <label className={styles.label}>Клиент *</label>
+            <form className="form" onSubmit={handleSubmit}>
+              <div className="formGrid">
+                <div className="field">
+                  <label className="label">Клиент *</label>
                   <select
                     name="clientId"
-                    className={styles.input}
+                    className="input"
                     defaultValue={current?.client || ""}
                     required
                   >
@@ -400,11 +387,11 @@ const Recorda = () => {
                   </select>
                 </div>
 
-                <div className={styles.field}>
-                  <label className={styles.label}>Мастер *</label>
+                <div className="field">
+                  <label className="label">Мастер *</label>
                   <select
                     name="barberId"
-                    className={styles.input}
+                    className="input"
                     defaultValue={current?.barber || ""}
                     required
                   >
@@ -417,11 +404,11 @@ const Recorda = () => {
                   </select>
                 </div>
 
-                <div className={styles.field}>
-                  <label className={styles.label}>Услуга *</label>
+                <div className="field">
+                  <label className="label">Услуга *</label>
                   <select
                     name="serviceId"
-                    className={styles.input}
+                    className="input"
                     defaultValue={current?.service || ""}
                     required
                   >
@@ -435,53 +422,53 @@ const Recorda = () => {
                   </select>
                 </div>
 
-                <div className={styles.field}>
-                  <label className={styles.label}>Начало — дата *</label>
+                <div className="field">
+                  <label className="label">Начало — дата *</label>
                   <input
                     name="startDate"
                     type="date"
-                    className={styles.input}
+                    className="input"
                     defaultValue={toDate(current?.start_at)}
                     required
                   />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Начало — время *</label>
+                <div className="field">
+                  <label className="label">Начало — время *</label>
                   <input
                     name="startTime"
                     type="time"
-                    className={styles.input}
+                    className="input"
                     defaultValue={toTime(current?.start_at)}
                     required
                   />
                 </div>
 
-                <div className={styles.field}>
-                  <label className={styles.label}>Конец — дата *</label>
+                <div className="field">
+                  <label className="label">Конец — дата *</label>
                   <input
                     name="endDate"
                     type="date"
-                    className={styles.input}
+                    className="input"
                     defaultValue={toDate(current?.end_at)}
                     required
                   />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Конец — время *</label>
+                <div className="field">
+                  <label className="label">Конец — время *</label>
                   <input
                     name="endTime"
                     type="time"
-                    className={styles.input}
+                    className="input"
                     defaultValue={toTime(current?.end_at)}
                     required
                   />
                 </div>
 
-                <div className={styles.field}>
-                  <label className={styles.label}>Статус *</label>
+                <div className="field">
+                  <label className="label">Статус *</label>
                   <select
                     name="status"
-                    className={styles.input}
+                    className="input"
                     defaultValue={current?.status || "booked"}
                     required
                   >
@@ -493,22 +480,22 @@ const Recorda = () => {
                   </select>
                 </div>
 
-                <div className={`${styles.field} ${styles.fieldFull}`}>
-                  <label className={styles.label}>Комментарий</label>
+                <div className="field fieldFull">
+                  <label className="label">Комментарий</label>
                   <textarea
                     name="comment"
-                    className={styles.textarea}
+                    className="textarea"
                     defaultValue={current?.comment || ""}
                     placeholder="Заметка для мастера/клиента"
                   />
                 </div>
               </div>
 
-              <div className={styles.formActions}>
+              <div className="formActions">
                 {current?.id ? (
                   <button
                     type="button"
-                    className={`${styles.btn} ${styles.btnDanger}`}
+                    className="btn btnDanger"
                     onClick={handleDelete}
                     disabled={deleting || saving}
                     title="Удалить запись"
@@ -516,14 +503,14 @@ const Recorda = () => {
                     <FaTrash /> {deleting ? "Удаление..." : "Удалить"}
                   </button>
                 ) : (
-                  <span className={styles.actionsSpacer} />
+                  <span className="actionsSpacer" />
                 )}
 
-                <div className={styles.actionsRight}>
+                <div className="actionsRight">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className={`${styles.btn} ${styles.btnSecondary}`}
+                    className="btn btnSecondary"
                     disabled={saving || deleting}
                   >
                     Отмена
@@ -531,7 +518,7 @@ const Recorda = () => {
                   <button
                     type="submit"
                     disabled={saving || deleting}
-                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    className="btn btnPrimary"
                   >
                     {saving ? "Сохранение..." : "Сохранить"}
                   </button>

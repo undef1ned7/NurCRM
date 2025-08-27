@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import s from "./Analytics.module.scss";
+import "./Analytics.scss";
 import api from "../../../../api";
 
 /**
@@ -41,8 +41,10 @@ const nowMonth = (() => {
 })();
 
 const fmtMoney = (n) =>
-  new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    .format(toNum(n));
+  new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(toNum(n));
 
 export default function CafeAnalytics() {
   const [month, setMonth] = useState(nowMonth);
@@ -50,7 +52,7 @@ export default function CafeAnalytics() {
   const [loading, setLoading] = useState(true);
 
   const [rowsAgg, setRowsAgg] = useState([]); // агрегированные выплаты [{staff, month, orders_count, sales, salary, paid_at}]
-  const [staff, setStaff] = useState([]);     // для имён/ролей
+  const [staff, setStaff] = useState([]); // для имён/ролей
 
   const staffMap = useMemo(() => {
     const m = new Map();
@@ -85,7 +87,9 @@ export default function CafeAnalytics() {
       // 4) merge + дедуп (на уровне отдельных записей)
       const seen = new Set();
       const keyOf = (p) =>
-        `${p.staff}|${p.month}|${p.orders_count}|${p.sales}|${p.salary}|${p.paid_at || ""}`;
+        `${p.staff}|${p.month}|${p.orders_count}|${p.sales}|${p.salary}|${
+          p.paid_at || ""
+        }`;
       const merged = [...local, ...server].filter((p) => {
         const k = keyOf(p);
         if (seen.has(k)) return false;
@@ -163,7 +167,9 @@ export default function CafeAnalytics() {
     }
   };
 
-  useEffect(() => { load(month); /* eslint-disable-next-line */ }, [month]);
+  useEffect(() => {
+    load(month); /* eslint-disable-next-line */
+  }, [month]);
 
   // поиск по имени/роли на АГРЕГИРОВАННЫХ строках
   const rowsFiltered = useMemo(() => {
@@ -184,40 +190,44 @@ export default function CafeAnalytics() {
   );
 
   const totals = useMemo(() => {
-    const orders = rowsFiltered.reduce((s, r) => s + (Number(r.orders_count) || 0), 0);
+    const orders = rowsFiltered.reduce(
+      (s, r) => s + (Number(r.orders_count) || 0),
+      0
+    );
     const sales = rowsFiltered.reduce((s, r) => s + toNum(r.sales), 0);
     const salary = rowsFiltered.reduce((s, r) => s + toNum(r.salary), 0);
     return { orders, sales, salary };
   }, [rowsFiltered]);
 
   return (
-    <section className={s.analytics}>
+    <section className="analytics">
       {/* Заголовок + фильтры */}
-      <header className={s.analytics__header}>
+      <header className="analytics__header">
         <div>
-          <h2 className={s.analytics__title}>Аналитика выплат</h2>
-          <p className={s.analytics__subtitle}>
-            Данные группируются по сотруднику и месяцу. Удалённые сотрудники скрываются.
+          <h2 className="analytics__title">Аналитика выплат</h2>
+          <p className="analytics__subtitle">
+            Данные группируются по сотруднику и месяцу. Удалённые сотрудники
+            скрываются.
           </p>
         </div>
 
-        <div className={s.analytics__actions}>
+        <div className="analytics__actions">
           <input
             type="month"
-            className={s.analytics__select}
+            className="analytics__select"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             title="Фильтр по месяцу"
           />
           <input
-            className={s.analytics__select}
+            className="analytics__select"
             placeholder="Поиск: сотрудник или роль…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             title="Поиск"
           />
           <button
-            className={`${s.analytics__btn} ${s["analytics__btn--secondary"]}`}
+            className="analytics__btn analytics__btn--secondary"
             onClick={() => load(month)}
             disabled={loading}
           >
@@ -228,31 +238,33 @@ export default function CafeAnalytics() {
 
       {/* Сводка */}
       {loading ? (
-        <div className={s.analytics__skeletonRow}>
+        <div className="analytics__skeletonRow">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className={s.analytics__skeleton} />
+            <div key={i} className="analytics__skeleton" />
           ))}
         </div>
       ) : (
-        <div className={s.analytics__summary}>
-          <div className={s.analytics__card}>
-            <div className={s.analytics__value}>{totals.orders}</div>
-            <div className={s.analytics__label}>Заказы</div>
+        <div className="analytics__summary">
+          <div className="analytics__card">
+            <div className="analytics__value">{totals.orders}</div>
+            <div className="analytics__label">Заказы</div>
           </div>
-          <div className={s.analytics__card}>
-            <div className={s.analytics__value}>{fmtMoney(totals.sales)} сом</div>
-            <div className={s.analytics__label}>Выручка</div>
+          <div className="analytics__card">
+            <div className="analytics__value">{fmtMoney(totals.sales)} сом</div>
+            <div className="analytics__label">Выручка</div>
           </div>
-          <div className={s.analytics__card}>
-            <div className={s.analytics__value}>{fmtMoney(totals.salary)} сом</div>
-            <div className={s.analytics__label}>Выплаты</div>
+          <div className="analytics__card">
+            <div className="analytics__value">
+              {fmtMoney(totals.salary)} сом
+            </div>
+            <div className="analytics__label">Выплаты</div>
           </div>
         </div>
       )}
 
       {/* Таблица (агрегированные записи) */}
-      <section className={s.analytics__panel}>
-        <div className={s.analytics__head}>Выплаты</div>
+      <section className="analytics__panel">
+        <div className="analytics__head">Выплаты</div>
         <div className="table">
           <div className="table__head">
             <span>Сотрудник</span>
@@ -277,7 +289,9 @@ export default function CafeAnalytics() {
                     <span>{r.orders_count || 0}</span>
                     <span>{fmtMoney(r.sales)} сом</span>
                     <span>{fmtMoney(r.salary)} сом</span>
-                    <span>{r.paid_at ? new Date(r.paid_at).toLocaleString() : "—"}</span>
+                    <span>
+                      {r.paid_at ? new Date(r.paid_at).toLocaleString() : "—"}
+                    </span>
                   </div>
                 );
               })

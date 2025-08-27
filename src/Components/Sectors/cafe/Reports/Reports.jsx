@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "./Reports.module.scss";
+import "./Reports.scss";
 import { FaChartLine, FaPrint, FaFilter, FaSync } from "react-icons/fa";
 import api from "../../../../api";
 
@@ -153,25 +153,25 @@ export default function CafeReports() {
   }, [data, queryMonth]);
 
   return (
-    <section className={styles.reports}>
+    <section className="reports">
       {/* Header */}
-      <div className={styles.reports__header}>
+      <div className="reports__header">
         <div>
-          <h2 className={styles.reports__title}>
+          <h2 className="reports__title">
             <FaChartLine /> Отчёты и аналитика (касса)
           </h2>
         </div>
 
-        <div className={styles.reports__actions}>
+        <div className="reports__actions">
           {/* Экспорт CSV удалён */}
           <button
-            className={`${styles.reports__btn} ${styles["reports__btn--secondary"]}`}
+            className="reports__btn reports__btn--secondary"
             onClick={() => window.print()}
           >
             <FaPrint /> Печать
           </button>
           <button
-            className={`${styles.reports__btn} ${styles["reports__btn--secondary"]}`}
+            className="reports__btn reports__btn--secondary"
             onClick={fetchAllOrders}
             disabled={loading}
             title="Обновить данные"
@@ -182,11 +182,11 @@ export default function CafeReports() {
       </div>
 
       {/* Controls */}
-      <div className={styles.reports__controls}>
-        <div className={styles.reports__filter}>
-          <FaFilter className={styles.reports__filterIcon} />
+      <div className="reports__controls">
+        <div className="reports__filter">
+          <FaFilter className="reports__filterIcon" />
           <select
-            className={styles.reports__select}
+            className="reports__select"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
           >
@@ -196,16 +196,14 @@ export default function CafeReports() {
           </select>
         </div>
 
-        <div className={styles.reports__series}>
-          <label className={styles.reports__check}>
+        <div className="reports__series">
+          <label className="reports__check">
             <input type="checkbox" checked readOnly />
-            <span
-              className={`${styles.reports__dot} ${styles["reports__dot--revenue"]}`}
-            ></span>
+            <span className="reports__dot reports__dot--revenue"></span>
             Выручка
           </label>
           <input
-            className={styles.reports__select}
+            className="reports__select"
             placeholder="Фильтр месяца (напр. Июл)"
             value={queryMonth}
             onChange={(e) => setQueryMonth(e.target.value)}
@@ -215,41 +213,35 @@ export default function CafeReports() {
       </div>
 
       {/* KPIs */}
-      <div className={styles.reports__kpis}>
-        <div className={styles.reports__kpi}>
-          <div className={styles.reports__kpiLabel}>Выручка</div>
-          <div className={styles.reports__kpiValue}>
-            {fmtMoney(summary.revenue)}
-          </div>
+      <div className="reports__kpis">
+        <div className="reports__kpi">
+          <div className="reports__kpiLabel">Выручка</div>
+          <div className="reports__kpiValue">{fmtMoney(summary.revenue)}</div>
         </div>
-        <div className={styles.reports__kpi}>
-          <div className={styles.reports__kpiLabel}>Средний чек</div>
-          <div className={styles.reports__kpiValue}>
-            {fmtMoney(summary.avgCheck)}
-          </div>
+        <div className="reports__kpi">
+          <div className="reports__kpiLabel">Средний чек</div>
+          <div className="reports__kpiValue">{fmtMoney(summary.avgCheck)}</div>
         </div>
-        <div className={styles.reports__kpi}>
-          <div className={styles.reports__kpiLabel}>Заказы</div>
-          <div className={styles.reports__kpiValue}>{fmt(summary.orders)}</div>
+        <div className="reports__kpi">
+          <div className="reports__kpiLabel">Заказы</div>
+          <div className="reports__kpiValue">{fmt(summary.orders)}</div>
         </div>
       </div>
 
       {/* Chart */}
-      <div className={styles.reports__chartCard}>
-        <div className={styles.reports__chartHead}>
-          Динамика выручки по месяцам
-        </div>
-        <div className={styles.reports__chart}>
-          <div className={styles.reports__chartLabels}>
+      <div className="reports__chartCard">
+        <div className="reports__chartHead">Динамика выручки по месяцам</div>
+        <div className="reports__chart">
+          <div className="reports__chartLabels">
             {series.map((s) => (
-              <span key={s.label} className={styles.reports__chartLabel}>
+              <span key={s.label} className="reports__chartLabel">
                 {s.label}
               </span>
             ))}
           </div>
 
           <svg
-            className={styles.reports__svg}
+            className="reports__svg"
             viewBox="0 0 640 220"
             preserveAspectRatio="none"
             aria-hidden
@@ -261,7 +253,7 @@ export default function CafeReports() {
                 x2="616"
                 y1={24 + (220 - 48) * g}
                 y2={24 + (220 - 48) * g}
-                className={styles.reports__grid}
+                className="reports__grid"
               />
             ))}
             {(() => {
@@ -269,7 +261,7 @@ export default function CafeReports() {
               return (
                 <>
                   <polyline
-                    className={`${styles.reports__poly} ${styles["reports__poly--revenue"]}`}
+                    className="reports__poly reports__poly--revenue"
                     points={poly.points}
                   />
                   {series.map((s, i) => {
@@ -280,7 +272,7 @@ export default function CafeReports() {
                         cx={p[0]}
                         cy={p[1]}
                         r="3"
-                        className={`${styles.reports__dotPoint} ${styles["reports__dotPoint--revenue"]}`}
+                        className="reports__dotPoint reports__dotPoint--revenue"
                       />
                     );
                   })}
@@ -290,19 +282,17 @@ export default function CafeReports() {
           </svg>
         </div>
 
-        <div className={styles.reports__legend}>
+        <div className="reports__legend">
           <span>
-            <i
-              className={`${styles.reports__legendDot} ${styles["reports__legendDot--revenue"]}`}
-            />
+            <i className="reports__legendDot reports__legendDot--revenue" />
             Выручка
           </span>
         </div>
       </div>
 
       {/* Table */}
-      <div className={styles.reports__tableWrap}>
-        <table className={styles.reports__table}>
+      <div className="reports__tableWrap">
+        <table className="reports__table">
           <thead>
             <tr>
               <th>Месяц</th>
@@ -335,11 +325,9 @@ export default function CafeReports() {
         </table>
       </div>
 
-      {loading && (
-        <div className={styles.reports__alert}>Загрузка данных кассы…</div>
-      )}
+      {loading && <div className="reports__alert">Загрузка данных кассы…</div>}
       {!loading && !data.length && (
-        <div className={styles.reports__alert}>
+        <div className="reports__alert">
           Нет данных кассы для выбранного периода.
         </div>
       )}

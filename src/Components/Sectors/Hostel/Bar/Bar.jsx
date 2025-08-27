@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useOutletContext } from "react-router-dom";
 import api from "../../../../api";
-import s from "./Bar.module.scss";
+import "./Bar.scss";
 
 /* =========================
  * helpers
@@ -286,22 +286,22 @@ function HostelBar() {
   const total = Number(sale.total) || computedTotal;
 
   return (
-    <section className={s.bar}>
+    <section className="bar">
       {/* ===== Заголовок (без описания) ===== */}
-      <header className={s["bar__header"]}>
+      <header className="bar__header">
         <div>
-          <h2 className={s["bar__title"]}>Бар</h2>
+          <h2 className="bar__title">Бар</h2>
         </div>
-        <div className={s["bar__actions"]}>
+        <div className="bar__actions">
           <button
-            className={`${s["bar__btn"]} ${s["bar__btn--secondary"]}`}
+            className="bar__btn bar__btn--secondary"
             onClick={startSale}
             disabled={loadingSale || scanBusy || checkoutBusy}
           >
             Создать/обновить корзину
           </button>
           <button
-            className={`${s["bar__btn"]} ${s["bar__btn--primary"]}`}
+            className="bar__btn bar__btn--primary"
             onClick={() => setIsSellOpen(true)}
           >
             Открыть продажу
@@ -310,21 +310,20 @@ function HostelBar() {
       </header>
 
       {(saleErr || productsErr) && (
-        <div className={s["bar__error"]}>{saleErr || productsErr}</div>
+        <div className="bar__error">{saleErr || productsErr}</div>
       )}
 
       {/* ===== Текущая корзина ===== */}
-      <section className={s["bar__panel"]}>
-        <div className={s["bar__panelHead"]}>
-          <div className={s["bar__panelTitle"]}>Текущая корзина</div>
-          {/* строка с ID/«• Позиции: 0» удалена */}
+      <section className="bar__panel">
+        <div className="bar__panelHead">
+          <div className="bar__panelTitle">Текущая корзина</div>
         </div>
 
         {loadingSale ? (
-          <div className={s["bar__skeletonRow"]}>
-            <div className={s["bar__skeleton"]} />
-            <div className={s["bar__skeleton"]} />
-            <div className={s["bar__skeleton"]} />
+          <div className="bar__skeletonRow">
+            <div className="bar__skeleton" />
+            <div className="bar__skeleton" />
+            <div className="bar__skeleton" />
           </div>
         ) : (
           <>
@@ -334,8 +333,8 @@ function HostelBar() {
               busy={scanBusy}
             />
 
-            <div className={s["bar__tableWrap"]}>
-              <table className={s["bar__table"]}>
+            <div className="bar__tableWrap">
+              <table className="bar__table">
                 <thead>
                   <tr>
                     <th>Товар</th>
@@ -350,16 +349,16 @@ function HostelBar() {
                   {sale.items.length ? (
                     sale.items.map((it) => (
                       <tr key={it.productId}>
-                        <td className={s.ellipsis} title={it.name}>
+                        <td className="ellipsis" title={it.name}>
                           {it.name}
                         </td>
-                        <td className={s.ellipsis} title={it.barcode || "—"}>
+                        <td className="ellipsis" title={it.barcode || "—"}>
                           {it.barcode || "—"}
                         </td>
                         <td style={{ textAlign: "center" }}>
-                          <div className={s["bar__qtyCtrls"]}>
+                          <div className="bar__qtyCtrls">
                             <button
-                              className={s["bar__qtyBtn"]}
+                              className="bar__qtyBtn"
                               disabled={scanBusy || checkoutBusy}
                               onClick={() =>
                                 changeQty(
@@ -371,11 +370,11 @@ function HostelBar() {
                             >
                               −
                             </button>
-                            <span className={s["bar__qty"]}>
+                            <span className="bar__qty">
                               {Number(it.qty) || 0}
                             </span>
                             <button
-                              className={s["bar__qtyBtn"]}
+                              className="bar__qtyBtn"
                               disabled={scanBusy || checkoutBusy}
                               onClick={() =>
                                 changeQty(
@@ -398,7 +397,7 @@ function HostelBar() {
                         </td>
                         <td>
                           <button
-                            className={`${s["bar__btn"]} ${s["bar__btn--secondary"]}`}
+                            className="bar__btn bar__btn--secondary"
                             onClick={() => removeItem(it.productId)}
                             disabled={scanBusy || checkoutBusy}
                           >
@@ -409,7 +408,7 @@ function HostelBar() {
                     ))
                   ) : (
                     <tr>
-                      <td className={s["bar__empty"]} colSpan={6}>
+                      <td className="bar__empty" colSpan={6}>
                         Корзина пуста
                       </td>
                     </tr>
@@ -417,19 +416,19 @@ function HostelBar() {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td className={s["bar__tfootLabel"]} colSpan={4}>
+                    <td className="bar__tfootLabel" colSpan={4}>
                       Итого
                     </td>
-                    <td className={s["bar__tfootValue"]}>{fmtMoney(total)}</td>
+                    <td className="bar__tfootValue">{fmtMoney(total)}</td>
                     <td></td>
                   </tr>
                 </tfoot>
               </table>
             </div>
 
-            <div className={s["bar__footer"]}>
+            <div className="bar__footer">
               <button
-                className={`${s["bar__btn"]} ${s["bar__btn--primary"]}`}
+                className="bar__btn bar__btn--primary"
                 onClick={checkout}
                 disabled={!sale.items.length || checkoutBusy || scanBusy}
                 title={
@@ -460,9 +459,7 @@ function HostelBar() {
         />
       )}
 
-      {productsLoading && (
-        <div className={s["bar__muted"]}>Загрузка склада…</div>
-      )}
+      {productsLoading && <div className="bar__muted">Загрузка склада…</div>}
     </section>
   );
 }
@@ -484,23 +481,19 @@ function ScanForm({ disabled, onScan, busy }) {
   }
 
   return (
-    <form className={s["bar__scan"]} onSubmit={submit}>
-      <div className={s["bar__search"]}>
-        <span className={s["bar__searchIcon"]}>#</span>
+    <form className="bar__scan" onSubmit={submit}>
+      <div className="bar__search">
+        <span className="bar__searchIcon">#</span>
         <input
           ref={ref}
-          className={s["bar__searchInput"]}
+          className="bar__searchInput"
           placeholder="Сканируйте или введите штрих-код…"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           disabled={disabled}
         />
       </div>
-      <button
-        type="submit"
-        className={s["bar__btn"]}
-        disabled={disabled || busy}
-      >
+      <button type="submit" className="bar__btn" disabled={disabled || busy}>
         {busy ? "Добавление…" : "Добавить"}
       </button>
     </form>
@@ -576,17 +569,24 @@ function SellModal({
     setCode("");
   }
 
+  const lan = localStorage.getItem("i18nextLng") || "ru";
+  const languageFunc = () => {
+    if (lan === "ru") return "app-ru";
+    if (lan === "ky") return "app-ky";
+    if (lan === "en") return "app-en";
+  };
+
   return createPortal(
-    <div className={s["bar__modalOverlay"]} onClick={onClose}>
+    <div className={`bar__modalOverlay ${languageFunc()}`} onClick={onClose}>
       <div
-        className={s["bar__modal"]}
+        className="bar__modal"
         onClick={(e) => e.stopPropagation()}
         ref={modalRef}
       >
-        <div className={s["bar__modalHeader"]}>
-          <div className={s["bar__modalTitle"]}>Продажа</div>
+        <div className="bar__modalHeader">
+          <div className="bar__modalTitle">Продажа</div>
           <button
-            className={s["bar__iconBtn"]}
+            className="bar__iconBtn"
             onClick={onClose}
             aria-label="Закрыть"
           >
@@ -595,19 +595,16 @@ function SellModal({
         </div>
 
         {/* панель действий */}
-        <div className={s["bar__modalTopRow"]}>
-          <button
-            className={`${s["bar__btn"]} ${s["bar__btn--secondary"]}`}
-            onClick={startSale}
-          >
+        <div className="bar__modalTopRow">
+          <button className="bar__btn bar__btn--secondary" onClick={startSale}>
             {sale.id ? "Обновить корзину" : "Создать корзину"}
           </button>
 
-          <form className={s["bar__scan"]} onSubmit={onScanSubmit}>
-            <div className={s["bar__search"]}>
-              <span className={s["bar__searchIcon"]}>#</span>
+          <form className="bar__scan" onSubmit={onScanSubmit}>
+            <div className="bar__search">
+              <span className="bar__searchIcon">#</span>
               <input
-                className={s["bar__searchInput"]}
+                className="bar__searchInput"
                 placeholder="Сканируйте или введите штрих-код…"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -616,7 +613,7 @@ function SellModal({
             </div>
             <button
               type="submit"
-              className={s["bar__btn"]}
+              className="bar__btn"
               disabled={!sale.id || scanBusy || checkoutBusy}
             >
               {scanBusy ? "Добавление…" : "Добавить"}
@@ -625,13 +622,13 @@ function SellModal({
         </div>
 
         {/* выбор из склада */}
-        <div className={s["bar__picker"]}>
-          <div className={s["bar__pickerHead"]}>
-            <div className={s["bar__pickerTitle"]}>Склад</div>
-            <div className={s["bar__search"]}>
-              <span className={s["bar__searchIcon"]}>🔎</span>
+        <div className="bar__picker">
+          <div className="bar__pickerHead">
+            <div className="bar__pickerTitle">Склад</div>
+            <div className="bar__search">
+              <span className="bar__searchIcon">🔎</span>
               <input
-                className={s["bar__searchInput"]}
+                className="bar__searchInput"
                 placeholder="Поиск по названию…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -639,45 +636,41 @@ function SellModal({
             </div>
           </div>
 
-          <div className={s["bar__list"]}>
+          <div className="bar__list">
             {filtered.length ? (
               filtered.map((p) => (
                 <button
                   key={p.id}
-                  className={s["bar__item"]}
+                  className="bar__item"
                   title={`Остаток: ${p.quantity || 0}`}
                   onClick={() => addByPick(p)}
                   disabled={!sale.id || scanBusy || checkoutBusy}
                 >
-                  <div className={s["bar__itemName"]} title={p.name}>
+                  <div className="bar__itemName" title={p.name}>
                     {p.name}
                   </div>
-                  <div className={s["bar__itemMeta"]}>
-                    <span className={s["bar__badge"]}>
-                      Категория: {catName(p)}
-                    </span>
-                    <span className={s["bar__badge"]}>Бренд: {brName(p)}</span>
-                    <span className={s["bar__badge"]}>
+                  <div className="bar__itemMeta">
+                    <span className="bar__badge">Категория: {catName(p)}</span>
+                    <span className="bar__badge">Бренд: {brName(p)}</span>
+                    <span className="bar__badge">
                       Цена: {fmtMoney(p.price)}
                     </span>
-                    <span className={s["bar__badge"]}>
+                    <span className="bar__badge">
                       Остаток: {Number(p.quantity) || 0}
                     </span>
-                    <span className={s["bar__badge"]}>
-                      ШК: {p.barcode || "—"}
-                    </span>
+                    <span className="bar__badge">ШК: {p.barcode || "—"}</span>
                   </div>
                 </button>
               ))
             ) : (
-              <div className={s["bar__hint"]}>Нет подходящих товаров</div>
+              <div className="bar__hint">Нет подходящих товаров</div>
             )}
           </div>
         </div>
 
         {/* текущая корзина внутри модалки */}
-        <div className={s["bar__tableWrap"]}>
-          <table className={s["bar__table"]}>
+        <div className="bar__tableWrap">
+          <table className="bar__table">
             <thead>
               <tr>
                 <th>Товар</th>
@@ -691,17 +684,15 @@ function SellModal({
               {sale.items.length ? (
                 sale.items.map((it) => (
                   <tr key={it.productId}>
-                    <td className={s.ellipsis} title={it.name}>
+                    <td className="ellipsis" title={it.name}>
                       {it.name}
                     </td>
-                    <td className={s.ellipsis} title={it.barcode || "—"}>
+                    <td className="ellipsis" title={it.barcode || "—"}>
                       {it.barcode || "—"}
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      <div className={s["bar__qtyCtrls"]}>
-                        <span className={s["bar__qty"]}>
-                          {Number(it.qty) || 0}
-                        </span>
+                      <div className="bar__qtyCtrls">
+                        <span className="bar__qty">{Number(it.qty) || 0}</span>
                       </div>
                     </td>
                     <td>{fmtMoney(it.price)}</td>
@@ -715,7 +706,7 @@ function SellModal({
                 ))
               ) : (
                 <tr>
-                  <td className={s["bar__empty"]} colSpan={5}>
+                  <td className="bar__empty" colSpan={5}>
                     Корзина пуста
                   </td>
                 </tr>
@@ -723,10 +714,10 @@ function SellModal({
             </tbody>
             <tfoot>
               <tr>
-                <td className={s["bar__tfootLabel"]} colSpan={4}>
+                <td className="bar__tfootLabel" colSpan={4}>
                   Итого
                 </td>
-                <td className={s["bar__tfootValue"]}>
+                <td className="bar__tfootValue">
                   {fmtMoney(
                     Number(sale.total) ||
                       sale.items.reduce(
@@ -743,18 +734,15 @@ function SellModal({
           </table>
         </div>
 
-        <div className={s["bar__modalFooter"]}>
+        <div className="bar__modalFooter">
           <button
-            className={`${s["bar__btn"]} ${s["bar__btn--primary"]}`}
+            className="bar__btn bar__btn--primary"
             onClick={checkout}
             disabled={!sale.items.length || checkoutBusy || scanBusy}
           >
             {checkoutBusy ? "Оформление…" : "Оформить продажу"}
           </button>
-          <button
-            className={`${s["bar__btn"]} ${s["bar__btn--secondary"]}`}
-            onClick={onClose}
-          >
+          <button className="bar__btn bar__btn--secondary" onClick={onClose}>
             Закрыть
           </button>
         </div>

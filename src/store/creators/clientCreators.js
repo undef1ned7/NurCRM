@@ -2,9 +2,11 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/";
 export const fetchClientsAsync = createAsyncThunk(
   "client/fetchAll",
-  async (params = {}, { rejectWithValue }) => {
+  async (clientParams, { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/main/clients/", { params });
+      const { data } = await api.get("/main/clients/", {
+        params: clientParams,
+      });
       return data; // { count, next, previous, results }
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);

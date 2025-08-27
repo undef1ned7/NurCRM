@@ -2,6 +2,7 @@ import React from "react";
 import styles from "./Landing.module.scss";
 import logo from "../../Photo/Logo.png"; // Убедитесь, что путь к логотипу корректен
 import { Link } from "react-router-dom"; // Импортируем Link для навигации
+import Lang from "../../Lang/Lang";
 
 const Landing = () => {
   return (
@@ -20,6 +21,7 @@ const Landing = () => {
               Оставить заявку
             </Link>
           </div>
+          <Lang />
         </div>
         <p className={styles.slogan}>Сила управления в ваших руках</p>
       </header>

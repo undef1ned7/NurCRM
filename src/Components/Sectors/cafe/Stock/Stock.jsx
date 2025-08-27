@@ -2,7 +2,6 @@
 // import styles from "./Stock.module.scss";
 // import { FaSearch, FaPlus, FaTimes, FaBoxes, FaEdit, FaTrash } from "react-icons/fa";
 
-
 // // Безопасно достаём список из {results} или напрямую из data
 // const listFrom = (res) => res?.data?.results || res?.data || [];
 
@@ -413,11 +412,16 @@
 //   );
 // }
 
-
-
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "./Stock.module.scss";
-import { FaSearch, FaPlus, FaTimes, FaBoxes, FaEdit, FaTrash } from "react-icons/fa";
+import "./Stock.scss";
+import {
+  FaSearch,
+  FaPlus,
+  FaTimes,
+  FaBoxes,
+  FaEdit,
+  FaTrash,
+} from "react-icons/fa";
 import api from "../../../../api";
 
 const listFrom = (res) => res?.data?.results || res?.data || [];
@@ -436,7 +440,12 @@ export default function CafeStock() {
   // модалка товара
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ title: "", unit: "", remainder: 0, minimum: 0 });
+  const [form, setForm] = useState({
+    title: "",
+    unit: "",
+    remainder: 0,
+    minimum: 0,
+  });
 
   // модалка движения
   const [moveOpen, setMoveOpen] = useState(false);
@@ -464,7 +473,9 @@ export default function CafeStock() {
     const q = query.trim().toLowerCase();
     if (!q) return items;
     return items.filter(
-      (s) => (s.title || "").toLowerCase().includes(q) || (s.unit || "").toLowerCase().includes(q)
+      (s) =>
+        (s.title || "").toLowerCase().includes(q) ||
+        (s.unit || "").toLowerCase().includes(q)
     );
   }, [items, query]);
 
@@ -504,7 +515,9 @@ export default function CafeStock() {
         setItems((prev) => [...prev, res.data]);
       } else {
         const res = await api.put(`/cafe/warehouse/${editingId}/`, payload);
-        setItems((prev) => prev.map((s) => (s.id === editingId ? res.data : s)));
+        setItems((prev) =>
+          prev.map((s) => (s.id === editingId ? res.data : s))
+        );
       }
       setModalOpen(false);
     } catch (err) {
@@ -535,7 +548,8 @@ export default function CafeStock() {
     if (!moveItem || moveQty <= 0) return;
 
     const current = toNum(moveItem.remainder);
-    const nextQty = moveType === "in" ? current + moveQty : Math.max(0, current - moveQty);
+    const nextQty =
+      moveType === "in" ? current + moveQty : Math.max(0, current - moveQty);
 
     const payload = {
       title: moveItem.title,
@@ -546,7 +560,9 @@ export default function CafeStock() {
 
     try {
       const res = await api.put(`/cafe/warehouse/${moveItem.id}/`, payload);
-      setItems((prev) => prev.map((s) => (s.id === moveItem.id ? res.data : s)));
+      setItems((prev) =>
+        prev.map((s) => (s.id === moveItem.id ? res.data : s))
+      );
       setMoveOpen(false);
     } catch (err) {
       console.error("Ошибка применения движения:", err);
@@ -554,54 +570,55 @@ export default function CafeStock() {
   };
 
   return (
-    <section className={styles.stock}>
-      <div className={styles.stock__header}>
+    <section className="stock">
+      <div className="stock__header">
         <div>
-          <h2 className={styles.stock__title}>Склад</h2>
-          <div className={styles.stock__subtitle}>Остатки и движение.</div>
+          <h2 className="stock__title">Склад</h2>
+          <div className="stock__subtitle">Остатки и движение.</div>
         </div>
 
-        <div className={styles.stock__actions}>
-          <div className={styles.stock__search}>
-            <FaSearch className={styles["stock__search-icon"]} />
+        <div className="stock__actions">
+          <div className="stock__search">
+            <FaSearch className="stock__search-icon" />
             <input
-              className={styles["stock__search-input"]}
+              className="stock__search-input"
               placeholder="Поиск ингредиента…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <button className={`${styles.stock__btn} ${styles["stock__btn--secondary"]}`}>
-            Экспорт
-          </button>
-          <button className={`${styles.stock__btn} ${styles["stock__btn--primary"]}`} onClick={openCreate}>
+          <button className="stock__btn stock__btn--secondary">Экспорт</button>
+          <button
+            className="stock__btn stock__btn--primary"
+            onClick={openCreate}
+          >
             <FaPlus /> Новый товар
           </button>
         </div>
       </div>
 
-      <div className={styles.stock__list}>
-        {loading && <div className={styles.stock__alert}>Загрузка…</div>}
+      <div className="stock__list">
+        {loading && <div className="stock__alert">Загрузка…</div>}
 
         {!loading &&
           filtered.map((s) => (
-            <article key={s.id} className={styles.stock__card}>
-              <div className={styles["stock__card-left"]}>
-                <div className={styles.stock__avatar}>
+            <article key={s.id} className="stock__card">
+              <div className="stock__card-left">
+                <div className="stock__avatar">
                   <FaBoxes />
                 </div>
                 <div>
-                  <h3 className={styles.stock__name}>{s.title}</h3>
-                  <div className={styles.stock__meta}>
-                    <span className={styles.stock__muted}>
+                  <h3 className="stock__name">{s.title}</h3>
+                  <div className="stock__meta">
+                    <span className="stock__muted">
                       Остаток: {toNum(s.remainder)} {s.unit}
                     </span>
-                    <span className={styles.stock__muted}>
+                    <span className="stock__muted">
                       Мин.: {toNum(s.minimum)} {s.unit}
                     </span>
                     <span
-                      className={`${styles.stock__status} ${
-                        isLow(s) ? styles["stock__status--low"] : styles["stock__status--ok"]
+                      className={`stock__status ${
+                        isLow(s) ? "stock__status--low" : "stock__status--ok"
                       }`}
                     >
                       {isLow(s) ? "Мало" : "Ок"}
@@ -610,27 +627,27 @@ export default function CafeStock() {
                 </div>
               </div>
 
-              <div className={styles.stock__rowActions}>
+              <div className="stock__rowActions">
                 <button
-                  className={`${styles.stock__btn} ${styles["stock__btn--success"]}`}
+                  className="stock__btn stock__btn--success"
                   onClick={() => openMove(s, "in")}
                 >
                   Приход
                 </button>
                 <button
-                  className={`${styles.stock__btn} ${styles["stock__btn--danger"]}`}
+                  className="stock__btn stock__btn--danger"
                   onClick={() => openMove(s, "out")}
                 >
                   Списание
                 </button>
                 <button
-                  className={`${styles.stock__btn} ${styles["stock__btn--secondary"]}`}
+                  className="stock__btn stock__btn--secondary"
                   onClick={() => openEdit(s)}
                 >
                   <FaEdit /> Изменить
                 </button>
                 <button
-                  className={`${styles.stock__btn} ${styles["stock__btn--danger"]}`}
+                  className="stock__btn stock__btn--danger"
                   onClick={() => handleDelete(s.id)}
                 >
                   <FaTrash /> Удалить
@@ -640,85 +657,104 @@ export default function CafeStock() {
           ))}
 
         {!loading && !filtered.length && (
-          <div className={styles.stock__alert}>Ничего не найдено по «{query}».</div>
+          <div className="stock__alert">Ничего не найдено по «{query}».</div>
         )}
       </div>
 
       {/* Модалка: товар */}
       {modalOpen && (
-        <div className={styles["stock__modal-overlay"]} onClick={() => setModalOpen(false)}>
-          <div className={styles.stock__modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles["stock__modal-header"]}>
-              <h3 className={styles["stock__modal-title"]}>
+        <div
+          className="stock__modal-overlay"
+          onClick={() => setModalOpen(false)}
+        >
+          <div className="stock__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="stock__modal-header">
+              <h3 className="stock__modal-title">
                 {editingId == null ? "Новый товар" : "Изменить товар"}
               </h3>
-              <button className={styles["stock__icon-btn"]} onClick={() => setModalOpen(false)}>
+              <button
+                className="stock__icon-btn"
+                onClick={() => setModalOpen(false)}
+              >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.stock__form} onSubmit={saveItem}>
-              <div className={styles["stock__form-grid"]}>
-                <div className={styles.stock__field}>
-                  <label className={styles.stock__label}>Название</label>
+            <form className="stock__form" onSubmit={saveItem}>
+              <div className="stock__form-grid">
+                <div className="stock__field">
+                  <label className="stock__label">Название</label>
                   <input
-                    className={styles.stock__input}
+                    className="stock__input"
                     value={form.title}
-                    onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, title: e.target.value }))
+                    }
                     required
                     maxLength={255}
                   />
                 </div>
 
-                <div className={styles.stock__field}>
-                  <label className={styles.stock__label}>Ед. изм.</label>
+                <div className="stock__field">
+                  <label className="stock__label">Ед. изм.</label>
                   <input
-                    className={styles.stock__input}
+                    className="stock__input"
                     value={form.unit}
-                    onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, unit: e.target.value }))
+                    }
                     required
                     maxLength={255}
                   />
                 </div>
 
-                <div className={styles.stock__field}>
-                  <label className={styles.stock__label}>Остаток</label>
+                <div className="stock__field">
+                  <label className="stock__label">Остаток</label>
                   <input
                     type="number"
                     min={0}
-                    className={styles.stock__input}
+                    className="stock__input"
                     value={form.remainder}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, remainder: Math.max(0, Number(e.target.value) || 0) }))
+                      setForm((f) => ({
+                        ...f,
+                        remainder: Math.max(0, Number(e.target.value) || 0),
+                      }))
                     }
                     required
                   />
                 </div>
 
-                <div className={styles.stock__field}>
-                  <label className={styles.stock__label}>Минимум</label>
+                <div className="stock__field">
+                  <label className="stock__label">Минимум</label>
                   <input
                     type="number"
                     min={0}
-                    className={styles.stock__input}
+                    className="stock__input"
                     value={form.minimum}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, minimum: Math.max(0, Number(e.target.value) || 0) }))
+                      setForm((f) => ({
+                        ...f,
+                        minimum: Math.max(0, Number(e.target.value) || 0),
+                      }))
                     }
                     required
                   />
                 </div>
               </div>
 
-              <div className={styles["stock__form-actions"]}>
+              <div className="stock__form-actions">
                 <button
                   type="button"
-                  className={`${styles.stock__btn} ${styles["stock__btn--secondary"]}`}
+                  className="stock__btn stock__btn--secondary"
                   onClick={() => setModalOpen(false)}
                 >
                   Отмена
                 </button>
-                <button type="submit" className={`${styles.stock__btn} ${styles["stock__btn--primary"]}`}>
+                <button
+                  type="submit"
+                  className="stock__btn stock__btn--primary"
+                >
                   Сохранить
                 </button>
               </div>
@@ -729,41 +765,54 @@ export default function CafeStock() {
 
       {/* Модалка: приход/списание */}
       {moveOpen && moveItem && (
-        <div className={styles["stock__modal-overlay"]} onClick={() => setMoveOpen(false)}>
-          <div className={styles.stock__modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles["stock__modal-header"]}>
-              <h3 className={styles["stock__modal-title"]}>
+        <div
+          className="stock__modal-overlay"
+          onClick={() => setMoveOpen(false)}
+        >
+          <div className="stock__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="stock__modal-header">
+              <h3 className="stock__modal-title">
                 {moveType === "in" ? "Приход" : "Списание"}: {moveItem.title}
               </h3>
-              <button className={styles["stock__icon-btn"]} onClick={() => setMoveOpen(false)}>
+              <button
+                className="stock__icon-btn"
+                onClick={() => setMoveOpen(false)}
+              >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.stock__form} onSubmit={applyMove}>
-              <div className={styles["stock__form-grid"]}>
-                <div className={styles.stock__field}>
-                  <label className={styles.stock__label}>Количество ({moveItem.unit})</label>
+            <form className="stock__form" onSubmit={applyMove}>
+              <div className="stock__form-grid">
+                <div className="stock__field">
+                  <label className="stock__label">
+                    Количество ({moveItem.unit})
+                  </label>
                   <input
                     type="number"
                     min={1}
-                    className={styles.stock__input}
+                    className="stock__input"
                     value={moveQty}
-                    onChange={(e) => setMoveQty(Math.max(1, Number(e.target.value) || 1))}
+                    onChange={(e) =>
+                      setMoveQty(Math.max(1, Number(e.target.value) || 1))
+                    }
                     required
                   />
                 </div>
               </div>
 
-              <div className={styles["stock__form-actions"]}>
+              <div className="stock__form-actions">
                 <button
                   type="button"
-                  className={`${styles.stock__btn} ${styles["stock__btn--secondary"]}`}
+                  className="stock__btn stock__btn--secondary"
                   onClick={() => setMoveOpen(false)}
                 >
                   Отмена
                 </button>
-                <button type="submit" className={`${styles.stock__btn} ${styles["stock__btn--primary"]}`}>
+                <button
+                  type="submit"
+                  className="stock__btn stock__btn--primary"
+                >
                   Применить
                 </button>
               </div>

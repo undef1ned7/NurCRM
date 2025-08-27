@@ -1,10 +1,10 @@
 // ВКЛАДКИ «Комнаты / Залы» на одной странице
 // GET/POST/PUT/DELETE /booking/hotels/… и /booking/rooms/…
 
-import React, { useEffect, useMemo, useState } from "react";
-import s from "./RoomsHalls.module.scss";
-import { FaSearch, FaPlus, FaTimes } from "react-icons/fa";
+import { useEffect, useMemo, useState } from "react";
+import { FaPlus, FaSearch, FaTimes } from "react-icons/fa";
 import api from "../../../../api";
+import "./RoomsHalls.scss";
 
 /* ===== нормализация ===== */
 const normalizeHotel = (h) => ({
@@ -52,7 +52,11 @@ export default function RoomsHalls() {
 
   const [hallModalOpen, setHallModalOpen] = useState(false);
   const [hallEditingId, setHallEditingId] = useState(null);
-  const [hallForm, setHallForm] = useState({ name: "", capacity: 1, location: "" });
+  const [hallForm, setHallForm] = useState({
+    name: "",
+    capacity: 1,
+    location: "",
+  });
 
   const [saving, setSaving] = useState(false);
 
@@ -63,7 +67,11 @@ export default function RoomsHalls() {
         setLoadingHotels(true);
         setErrorHotels("");
         const { data } = await api.get("/booking/hotels/");
-        const rows = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+        const rows = Array.isArray(data?.results)
+          ? data.results
+          : Array.isArray(data)
+          ? data
+          : [];
         setHotels(rows.map(normalizeHotel));
       } catch (e) {
         console.error(e);
@@ -78,7 +86,11 @@ export default function RoomsHalls() {
         setLoadingHalls(true);
         setErrorHalls("");
         const { data } = await api.get("/booking/rooms/");
-        const rows = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+        const rows = Array.isArray(data?.results)
+          ? data.results
+          : Array.isArray(data)
+          ? data
+          : [];
         setHalls(rows.map(normalizeHall));
       } catch (e) {
         console.error(e);
@@ -139,7 +151,9 @@ export default function RoomsHalls() {
     const t = q.trim().toLowerCase();
     if (!t) return halls;
     return halls.filter((h) =>
-      [h.name, h.location, h.capacity].some((v) => String(v).toLowerCase().includes(t))
+      [h.name, h.location, h.capacity].some((v) =>
+        String(v).toLowerCase().includes(t)
+      )
     );
   }, [q, halls]);
 
@@ -256,17 +270,17 @@ export default function RoomsHalls() {
   const isHotels = tab === TABS.HOTELS;
 
   return (
-    <section className={s.rh}>
+    <section className="rh">
       {/* Вкладки */}
-      <div className={s.rh__tabs}>
+      <div className="rh__tabs">
         <button
-          className={`${s.rh__tab} ${isHotels ? s["rh__tab--active"] : ""}`}
+          className={`rh__tab ${isHotels ? "rh__tab--active" : ""}`}
           onClick={() => setTab(TABS.HOTELS)}
         >
           Комнаты
         </button>
         <button
-          className={`${s.rh__tab} ${!isHotels ? s["rh__tab--active"] : ""}`}
+          className={`rh__tab ${!isHotels ? "rh__tab--active" : ""}`}
           onClick={() => setTab(TABS.HALLS)}
         >
           Залы
@@ -274,21 +288,21 @@ export default function RoomsHalls() {
       </div>
 
       {/* Хедер списка */}
-      <header className={s.rh__header}>
+      <header className="rh__header">
         <div>
-          <h2 className={s.rh__title}>{isHotels ? "Комнаты" : "Залы"}</h2>
-          <p className={s.rh__subtitle}>
+          <h2 className="rh__title">{isHotels ? "Комнаты" : "Залы"}</h2>
+          <p className="rh__subtitle">
             {isHotels
               ? "Создание, редактирование и список всех комнат"
               : "Создание, редактирование и список всех залов"}
           </p>
         </div>
 
-        <div className={s.rh__actions}>
-          <div className={s.rh__search}>
-            <FaSearch className={s.rh__searchIcon} />
+        <div className="rh__actions">
+          <div className="rh__search">
+            <FaSearch className="rh__searchIcon" />
             <input
-              className={s.rh__searchInput}
+              className="rh__searchInput"
               placeholder={
                 isHotels
                   ? "Поиск по названию, описанию, вместимости, цене"
@@ -300,11 +314,17 @@ export default function RoomsHalls() {
           </div>
 
           {isHotels ? (
-            <button className={`${s.rh__btn} ${s["rh__btn--primary"]}`} onClick={openHotelCreate}>
+            <button
+              className="rh__btn rh__btn--primary"
+              onClick={openHotelCreate}
+            >
               <FaPlus /> Добавить
             </button>
           ) : (
-            <button className={`${s.rh__btn} ${s["rh__btn--primary"]}`} onClick={openHallCreate}>
+            <button
+              className="rh__btn rh__btn--primary"
+              onClick={openHallCreate}
+            >
               <FaPlus /> Добавить
             </button>
           )}
@@ -314,134 +334,187 @@ export default function RoomsHalls() {
       {/* Списки */}
       {isHotels ? (
         loadingHotels ? (
-          <div className={s.rh__empty}>Загрузка…</div>
+          <div className="rh__empty">Загрузка…</div>
         ) : errorHotels ? (
-          <div className={s.rh__empty}>{errorHotels}</div>
+          <div className="rh__empty">{errorHotels}</div>
         ) : (
-          <div className={s.rh__list}>
+          <div className="rh__list">
             {filteredHotels.map((h) => (
-              <div key={h.id} className={s.rh__row}>
-                <div className={s.rh__rowLeft}>
-                  <div className={s.rh__name}>{h.name}</div>
-                  <div className={s.rh__meta}>
-                    <span className={s.rh__badge}>Вместимость: {h.capacity}</span>
-                    <span className={s.rh__price}>{prettyPrice(h.price)} сом</span>
+              <div key={h.id} className="rh__row">
+                <div className="rh__rowLeft">
+                  <div className="rh__name">{h.name}</div>
+                  <div className="rh__meta">
+                    <span className="rh__badge">Вместимость: {h.capacity}</span>
+                    <span className="rh__price">
+                      {prettyPrice(h.price)} сом
+                    </span>
                   </div>
                   {h.description && (
-                    <div className={s.rh__desc} title={h.description}>
-                      {h.description.length > 140 ? h.description.slice(0, 140) + "…" : h.description}
+                    <div className="rh__desc" title={h.description}>
+                      {h.description.length > 140
+                        ? h.description.slice(0, 140) + "…"
+                        : h.description}
                     </div>
                   )}
                 </div>
-                <div className={s.rh__rowRight}>
-                  <button className={`${s.rh__btn} ${s["rh__btn--secondary"]}`} onClick={() => openHotelEdit(h)}>
+                <div className="rh__rowRight">
+                  <button
+                    className="rh__btn rh__btn--secondary"
+                    onClick={() => openHotelEdit(h)}
+                  >
                     Изменить
                   </button>
-                  <button className={`${s.rh__btn} ${s["rh__btn--secondary"]}`} onClick={() => onDeleteHotel(h.id)}>
+                  <button
+                    className="rh__btn rh__btn--secondary"
+                    onClick={() => onDeleteHotel(h.id)}
+                  >
                     Удалить
                   </button>
                 </div>
               </div>
             ))}
-            {filteredHotels.length === 0 && <div className={s.rh__empty}>Ничего не найдено</div>}
+            {filteredHotels.length === 0 && (
+              <div className="rh__empty">Ничего не найдено</div>
+            )}
           </div>
         )
       ) : loadingHalls ? (
-        <div className={s.rh__empty}>Загрузка…</div>
+        <div className="rh__empty">Загрузка…</div>
       ) : errorHalls ? (
-        <div className={s.rh__empty}>{errorHalls}</div>
+        <div className="rh__empty">{errorHalls}</div>
       ) : (
-        <div className={s.rh__list}>
+        <div className="rh__list">
           {filteredHalls.map((h) => (
-            <div key={h.id} className={s.rh__row}>
-              <div className={s.rh__rowLeft}>
-                <div className={s.rh__name}>{h.name}</div>
-                <div className={s.rh__meta}>
-                  <span className={s.rh__badge}>Вместимость: {h.capacity}</span>
-                  <span className={s.rh__badge}>Локация: {h.location || "—"}</span>
+            <div key={h.id} className="rh__row">
+              <div className="rh__rowLeft">
+                <div className="rh__name">{h.name}</div>
+                <div className="rh__meta">
+                  <span className="rh__badge">Вместимость: {h.capacity}</span>
+                  <span className="rh__badge">
+                    Локация: {h.location || "—"}
+                  </span>
                 </div>
               </div>
-              <div className={s.rh__rowRight}>
-                <button className={`${s.rh__btn} ${s["rh__btn--secondary"]}`} onClick={() => openHallEdit(h)}>
+              <div className="rh__rowRight">
+                <button
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => openHallEdit(h)}
+                >
                   Изменить
                 </button>
-                <button className={`${s.rh__btn} ${s["rh__btn--secondary"]}`} onClick={() => onDeleteHall(h.id)}>
+                <button
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => onDeleteHall(h.id)}
+                >
                   Удалить
                 </button>
               </div>
             </div>
           ))}
-          {filteredHalls.length === 0 && <div className={s.rh__empty}>Ничего не найдено</div>}
+          {filteredHalls.length === 0 && (
+            <div className="rh__empty">Ничего не найдено</div>
+          )}
         </div>
       )}
 
       {/* Модал: Комнаты */}
       {hotelModalOpen && (
-        <div className={s.rh__modalOverlay} onClick={() => setHotelModalOpen(false)}>
-          <div className={s.rh__modal} onClick={(e) => e.stopPropagation()}>
-            <div className={s.rh__modalHeader}>
-              <div className={s.rh__modalTitle}>{hotelEditingId == null ? "Новая комната" : "Изменить комнату"}</div>
-              <button className={s.rh__iconBtn} onClick={() => setHotelModalOpen(false)}>
+        <div
+          className="rh__modalOverlay"
+          onClick={() => setHotelModalOpen(false)}
+        >
+          <div className="rh__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="rh__modalHeader">
+              <div className="rh__modalTitle">
+                {hotelEditingId == null ? "Новая комната" : "Изменить комнату"}
+              </div>
+              <button
+                className="rh__iconBtn"
+                onClick={() => setHotelModalOpen(false)}
+              >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={s.rh__form} onSubmit={submitHotel}>
-              <div className={s.rh__formGrid}>
-                <div className={s.rh__field}>
-                  <label className={s.rh__label}>
-                    Название <span className={s.rh__req}>*</span>
+            <form className="rh__form" onSubmit={submitHotel}>
+              <div className="rh__formGrid">
+                <div className="rh__field">
+                  <label className="rh__label">
+                    Название <span className="rh__req">*</span>
                   </label>
                   <input
-                    className={s.rh__input}
+                    className="rh__input"
                     maxLength={200}
                     value={hotelForm.name}
-                    onChange={(e) => setHotelForm({ ...hotelForm, name: e.target.value })}
+                    onChange={(e) =>
+                      setHotelForm({ ...hotelForm, name: e.target.value })
+                    }
                     required
                   />
                 </div>
 
-                <div className={s.rh__field}>
-                  <label className={s.rh__label}>Вместимость</label>
+                <div className="rh__field">
+                  <label className="rh__label">Вместимость</label>
                   <input
                     type="number"
                     min={0}
-                    className={s.rh__input}
+                    className="rh__input"
                     value={hotelForm.capacity}
-                    onChange={(e) => setHotelForm({ ...hotelForm, capacity: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setHotelForm({
+                        ...hotelForm,
+                        capacity: Number(e.target.value),
+                      })
+                    }
                   />
                 </div>
 
-                <div className={s.rh__field}>
-                  <label className={s.rh__label}>
-                    Цена (сом) <span className={s.rh__req}>*</span>
+                <div className="rh__field">
+                  <label className="rh__label">
+                    Цена (сом) <span className="rh__req">*</span>
                   </label>
                   <input
                     inputMode="decimal"
-                    className={s.rh__input}
+                    className="rh__input"
                     placeholder="Напр., 3500.00"
                     value={hotelForm.price}
-                    onChange={(e) => setHotelForm({ ...hotelForm, price: e.target.value })}
+                    onChange={(e) =>
+                      setHotelForm({ ...hotelForm, price: e.target.value })
+                    }
                     required
                   />
                 </div>
 
-                <div className={s.rh__field}>
-                  <label className={s.rh__label}>Описание</label>
+                <div className="rh__field">
+                  <label className="rh__label">Описание</label>
                   <textarea
                     rows={3}
-                    className={s.rh__input}
+                    className="rh__input"
                     value={hotelForm.description}
-                    onChange={(e) => setHotelForm({ ...hotelForm, description: e.target.value })}
+                    onChange={(e) =>
+                      setHotelForm({
+                        ...hotelForm,
+                        description: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
 
-              <div className={s.rh__formActions}>
-                <button type="button" className={`${s.rh__btn} ${s["rh__btn--secondary"]}`} onClick={() => setHotelModalOpen(false)} disabled={saving}>
+              <div className="rh__formActions">
+                <button
+                  type="button"
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => setHotelModalOpen(false)}
+                  disabled={saving}
+                >
                   Отмена
                 </button>
-                <button type="submit" className={`${s.rh__btn} ${s["rh__btn--primary"]}`} disabled={saving}>
+                <button
+                  type="submit"
+                  className="rh__btn rh__btn--primary"
+                  disabled={saving}
+                >
                   {saving ? "Сохранение…" : "Сохранить"}
                 </button>
               </div>
@@ -452,60 +525,86 @@ export default function RoomsHalls() {
 
       {/* Модал: Залы */}
       {hallModalOpen && (
-        <div className={s.rh__modalOverlay} onClick={() => setHallModalOpen(false)}>
-          <div className={s.rh__modal} onClick={(e) => e.stopPropagation()}>
-            <div className={s.rh__modalHeader}>
-              <div className={s.rh__modalTitle}>{hallEditingId == null ? "Новый зал" : "Изменить зал"}</div>
-              <button className={s.rh__iconBtn} onClick={() => setHallModalOpen(false)}>
+        <div
+          className="rh__modalOverlay"
+          onClick={() => setHallModalOpen(false)}
+        >
+          <div className="rh__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="rh__modalHeader">
+              <div className="rh__modalTitle">
+                {hallEditingId == null ? "Новый зал" : "Изменить зал"}
+              </div>
+              <button
+                className="rh__iconBtn"
+                onClick={() => setHallModalOpen(false)}
+              >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={s.rh__form} onSubmit={submitHall}>
-              <div className={s.rh__formGrid}>
-                <div className={s.rh__field}>
-                  <label className={s.rh__label}>
-                    Название зала <span className={s.rh__req}>*</span>
+            <form className="rh__form" onSubmit={submitHall}>
+              <div className="rh__formGrid">
+                <div className="rh__field">
+                  <label className="rh__label">
+                    Название зала <span className="rh__req">*</span>
                   </label>
                   <input
-                    className={s.rh__input}
+                    className="rh__input"
                     maxLength={100}
                     value={hallForm.name}
-                    onChange={(e) => setHallForm({ ...hallForm, name: e.target.value })}
+                    onChange={(e) =>
+                      setHallForm({ ...hallForm, name: e.target.value })
+                    }
                     required
                   />
                 </div>
 
-                <div className={s.rh__field}>
-                  <label className={s.rh__label}>Вместимость</label>
+                <div className="rh__field">
+                  <label className="rh__label">Вместимость</label>
                   <input
                     type="number"
                     min={0}
-                    className={s.rh__input}
+                    className="rh__input"
                     value={hallForm.capacity}
-                    onChange={(e) => setHallForm({ ...hallForm, capacity: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setHallForm({
+                        ...hallForm,
+                        capacity: Number(e.target.value),
+                      })
+                    }
                   />
                 </div>
 
-                <div className={s.rh__field}>
-                  <label className={s.rh__label}>
-                    Локация <span className={s.rh__req}>*</span>
+                <div className="rh__field">
+                  <label className="rh__label">
+                    Локация <span className="rh__req">*</span>
                   </label>
                   <input
-                    className={s.rh__input}
+                    className="rh__input"
                     maxLength={255}
                     value={hallForm.location}
-                    onChange={(e) => setHallForm({ ...hallForm, location: e.target.value })}
+                    onChange={(e) =>
+                      setHallForm({ ...hallForm, location: e.target.value })
+                    }
                     required
                   />
                 </div>
               </div>
 
-              <div className={s.rh__formActions}>
-                <button type="button" className={`${s.rh__btn} ${s["rh__btn--secondary"]}`} onClick={() => setHallModalOpen(false)} disabled={saving}>
+              <div className="rh__formActions">
+                <button
+                  type="button"
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => setHallModalOpen(false)}
+                  disabled={saving}
+                >
                   Отмена
                 </button>
-                <button type="submit" className={`${s.rh__btn} ${s["rh__btn--primary"]}`} disabled={saving}>
+                <button
+                  type="submit"
+                  className="rh__btn rh__btn--primary"
+                  disabled={saving}
+                >
                   {saving ? "Сохранение…" : "Сохранить"}
                 </button>
               </div>

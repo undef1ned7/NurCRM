@@ -2,7 +2,7 @@
 // ВНИМАНИЕ: проверь путь импорта api!
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FaPlus, FaSearch, FaTimes, FaEdit, FaTrash } from "react-icons/fa";
-import s from "./CoursesGroups.module.scss";
+import "./CoursesGroups.scss";
 import api from "../../../../api";
 
 const COURSES_EP = "/education/courses/";
@@ -247,21 +247,21 @@ function SchoolCoursesGroups() {
   };
 
   return (
-    <div className={s.cg}>
+    <div className="cg">
       {/* Header */}
-      <div className={s.cg__header}>
+      <div className="cg__header">
         <div>
-          <h2 className={s.cg__title}>Курсы и группы</h2>
-          <p className={s.cg__subtitle}>
+          <h2 className="cg__title">Курсы и группы</h2>
+          <p className="cg__subtitle">
             Список курсов → группы, с количеством студентов.
           </p>
         </div>
 
-        <div className={s.cg__toolbar}>
-          <div className={s.cg__search}>
-            <FaSearch className={s["cg__search-icon"]} aria-hidden />
+        <div className="cg__toolbar">
+          <div className="cg__search">
+            <FaSearch className="cg__search-icon" aria-hidden />
             <input
-              className={s["cg__search-input"]}
+              className="cg__search-input"
               placeholder="Поиск по курсам…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -269,15 +269,15 @@ function SchoolCoursesGroups() {
             />
           </div>
 
-          <div className={s.cg__toolbarActions}>
+          <div className="cg__toolbarActions">
             <button
-              className={`${s.cg__btn} ${s["cg__btn--secondary"]}`}
+              className="cg__btn cg__btn--secondary"
               onClick={openCreateGroup}
             >
               <FaPlus /> Группа
             </button>
             <button
-              className={`${s.cg__btn} ${s["cg__btn--primary"]}`}
+              className="cg__btn cg__btn--primary"
               onClick={openCreateCourse}
             >
               <FaPlus /> Курс
@@ -287,26 +287,26 @@ function SchoolCoursesGroups() {
       </div>
 
       {/* States */}
-      {loading && <div className={s.cg__alert}>Загрузка…</div>}
-      {!!error && <div className={s.cg__alert}>{error}</div>}
+      {loading && <div className="cg__alert">Загрузка…</div>}
+      {!!error && <div className="cg__alert">{error}</div>}
 
       {/* Content */}
       {!loading && (
-        <div className={s.cg__columns}>
-          <div className={s.cg__left}>
-            <ul className={s.cg__courseList}>
+        <div className="cg__columns">
+          <div className="cg__left">
+            <ul className="cg__courseList">
               {filteredCourses.map((c) => (
-                <li key={c.id} className={s.cg__courseItem}>
-                  <div className={s.cg__courseHead}>
-                    <div className={s.cg__courseName}>{c.name}</div>
-                    <div className={s.cg__courseRight}>
-                      <div className={s.cg__coursePrice}>
+                <li key={c.id} className="cg__courseItem">
+                  <div className="cg__courseHead">
+                    <div className="cg__courseName">{c.name}</div>
+                    <div className="cg__courseRight">
+                      <div className="cg__coursePrice">
                         {Number(c.price || 0).toLocaleString("ru-RU")} сом/мес
                       </div>
-                      <div className={s.cg__miniActions}>
+                      <div className="cg__miniActions">
                         <button
                           type="button"
-                          className={`${s.cg__btn} ${s["cg__btn--secondary"]}`}
+                          className="cg__btn cg__btn--secondary"
                           onClick={() => openEditCourse(c)}
                           title="Изменить курс"
                         >
@@ -314,7 +314,7 @@ function SchoolCoursesGroups() {
                         </button>
                         <button
                           type="button"
-                          className={`${s.cg__btn} ${s["cg__btn--secondary"]}`}
+                          className="cg__btn cg__btn--secondary"
                           onClick={() => deleteCourse(c.id)}
                           title="Удалить курс"
                         >
@@ -324,18 +324,18 @@ function SchoolCoursesGroups() {
                     </div>
                   </div>
 
-                  <ul className={s.cg__groupList}>
+                  <ul className="cg__groupList">
                     {groups
                       .filter((g) => String(g.courseId) === String(c.id))
                       .map((g) => (
-                        <li key={g.id} className={s.cg__groupItem}>
+                        <li key={g.id} className="cg__groupItem">
                           <button
-                            className={s.cg__groupBtn}
+                            className="cg__groupBtn"
                             onClick={() => setActiveGroupId(g.id)}
                             title="Детали группы"
                           >
                             {g.name}
-                            <span className={s.cg__badge}>
+                            <span className="cg__badge">
                               {countStudents(g.id)}
                             </span>
                           </button>
@@ -343,38 +343,34 @@ function SchoolCoursesGroups() {
                       ))}
 
                     {groups.filter((g) => String(g.courseId) === String(c.id))
-                      .length === 0 && (
-                      <li className={s.cg__muted}>Нет групп</li>
-                    )}
+                      .length === 0 && <li className="cg__muted">Нет групп</li>}
                   </ul>
                 </li>
               ))}
 
               {filteredCourses.length === 0 && (
-                <li className={s.cg__muted}>Курсы не найдены.</li>
+                <li className="cg__muted">Курсы не найдены.</li>
               )}
             </ul>
           </div>
 
-          <div className={s.cg__right}>
+          <div className="cg__right">
             {!groupDetails ? (
-              <div className={s.cg__placeholder}>
+              <div className="cg__placeholder">
                 Выберите группу слева, чтобы увидеть детали
               </div>
             ) : (
-              <div className={s.cg__panel}>
-                <div className={s.cg__panelHead}>
-                  <h3 className={s.cg__panelTitle}>
-                    {groupDetails.group.name}
-                  </h3>
-                  <p className={s.cg__panelSub}>
+              <div className="cg__panel">
+                <div className="cg__panelHead">
+                  <h3 className="cg__panelTitle">{groupDetails.group.name}</h3>
+                  <p className="cg__panelSub">
                     Курс: <b>{groupDetails.course?.name || "—"}</b>
                   </p>
 
-                  <div className={s.cg__panelActions}>
+                  <div className="cg__panelActions">
                     <button
                       type="button"
-                      className={`${s.cg__btn} ${s["cg__btn--secondary"]}`}
+                      className="cg__btn cg__btn--secondary"
                       onClick={() => openEditGroup(groupDetails.group)}
                       title="Изменить группу"
                     >
@@ -382,7 +378,7 @@ function SchoolCoursesGroups() {
                     </button>
                     <button
                       type="button"
-                      className={`${s.cg__btn} ${s["cg__btn--secondary"]}`}
+                      className="cg__btn cg__btn--secondary"
                       onClick={() => deleteGroup(groupDetails.group.id)}
                       title="Удалить группу"
                     >
@@ -391,17 +387,17 @@ function SchoolCoursesGroups() {
                   </div>
                 </div>
 
-                <div className={s.cg__panelBody}>
-                  <h4 className={s.cg__panelCaption}>Состав группы</h4>
-                  <ul className={s.cg__members}>
+                <div className="cg__panelBody">
+                  <h4 className="cg__panelCaption">Состав группы</h4>
+                  <ul className="cg__members">
                     {groupDetails.members.map((m) => (
-                      <li key={m.id} className={s.cg__memberItem}>
-                        <span className={s.cg__memberName}>{m.name}</span>
-                        <span className={s.cg__memberMeta}>{m.status}</span>
+                      <li key={m.id} className="cg__memberItem">
+                        <span className="cg__memberName">{m.name}</span>
+                        <span className="cg__memberMeta">{m.status}</span>
                       </li>
                     ))}
                     {groupDetails.members.length === 0 && (
-                      <li className={s.cg__muted}>Студентов нет</li>
+                      <li className="cg__muted">Студентов нет</li>
                     )}
                   </ul>
                 </div>
@@ -413,14 +409,14 @@ function SchoolCoursesGroups() {
 
       {/* ===== Modals ===== */}
       {isCourseOpen && (
-        <div className={s["cg__modal-overlay"]} role="dialog" aria-modal="true">
-          <div className={s.cg__modal}>
-            <div className={s["cg__modal-header"]}>
-              <h3 className={s["cg__modal-title"]}>
+        <div className="cg__modal-overlay" role="dialog" aria-modal="true">
+          <div className="cg__modal">
+            <div className="cg__modal-header">
+              <h3 className="cg__modal-title">
                 {courseMode === "create" ? "Новый курс" : "Изменить курс"}
               </h3>
               <button
-                className={s["cg__icon-btn"]}
+                className="cg__icon-btn"
                 onClick={() => setCourseOpen(false)}
                 aria-label="Закрыть модал"
               >
@@ -428,14 +424,14 @@ function SchoolCoursesGroups() {
               </button>
             </div>
 
-            <form className={s.cg__form} onSubmit={submitCourse}>
-              <div className={s["cg__form-grid"]}>
-                <div className={s.cg__field}>
-                  <label className={s.cg__label}>
-                    Название<span className={s.cg__req}>*</span>
+            <form className="cg__form" onSubmit={submitCourse}>
+              <div className="cg__form-grid">
+                <div className="cg__field">
+                  <label className="cg__label">
+                    Название<span className="cg__req">*</span>
                   </label>
                   <input
-                    className={s.cg__input}
+                    className="cg__input"
                     value={courseForm.name}
                     onChange={(e) =>
                       setCourseForm({ ...courseForm, name: e.target.value })
@@ -444,12 +440,12 @@ function SchoolCoursesGroups() {
                   />
                 </div>
 
-                <div className={s.cg__field}>
-                  <label className={s.cg__label}>
-                    Цена/мес<span className={s.cg__req}>*</span>
+                <div className="cg__field">
+                  <label className="cg__label">
+                    Цена/мес<span className="cg__req">*</span>
                   </label>
                   <input
-                    className={s.cg__input}
+                    className="cg__input"
                     type="number"
                     min="0"
                     step="1"
@@ -462,20 +458,17 @@ function SchoolCoursesGroups() {
                 </div>
               </div>
 
-              <div className={s["cg__form-actions"]}>
-                <span className={s["cg__actions-spacer"]} />
-                <div className={s["cg__actions-right"]}>
+              <div className="cg__form-actions">
+                <span className="cg__actions-spacer" />
+                <div className="cg__actions-right">
                   <button
                     type="button"
-                    className={`${s.cg__btn} ${s["cg__btn--secondary"]}`}
+                    className="cg__btn cg__btn--secondary"
                     onClick={() => setCourseOpen(false)}
                   >
                     Отмена
                   </button>
-                  <button
-                    type="submit"
-                    className={`${s.cg__btn} ${s["cg__btn--primary"]}`}
-                  >
+                  <button type="submit" className="cg__btn cg__btn--primary">
                     {courseMode === "create"
                       ? "Сохранить"
                       : "Сохранить изменения"}
@@ -488,14 +481,14 @@ function SchoolCoursesGroups() {
       )}
 
       {isGroupOpen && (
-        <div className={s["cg__modal-overlay"]} role="dialog" aria-modal="true">
-          <div className={s.cg__modal}>
-            <div className={s["cg__modal-header"]}>
-              <h3 className={s["cg__modal-title"]}>
+        <div className="cg__modal-overlay" role="dialog" aria-modal="true">
+          <div className="cg__modal">
+            <div className="cg__modal-header">
+              <h3 className="cg__modal-title">
                 {groupMode === "create" ? "Новая группа" : "Изменить группу"}
               </h3>
               <button
-                className={s["cg__icon-btn"]}
+                className="cg__icon-btn"
                 onClick={() => setGroupOpen(false)}
                 aria-label="Закрыть модал"
               >
@@ -503,14 +496,14 @@ function SchoolCoursesGroups() {
               </button>
             </div>
 
-            <form className={s.cg__form} onSubmit={submitGroup}>
-              <div className={s["cg__form-grid"]}>
-                <div className={s.cg__field}>
-                  <label className={s.cg__label}>
-                    Курс<span className={s.cg__req}>*</span>
+            <form className="cg__form" onSubmit={submitGroup}>
+              <div className="cg__form-grid">
+                <div className="cg__field">
+                  <label className="cg__label">
+                    Курс<span className="cg__req">*</span>
                   </label>
                   <select
-                    className={s.cg__input}
+                    className="cg__input"
                     value={groupForm.courseId}
                     onChange={(e) =>
                       setGroupForm({ ...groupForm, courseId: e.target.value })
@@ -526,12 +519,12 @@ function SchoolCoursesGroups() {
                   </select>
                 </div>
 
-                <div className={s.cg__field}>
-                  <label className={s.cg__label}>
-                    Название группы<span className={s.cg__req}>*</span>
+                <div className="cg__field">
+                  <label className="cg__label">
+                    Название группы<span className="cg__req">*</span>
                   </label>
                   <input
-                    className={s.cg__input}
+                    className="cg__input"
                     value={groupForm.name}
                     onChange={(e) =>
                       setGroupForm({ ...groupForm, name: e.target.value })
@@ -541,20 +534,17 @@ function SchoolCoursesGroups() {
                 </div>
               </div>
 
-              <div className={s["cg__form-actions"]}>
-                <span className={s["cg__actions-spacer"]} />
-                <div className={s["cg__actions-right"]}>
+              <div className="cg__form-actions">
+                <span className="cg__actions-spacer" />
+                <div className="cg__actions-right">
                   <button
                     type="button"
-                    className={`${s.cg__btn} ${s["cg__btn--secondary"]}`}
+                    className="cg__btn cg__btn--secondary"
                     onClick={() => setGroupOpen(false)}
                   >
                     Отмена
                   </button>
-                  <button
-                    type="submit"
-                    className={`${s.cg__btn} ${s["cg__btn--primary"]}`}
-                  >
+                  <button type="submit" className="cg__btn cg__btn--primary">
                     {groupMode === "create"
                       ? "Сохранить"
                       : "Сохранить изменения"}

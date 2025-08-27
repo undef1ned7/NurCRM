@@ -1,0 +1,261 @@
+:root {
+  --primary: #f7d74f;   /* твой цвет */
+  --primary-dark: #d4b800;
+  --text: #0f172a;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --surface: #ffffff;
+  --radius: 12px;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+/* Контейнер */
+.services {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.subtitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Поиск */
+.search {
+  position: relative;
+}
+.searchInput {
+  width: 240px;
+  padding: 10px 12px 10px 32px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Кнопки */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  border: 1px solid transparent;
+}
+.btn:active { transform: translateY(1px); }
+
+.btnPrimary {
+  background: var(--primary);
+  color: #111;
+}
+.btnPrimary:hover { background: var(--primary-dark); }
+
+.btnSecondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btnSecondary:hover { background: #f9fafb; }
+
+/* ===== Список услуг ===== */
+.list {
+  display: grid;
+  gap: 10px;
+}
+.card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fafafa;
+  transition: background 0.2s;
+}
+.card:hover { background: #f1f5f9; }
+
+.name {
+  font-size: 16px;
+  font-weight: 600;
+}
+.price {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.meta {
+  display: flex;
+  gap: 8px;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.badgeActive {
+  background: rgba(39, 174, 96, 0.15);
+  color: #27ae60;
+  border-color: rgba(39, 174, 96, 0.35);
+}
+.badgeInactive {
+  background: rgba(149, 165, 166, 0.15);
+  color: #7f8c8d;
+  border-color: rgba(149, 165, 166, 0.35);
+}
+
+/* ===== Модалка ===== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 20px;
+  width: 400px;
+  max-width: 90%;
+}
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+.iconBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.form {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.formGrid {
+  display: grid;
+  gap: 14px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.req {
+  color: red;
+}
+.input {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Переключатель */
+.fieldSwitch {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+.switch input { display: none; }
+.slider {
+  position: absolute;
+  inset: 0;
+  background: #ccc;
+  border-radius: 20px;
+  transition: 0.3s;
+}
+.switch input:checked + .slider {
+  background: var(--primary);
+}
+.slider::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+.switch input:checked + .slider::before {
+  transform: translateX(20px);
+}
+
+/* Кнопки в форме */
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+

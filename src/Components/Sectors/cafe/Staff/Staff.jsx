@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "./Staff.module.scss";
+import "./Staff.scss";
 import { FaSearch, FaPlus, FaTimes, FaUserTie } from "react-icons/fa";
 import api from "../../../../api";
 
 // Роли: код бэка -> русское название
 const ROLE_OPTIONS = [
-  { code: "waiter",    label: "Официант" },
-  { code: "chef",      label: "Шеф" },
-  { code: "hostess",   label: "Хостес" },
+  { code: "waiter", label: "Официант" },
+  { code: "chef", label: "Шеф" },
+  { code: "hostess", label: "Хостес" },
   { code: "bartender", label: "Бармен" },
-  { code: "cashier",   label: "Кассир" },
-  { code: "cook",      label: "Повар" },
+  { code: "cashier", label: "Кассир" },
+  { code: "cook", label: "Повар" },
 ];
 
 const ROLE_LABELS = ROLE_OPTIONS.reduce((acc, r) => {
@@ -32,8 +32,8 @@ export default function CafeStaff() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     name: "",
-    role: ROLE_OPTIONS[0].code,   // код из enum бэкенда
-    is_active: true,               // поле бэка
+    role: ROLE_OPTIONS[0].code, // код из enum бэкенда
+    is_active: true, // поле бэка
   });
 
   const listFrom = (res) => res?.data?.results || res?.data || [];
@@ -54,7 +54,8 @@ export default function CafeStaff() {
   }, []);
 
   // видимое название роли для карточки
-  const roleDisplayOf = (it) => it.role_display || ROLE_LABELS[it.role] || it.role || "—";
+  const roleDisplayOf = (it) =>
+    it.role_display || ROLE_LABELS[it.role] || it.role || "—";
 
   // фильтрация
   const filtered = useMemo(() => {
@@ -103,7 +104,9 @@ export default function CafeStaff() {
       } else {
         // PUT /cafe/staff/{id}/
         const res = await api.put(`/cafe/staff/${editingId}/`, payload);
-        setItems((prev) => prev.map((s) => (s.id === editingId ? res.data : s)));
+        setItems((prev) =>
+          prev.map((s) => (s.id === editingId ? res.data : s))
+        );
       }
       setModalOpen(false);
     } catch (err) {
@@ -123,30 +126,30 @@ export default function CafeStaff() {
 
   // ===== RENDER =====
   return (
-    <section className={styles.staff}>
-      <div className={styles.staff__header}>
+    <section className="staff">
+      <div className="staff__header">
         <div>
-          <h2 className={styles.staff__title}>Персонал</h2>
-          <div className={styles.staff__subtitle}>
+          <h2 className="staff__title">Персонал</h2>
+          <div className="staff__subtitle">
             Сотрудники кафе: имена, роли, активность.
           </div>
         </div>
 
-        <div className={styles.staff__actions}>
+        <div className="staff__actions">
           {/* Поиск */}
-          <div className={styles.staff__search}>
-            <FaSearch className={styles["staff__search-icon"]} />
+          <div className="staff__search">
+            <FaSearch className="staff__search-icon" />
             <input
-              className={styles["staff__search-input"]}
+              className="staff__search-input"
               placeholder="Поиск: имя или роль…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
 
-          {/* Фильтр по роли (enum код) */}
+          {/* Фильтр по роли */}
           <select
-            className={styles.staff__input}
+            className="staff__input"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
             aria-label="Фильтр по роли"
@@ -160,7 +163,7 @@ export default function CafeStaff() {
           </select>
 
           <button
-            className={`${styles.staff__btn} ${styles["staff__btn--primary"]}`}
+            className="staff__btn staff__btn--primary"
             onClick={openCreate}
           >
             <FaPlus /> Новый сотрудник
@@ -169,49 +172,42 @@ export default function CafeStaff() {
       </div>
 
       {/* Список */}
-      <div className={styles.staff__list}>
-        {loading && <div className={styles.staff__alert}>Загрузка…</div>}
+      <div className="staff__list">
+        {loading && <div className="staff__alert">Загрузка…</div>}
 
         {!loading &&
           filtered.map((s) => (
-            <article key={s.id} className={styles.staff__card}>
-              <div className={styles["staff__card-left"]}>
-                <div className={styles.staff__avatar}>
+            <article key={s.id} className="staff__card">
+              <div className="staff__card-left">
+                <div className="staff__avatar">
                   <FaUserTie />
                 </div>
                 <div>
-                  <h3 className={styles.staff__name}>{s.name}</h3>
-                  <div className={styles.staff__meta}>
-                    <span className={styles.staff__muted}>
+                  <h3 className="staff__name">{s.name}</h3>
+                  <div className="staff__meta">
+                    <span className="staff__muted">
                       Роль: {roleDisplayOf(s)}
                     </span>
                     <span
-                      className={`${styles.staff__status} ${
-                        s.is_active
-                          ? styles["staff__status--on"]
-                          : styles["staff__status--off"]
+                      className={`staff__status ${
+                        s.is_active ? "staff__status--on" : "staff__status--off"
                       }`}
                     >
                       {s.is_active ? "Активен" : "Неактивен"}
                     </span>
-                    {/* Если хочешь даты: 
-                    <span className={styles.staff__muted}>
-                      Создан: {s.created_at ? new Date(s.created_at).toLocaleString() : "—"}
-                    </span>
-                    */}
                   </div>
                 </div>
               </div>
 
-              <div className={styles.staff__rowActions}>
+              <div className="staff__rowActions">
                 <button
-                  className={`${styles.staff__btn} ${styles["staff__btn--secondary"]}`}
+                  className="staff__btn staff__btn--secondary"
                   onClick={() => openEdit(s)}
                 >
                   Изменить
                 </button>
                 <button
-                  className={`${styles.staff__btn} ${styles["staff__btn--danger"]}`}
+                  className="staff__btn staff__btn--danger"
                   onClick={() => handleDelete(s.id)}
                 >
                   Удалить
@@ -221,38 +217,35 @@ export default function CafeStaff() {
           ))}
 
         {!loading && !filtered.length && (
-          <div className={styles.staff__alert}>Ничего не найдено.</div>
+          <div className="staff__alert">Ничего не найдено.</div>
         )}
       </div>
 
       {/* Модалка создания/редактирования */}
       {modalOpen && (
         <div
-          className={styles["staff__modal-overlay"]}
+          className="staff__modal-overlay"
           onClick={() => setModalOpen(false)}
         >
-          <div
-            className={styles.staff__modal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles["staff__modal-header"]}>
-              <h3 className={styles["staff__modal-title"]}>
+          <div className="staff__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="staff__modal-header">
+              <h3 className="staff__modal-title">
                 {editingId == null ? "Новый сотрудник" : "Изменить сотрудника"}
               </h3>
               <button
-                className={styles["staff__icon-btn"]}
+                className="staff__icon-btn"
                 onClick={() => setModalOpen(false)}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.staff__form} onSubmit={saveStaff}>
-              <div className={styles["staff__form-grid"]}>
-                <div className={styles.staff__field}>
-                  <label className={styles.staff__label}>Имя</label>
+            <form className="staff__form" onSubmit={saveStaff}>
+              <div className="staff__form-grid">
+                <div className="staff__field">
+                  <label className="staff__label">Имя</label>
                   <input
-                    className={styles.staff__input}
+                    className="staff__input"
                     value={form.name}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, name: e.target.value }))
@@ -262,10 +255,10 @@ export default function CafeStaff() {
                   />
                 </div>
 
-                <div className={styles.staff__field}>
-                  <label className={styles.staff__label}>Роль</label>
+                <div className="staff__field">
+                  <label className="staff__label">Роль</label>
                   <select
-                    className={styles.staff__input}
+                    className="staff__input"
                     value={form.role}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, role: e.target.value }))
@@ -280,8 +273,8 @@ export default function CafeStaff() {
                   </select>
                 </div>
 
-                <div className={styles.staff__field}>
-                  <label className={styles.staff__label}>
+                <div className="staff__field">
+                  <label className="staff__label">
                     <input
                       type="checkbox"
                       checked={form.is_active}
@@ -295,17 +288,17 @@ export default function CafeStaff() {
                 </div>
               </div>
 
-              <div className={styles["staff__form-actions"]}>
+              <div className="staff__form-actions">
                 <button
                   type="button"
-                  className={`${styles.staff__btn} ${styles["staff__btn--secondary"]}`}
+                  className="staff__btn staff__btn--secondary"
                   onClick={() => setModalOpen(false)}
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className={`${styles.staff__btn} ${styles["staff__btn--primary"]}`}
+                  className="staff__btn staff__btn--primary"
                 >
                   Сохранить
                 </button>

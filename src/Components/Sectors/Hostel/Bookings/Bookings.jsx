@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import s from "./Bookings.module.scss";
+import s from "./Bookings.scss";
 import { FaSearch, FaPlus, FaTimes } from "react-icons/fa";
 import api from "../../../../api";
 
@@ -221,21 +221,21 @@ export default function HostelBookings() {
   );
 
   return (
-    <section className={s.bookings}>
-      <header className={s.bookings__header}>
+    <section className="bookings">
+      <header className="bookings__header">
         <div>
-          <h2 className={s.bookings__title}>Бронирования</h2>
-          <p className={s.bookings__subtitle}>
+          <h2 className="bookings__title">Бронирования</h2>
+          <p className="bookings__subtitle">
             Выберите <b>гостиницу</b> <u>или</u> <b>зал</b>, затем даты и
             назначение
           </p>
         </div>
 
-        <div className={s.bookings__actions}>
-          <div className={s.bookings__search}>
-            <FaSearch className={s.bookings__searchIcon} />
+        <div className="bookings__actions">
+          <div className="bookings__search">
+            <FaSearch className="bookings__searchIcon" />
             <input
-              className={s.bookings__searchInput}
+              className="bookings__searchInput"
               placeholder="Поиск по объекту, датам, назначению"
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -243,7 +243,7 @@ export default function HostelBookings() {
           </div>
 
           <button
-            className={`${s.bookings__btn} ${s["bookings__btn--primary"]}`}
+            className="bookings__btn bookings__btn--primary"
             onClick={openCreate}
           >
             <FaPlus /> Добавить
@@ -251,41 +251,41 @@ export default function HostelBookings() {
         </div>
       </header>
 
-      {error && <div className={s.bookings__empty}>{error}</div>}
+      {error && <div className="bookings__empty">{error}</div>}
       {loading ? (
-        <div className={s.bookings__empty}>Загрузка…</div>
+        <div className="bookings__empty">Загрузка…</div>
       ) : (
-        <div className={s.bookings__list}>
+        <div className="bookings__list">
           {sorted.map((b) => (
-            <div key={b.id} className={s.bookings__card}>
+            <div key={b.id} className="bookings__card">
               <div>
-                <div className={s.bookings__name}>
+                <div className="bookings__name">
                   {b.hotel
                     ? `Гостиница: ${hotelName(b.hotel)}`
                     : `Зал: ${roomName(b.room)}`}
                 </div>
-                <div className={s.bookings__meta}>
-                  <span className={s.bookings__badge}>
+                <div className="bookings__meta">
+                  <span className="bookings__badge">
                     Начало: {toLocalInput(b.start_time)}
                   </span>
-                  <span className={s.bookings__badge}>
+                  <span className="bookings__badge">
                     Конец: {toLocalInput(b.end_time)}
                   </span>
                   {b.purpose && (
-                    <span className={s.bookings__badge}>Цель: {b.purpose}</span>
+                    <span className="bookings__badge">Цель: {b.purpose}</span>
                   )}
                 </div>
               </div>
 
-              <div className={s.bookings__right}>
+              <div className="bookings__right">
                 <button
-                  className={`${s.bookings__btn} ${s["bookings__btn--secondary"]}`}
+                  className="bookings__btn bookings__btn--secondary"
                   onClick={() => openEdit(b)}
                 >
                   Изменить
                 </button>
                 <button
-                  className={`${s.bookings__btn} ${s["bookings__btn--secondary"]}`}
+                  className="bookings__btn bookings__btn--secondary"
                   onClick={() => onDelete(b.id)}
                 >
                   Удалить
@@ -295,40 +295,37 @@ export default function HostelBookings() {
           ))}
 
           {sorted.length === 0 && !error && (
-            <div className={s.bookings__empty}>Пока нет броней</div>
+            <div className="bookings__empty">Пока нет броней</div>
           )}
         </div>
       )}
 
       {modalOpen && (
         <div
-          className={s.bookings__modalOverlay}
+          className="bookings__modalOverlay"
           onClick={() => setModalOpen(false)}
         >
-          <div
-            className={s.bookings__modal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={s.bookings__modalHeader}>
-              <div className={s.bookings__modalTitle}>
+          <div className="bookings__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="bookings__modalHeader">
+              <div className="bookings__modalTitle">
                 {editingId == null ? "Новая бронь" : "Изменить бронь"}
               </div>
               <button
-                className={s.bookings__iconBtn}
+                className="bookings__iconBtn"
                 onClick={() => setModalOpen(false)}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={s.bookings__form} onSubmit={onSubmit}>
-              <div className={s.bookings__formGrid}>
+            <form className="bookings__form" onSubmit={onSubmit}>
+              <div className="bookings__formGrid">
                 {/* Гостиница */}
-                <div className={s.bookings__field}>
-                  <label className={s.bookings__label}>Гостиница</label>
-                  <div className={s.bookings__row}>
+                <div className="bookings__field">
+                  <label className="bookings__label">Гостиница</label>
+                  <div className="bookings__row">
                     <select
-                      className={s.bookings__input}
+                      className="bookings__input"
                       value={form.hotel ?? ""}
                       onChange={(e) =>
                         setForm((f) => ({
@@ -348,7 +345,7 @@ export default function HostelBookings() {
                     {form.hotel && (
                       <button
                         type="button"
-                        className={s.bookings__miniBtn}
+                        className="bookings__miniBtn"
                         onClick={clearHotel}
                       >
                         Очистить
@@ -358,11 +355,11 @@ export default function HostelBookings() {
                 </div>
 
                 {/* Зал */}
-                <div className={s.bookings__field}>
-                  <label className={s.bookings__label}>Зал</label>
-                  <div className={s.bookings__row}>
+                <div className="bookings__field">
+                  <label className="bookings__label">Зал</label>
+                  <div className="bookings__row">
                     <select
-                      className={s.bookings__input}
+                      className="bookings__input"
                       value={form.room ?? ""}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, room: e.target.value || null }))
@@ -379,7 +376,7 @@ export default function HostelBookings() {
                     {form.room && (
                       <button
                         type="button"
-                        className={s.bookings__miniBtn}
+                        className="bookings__miniBtn"
                         onClick={clearRoom}
                       >
                         Очистить
@@ -388,13 +385,13 @@ export default function HostelBookings() {
                   </div>
                 </div>
 
-                <div className={s.bookings__field}>
-                  <label className={s.bookings__label}>
-                    Начало <span className={s.bookings__req}>*</span>
+                <div className="bookings__field">
+                  <label className="bookings__label">
+                    Начало <span className="bookings__req">*</span>
                   </label>
                   <input
                     type="datetime-local"
-                    className={s.bookings__input}
+                    className="bookings__input"
                     value={form.start_time}
                     onChange={(e) =>
                       setForm({ ...form, start_time: e.target.value })
@@ -403,13 +400,13 @@ export default function HostelBookings() {
                   />
                 </div>
 
-                <div className={s.bookings__field}>
-                  <label className={s.bookings__label}>
-                    Конец <span className={s.bookings__req}>*</span>
+                <div className="bookings__field">
+                  <label className="bookings__label">
+                    Конец <span className="bookings__req">*</span>
                   </label>
                   <input
                     type="datetime-local"
-                    className={s.bookings__input}
+                    className="bookings__input"
                     value={form.end_time}
                     onChange={(e) =>
                       setForm({ ...form, end_time: e.target.value })
@@ -419,14 +416,14 @@ export default function HostelBookings() {
                 </div>
 
                 <div
-                  className={s.bookings__field}
+                  className="bookings__field"
                   style={{ gridColumn: "1 / -1" }}
                 >
-                  <label className={s.bookings__label}>
+                  <label className="bookings__label">
                     Назначение (purpose)
                   </label>
                   <input
-                    className={s.bookings__input}
+                    className="bookings__input"
                     maxLength={255}
                     placeholder="Например: конференция / свадьба / встреча"
                     value={form.purpose}
@@ -437,15 +434,15 @@ export default function HostelBookings() {
                 </div>
               </div>
 
-              <div className={s.bookings__formHint}>
+              <div className="bookings__formHint">
                 * Выберите <b>гостиницу</b> <u>или</u> <b>зал</b>. Чтобы
                 переключиться — нажми «Очистить».
               </div>
 
-              <div className={s.bookings__formActions}>
+              <div className="bookings__formActions">
                 <button
                   type="button"
-                  className={`${s.bookings__btn} ${s["bookings__btn--secondary"]}`}
+                  className="bookings__btn bookings__btn--secondary"
                   onClick={() => setModalOpen(false)}
                   disabled={saving}
                 >
@@ -453,7 +450,7 @@ export default function HostelBookings() {
                 </button>
                 <button
                   type="submit"
-                  className={`${s.bookings__btn} ${s["bookings__btn--primary"]}`}
+                  className="bookings__btn bookings__btn--primary"
                   disabled={saving}
                 >
                   {saving ? "Сохранение…" : "Сохранить"}

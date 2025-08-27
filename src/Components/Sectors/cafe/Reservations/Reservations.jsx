@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "./Reservations.module.scss";
+import "./Reservations.scss";
 import {
   FaSearch,
   FaPlus,
@@ -31,11 +31,7 @@ const StatusPill = ({ s }) => {
     cancelled: "Отменено",
   };
   return (
-    <span
-      className={`${styles.reservations__status} ${
-        styles[`reservations__status--${s}`]
-      }`}
-    >
+    <span className={`reservations__status reservations__status--${s}`}>
       {map[s] || s}
     </span>
   );
@@ -167,7 +163,9 @@ export default function CafeReservations() {
       } else {
         // PUT
         const res = await api.put(`/cafe/bookings/${editingId}/`, payload);
-        setItems((prev) => prev.map((r) => (r.id === editingId ? res.data : r)));
+        setItems((prev) =>
+          prev.map((r) => (r.id === editingId ? res.data : r))
+        );
       }
       setModalOpen(false);
     } catch (err) {
@@ -187,20 +185,20 @@ export default function CafeReservations() {
 
   // Render
   return (
-    <section className={styles.reservations}>
-      <div className={styles.reservations__header}>
+    <section className="reservations">
+      <div className="reservations__header">
         <div>
-          <h2 className={styles.reservations__title}>Бронь</h2>
-          <div className={styles.reservations__subtitle}>
+          <h2 className="reservations__title">Бронь</h2>
+          <div className="reservations__subtitle">
             Резервы столов по дате и времени.
           </div>
         </div>
 
-        <div className={styles.reservations__actions}>
-          <div className={styles.reservations__search}>
-            <FaSearch className={styles["reservations__search-icon"]} />
+        <div className="reservations__actions">
+          <div className="reservations__search">
+            <FaSearch className="reservations__search-icon" />
             <input
-              className={styles["reservations__search-input"]}
+              className="reservations__search-input"
               placeholder="Поиск: гость, телефон, стол (номер), статус…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -208,7 +206,7 @@ export default function CafeReservations() {
           </div>
 
           <button
-            className={`${styles.reservations__btn} ${styles["reservations__btn--primary"]}`}
+            className="reservations__btn reservations__btn--primary"
             onClick={openCreate}
             disabled={!tables.length}
             title={!tables.length ? "Сначала добавьте столы" : ""}
@@ -218,32 +216,32 @@ export default function CafeReservations() {
         </div>
       </div>
 
-      <div className={styles.reservations__list}>
-        {loading && <div className={styles.reservations__alert}>Загрузка…</div>}
+      <div className="reservations__list">
+        {loading && <div className="reservations__alert">Загрузка…</div>}
 
         {!loading &&
           filtered.map((r) => (
-            <article key={r.id} className={styles.reservations__card}>
-              <div className={styles["reservations__card-left"]}>
-                <div className={styles.reservations__avatar}>
+            <article key={r.id} className="reservations__card">
+              <div className="reservations__card-left">
+                <div className="reservations__avatar">
                   <FaConciergeBell />
                 </div>
                 <div>
-                  <h3 className={styles.reservations__name}>
+                  <h3 className="reservations__name">
                     {r.date} • {r.time}
                   </h3>
-                  <div className={styles.reservations__meta}>
-                    <span className={styles.reservations__muted}>
+                  <div className="reservations__meta">
+                    <span className="reservations__muted">
                       <FaUser />
                       &nbsp;{r.guest} · {r.guests} чел.
                     </span>
                     {r.phone && (
-                      <span className={styles.reservations__muted}>
+                      <span className="reservations__muted">
                         <FaPhone />
                         &nbsp;{r.phone}
                       </span>
                     )}
-                    <span className={styles.reservations__muted}>
+                    <span className="reservations__muted">
                       {tableTitle(r.table)}
                     </span>
                     <StatusPill s={r.status} />
@@ -251,15 +249,15 @@ export default function CafeReservations() {
                 </div>
               </div>
 
-              <div className={styles.reservations__rowActions}>
+              <div className="reservations__rowActions">
                 <button
-                  className={`${styles.reservations__btn} ${styles["reservations__btn--secondary"]}`}
+                  className="reservations__btn reservations__btn--secondary"
                   onClick={() => openEdit(r)}
                 >
                   <FaEdit /> Изменить
                 </button>
                 <button
-                  className={`${styles.reservations__btn} ${styles["reservations__btn--danger"]}`}
+                  className="reservations__btn reservations__btn--danger"
                   onClick={() => handleDelete(r.id)}
                 >
                   <FaTrash /> Удалить
@@ -269,7 +267,7 @@ export default function CafeReservations() {
           ))}
 
         {!loading && !filtered.length && (
-          <div className={styles.reservations__alert}>
+          <div className="reservations__alert">
             Ничего не найдено по «{query}».
           </div>
         )}
@@ -278,31 +276,31 @@ export default function CafeReservations() {
       {/* Модалка: создать/редактировать */}
       {modalOpen && (
         <div
-          className={styles["reservations__modal-overlay"]}
+          className="reservations__modal-overlay"
           onClick={() => setModalOpen(false)}
         >
           <div
-            className={styles.reservations__modal}
+            className="reservations__modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={styles["reservations__modal-header"]}>
-              <h3 className={styles["reservations__modal-title"]}>
+            <div className="reservations__modal-header">
+              <h3 className="reservations__modal-title">
                 {editingId == null ? "Новая бронь" : "Изменить бронь"}
               </h3>
               <button
-                className={styles["reservations__icon-btn"]}
+                className="reservations__icon-btn"
                 onClick={() => setModalOpen(false)}
               >
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.reservations__form} onSubmit={saveReservation}>
-              <div className={styles["reservations__form-grid"]}>
-                <div className={styles.reservations__field}>
-                  <label className={styles.reservations__label}>Гость</label>
+            <form className="reservations__form" onSubmit={saveReservation}>
+              <div className="reservations__form-grid">
+                <div className="reservations__field">
+                  <label className="reservations__label">Гость</label>
                   <input
-                    className={styles.reservations__input}
+                    className="reservations__input"
                     value={form.guest}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, guest: e.target.value }))
@@ -312,10 +310,10 @@ export default function CafeReservations() {
                   />
                 </div>
 
-                <div className={styles.reservations__field}>
-                  <label className={styles.reservations__label}>Телефон</label>
+                <div className="reservations__field">
+                  <label className="reservations__label">Телефон</label>
                   <input
-                    className={styles.reservations__input}
+                    className="reservations__input"
                     value={form.phone}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, phone: e.target.value }))
@@ -324,11 +322,11 @@ export default function CafeReservations() {
                   />
                 </div>
 
-                <div className={styles.reservations__field}>
-                  <label className={styles.reservations__label}>Дата</label>
+                <div className="reservations__field">
+                  <label className="reservations__label">Дата</label>
                   <input
                     type="date"
-                    className={styles.reservations__input}
+                    className="reservations__input"
                     value={form.date}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, date: e.target.value }))
@@ -337,11 +335,11 @@ export default function CafeReservations() {
                   />
                 </div>
 
-                <div className={styles.reservations__field}>
-                  <label className={styles.reservations__label}>Время</label>
+                <div className="reservations__field">
+                  <label className="reservations__label">Время</label>
                   <input
                     type="time"
-                    className={styles.reservations__input}
+                    className="reservations__input"
                     value={form.time}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, time: e.target.value }))
@@ -350,13 +348,13 @@ export default function CafeReservations() {
                   />
                 </div>
 
-                <div className={styles.reservations__field}>
-                  <label className={styles.reservations__label}>Гостей</label>
+                <div className="reservations__field">
+                  <label className="reservations__label">Гостей</label>
                   <input
                     type="number"
                     min={1}
                     max={32767}
-                    className={styles.reservations__input}
+                    className="reservations__input"
                     value={form.guests}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -367,11 +365,11 @@ export default function CafeReservations() {
                   />
                 </div>
 
-                <div className={styles.reservations__field}>
-                  <label className={styles.reservations__label}>Стол</label>
+                <div className="reservations__field">
+                  <label className="reservations__label">Стол</label>
                   {tables.length ? (
                     <select
-                      className={styles.reservations__input}
+                      className="reservations__input"
                       value={form.table}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, table: e.target.value }))
@@ -386,16 +384,16 @@ export default function CafeReservations() {
                       ))}
                     </select>
                   ) : (
-                    <div className={styles.reservations__alert}>
+                    <div className="reservations__alert">
                       Нет столов. Добавьте их во вкладке «Столы».
                     </div>
                   )}
                 </div>
 
-                <div className={styles.reservations__field}>
-                  <label className={styles.reservations__label}>Статус</label>
+                <div className="reservations__field">
+                  <label className="reservations__label">Статус</label>
                   <select
-                    className={styles.reservations__input}
+                    className="reservations__input"
                     value={form.status}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, status: e.target.value }))
@@ -410,17 +408,17 @@ export default function CafeReservations() {
                 </div>
               </div>
 
-              <div className={styles["reservations__form-actions"]}>
+              <div className="reservations__form-actions">
                 <button
                   type="button"
-                  className={`${styles.reservations__btn} ${styles["reservations__btn--secondary"]}`}
+                  className="reservations__btn reservations__btn--secondary"
                   onClick={() => setModalOpen(false)}
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className={`${styles.reservations__btn} ${styles["reservations__btn--primary"]}`}
+                  className="reservations__btn reservations__btn--primary"
                 >
                   Сохранить
                 </button>

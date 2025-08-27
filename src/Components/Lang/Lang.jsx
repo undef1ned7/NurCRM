@@ -4,13 +4,20 @@ import { useTranslation } from "react-i18next";
 import { MdOutlineKeyboardArrowDown } from "react-icons/md";
 import { useState, useRef } from "react";
 import "./lang.scss";
+import { useLocation } from "react-router-dom";
 
 const Lang = () => {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-
+  const { pathname } = useLocation();
   const audioRef = useRef(new Audio("/sounds/switch.mp3"));
+  const toggleDropdown = () => setIsOpen((prev) => !prev);
 
+  // const handleChangeLang = (lang) => {
+  //   i18n.changeLanguage(lang);
+  //   localStorage.setItem("i18nextLng", lang);
+  //   setIsOpen(false);
+  // };
   const handleChangeLang = () => {
     const newLang = i18n.language === "ru" ? "ky" : "ru";
 
@@ -29,42 +36,57 @@ const Lang = () => {
   return (
     <div
       className="language-switcher"
-      style={{
-        position: "relative",
-        borderTopRightRadius: "15px",
-        borderTopLeftRadius: "15px",
-        backgroundColor: isOpen ? " #105B60" : "transparent",
-      }}
+      style={pathname === "/" ? { width: "200px", margin: "0" } : {}}
     >
-      <div className="selected-lang" onClick={() => setIsOpen(!isOpen)}>
+      <div
+        className={`selected-lang ${isOpen ? "open" : ""}`}
+        onClick={toggleDropdown}
+      >
         <img
           src={i18n.language === "ru" ? ru : kg}
-          alt={i18n.language === "ru" ? "Ru" : "Kg"}
+          alt={i18n.language}
+          className="lang-flag"
         />
+        {i18n.language === "ru" ? "Русский" : "Кыргызча"}
         <MdOutlineKeyboardArrowDown
-          className="lang_icon"
-          style={{
-            color: "white",
-            width: 20,
-            height: 20,
-            transform: isOpen ? "rotate(180deg)" : "rotate(0)",
-            transition: "transform 0.3s ease",
-          }}
+          className={`lang-icon ${isOpen ? "open" : ""}`}
         />
       </div>
 
       {isOpen && (
         <div className="dropdown">
-          <div onClick={handleChangeLang}>
+          <div className="dropdown-item" onClick={handleChangeLang}>
             <img
               src={i18n.language === "ru" ? kg : ru}
               alt={i18n.language === "ru" ? "ky" : "ru"}
               style={{ width: 30, height: 20 }}
             />
-            {i18n.language === "ru" ? "ky" : "ru"}
+            {i18n.language === "ru" ? "Кыргызча" : "Русский"}
           </div>
         </div>
       )}
+      {/* {isOpen && (
+        <div className="dropdown">
+          {i18n.language !== "ru" && (
+            <div
+              className="dropdown-item"
+              onClick={() => handleChangeLang("ru")}
+            >
+              <img src={ru} alt="ru" className="lang-flag" />
+              Русский
+            </div>
+          )}
+          {i18n.language !== "kg" && (
+            <div
+              className="dropdown-item"
+              onClick={() => handleChangeLang("kg")}
+            >
+              <img src={kg} alt="kg" className="lang-flag" />
+              Кыргызча
+            </div>
+          )}
+        </div>
+      )} */}
     </div>
   );
 };

@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../api";
 import { FaPlus, FaEdit, FaTimes, FaSearch, FaTrash } from "react-icons/fa";
-import styles from "./Masters.module.scss";
+import "./Masters.scss";
 
 // Нормализация данных из API
 const normalizeBarber = (b) => ({
@@ -143,20 +143,20 @@ const Masters = () => {
   };
 
   return (
-    <div className={styles.services}>
-      <div className={styles.header}>
+    <div className="services">
+      <div className="header">
         <div>
-          <h2 className={styles.title}>Мастера</h2>
-          <span className={styles.subtitle}>
+          <h2 className="title">Мастера</h2>
+          <span className="subtitle">
             {loading ? "Загрузка..." : `${barbers.length} записей`}
           </span>
         </div>
 
-        <div className={styles.actions}>
-          <div className={styles.search}>
-            <FaSearch className={styles.searchIcon} />
+        <div className="actions">
+          <div className="search">
+            <FaSearch className="searchIcon" />
             <input
-              className={styles.searchInput}
+              className="searchInput"
               type="text"
               placeholder="Поиск по ФИО или телефону"
               value={search}
@@ -164,29 +164,26 @@ const Masters = () => {
             />
           </div>
 
-          <button
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            onClick={() => openModal()}
-          >
+          <button className="btn btnPrimary" onClick={() => openModal()}>
             <FaPlus /> Добавить
           </button>
         </div>
       </div>
 
-      {error && <div className={styles.alert}>{error}</div>}
+      {error && <div className="alert">{error}</div>}
 
       {loading ? (
-        <div className={styles.skeletonList}>
+        <div className="skeletonList">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className={styles.skeletonCard} />
+            <div key={i} className="skeletonCard" />
           ))}
         </div>
       ) : (
-        <div className={styles.list}>
+        <div className="list">
           {filtered.map((barber) => (
-            <article key={barber.id} className={styles.card}>
-              <div className={styles.cardLeft}>
-                <div className={styles.avatar}>
+            <article key={barber.id} className="card">
+              <div className="cardLeft">
+                <div className="avatar">
                   {barber.fullName
                     .split(/\s+/)
                     .slice(0, 2)
@@ -194,26 +191,24 @@ const Masters = () => {
                     .join("")}
                 </div>
                 <div>
-                  <div className={styles.nameRow}>
-                    <h4 className={styles.name}>{barber.fullName}</h4>
+                  <div className="nameRow">
+                    <h4 className="name">{barber.fullName}</h4>
                     <span
-                      className={`${styles.badge} ${
-                        barber.active
-                          ? styles.badgeActive
-                          : styles.badgeInactive
+                      className={`badge ${
+                        barber.active ? "badgeActive" : "badgeInactive"
                       }`}
                     >
                       {barber.active ? "Активен" : "Неактивен"}
                     </span>
                   </div>
-                  <div className={styles.meta}>
+                  <div className="meta">
                     {barber.phone && <span>{barber.phone}</span>}
                   </div>
                 </div>
               </div>
 
               <button
-                className={`${styles.btn} ${styles.btnSecondary}`}
+                className="btn btnSecondary"
                 onClick={() => openModal(barber)}
               >
                 <FaEdit /> Редактировать
@@ -224,92 +219,92 @@ const Masters = () => {
       )}
 
       {modalOpen && (
-        <div className={styles.modalOverlay} onClick={closeModal}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>
+        <div className="modalOverlay" onClick={closeModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <h3 className="modalTitle">
                 {current ? "Редактировать мастера" : "Новый мастер"}
               </h3>
-              <button className={styles.iconBtn} onClick={closeModal}>
+              <button className="iconBtn" onClick={closeModal}>
                 <FaTimes />
               </button>
             </div>
 
-            <form className={styles.form} onSubmit={handleSubmit}>
-              <div className={styles.formGrid}>
-                <div className={styles.field}>
-                  <label htmlFor="fullName" className={styles.label}>
-                    ФИО <span className={styles.req}>*</span>
+            <form className="form" onSubmit={handleSubmit}>
+              <div className="formGrid">
+                <div className="field">
+                  <label htmlFor="fullName" className="label">
+                    ФИО <span className="req">*</span>
                   </label>
                   <input
                     id="fullName"
                     name="fullName"
-                    className={styles.input}
+                    className="input"
                     defaultValue={current?.fullName || ""}
                     placeholder="Фамилия Имя Отчество"
                     required
                   />
                 </div>
 
-                <div className={styles.field}>
-                  <label htmlFor="phone" className={styles.label}>
+                <div className="field">
+                  <label htmlFor="phone" className="label">
                     Телефон
                   </label>
                   <input
                     id="phone"
                     name="phone"
-                    className={styles.input}
+                    className="input"
                     defaultValue={current?.phone || ""}
                     placeholder="+996 ..."
                     inputMode="tel"
                   />
                 </div>
 
-                <div className={styles.field}>
-                  <label htmlFor="extraPhone" className={styles.label}>
+                <div className="field">
+                  <label htmlFor="extraPhone" className="label">
                     Доп. телефон
                   </label>
                   <input
                     id="extraPhone"
                     name="extraPhone"
-                    className={styles.input}
+                    className="input"
                     defaultValue={current?.extraPhone || ""}
                     placeholder="+996 ..."
                     inputMode="tel"
                   />
                 </div>
 
-                <div className={styles.field}>
-                  <label htmlFor="schedule" className={styles.label}>
+                <div className="field">
+                  <label htmlFor="schedule" className="label">
                     График
                   </label>
                   <input
                     id="schedule"
                     name="schedule"
-                    className={styles.input}
+                    className="input"
                     defaultValue={current?.schedule || ""}
                     placeholder="Пн–Пт 10–18"
                   />
                 </div>
 
-                <div className={`${styles.field} ${styles.fieldSwitch}`}>
-                  <label className={styles.label}>Активен</label>
-                  <label className={styles.switch}>
+                <div className="field fieldSwitch">
+                  <label className="label">Активен</label>
+                  <label className="switch">
                     <input
                       type="checkbox"
                       name="active"
                       defaultChecked={current?.active ?? true}
                     />
-                    <span className={styles.slider} />
+                    <span className="slider" />
                   </label>
                 </div>
               </div>
 
-              <div className={styles.formActions}>
+              <div className="formActions">
                 {current?.id ? (
                   <button
                     type="button"
-                    className={`${styles.btn} ${styles.btnDanger}`}
+                    className="btn btnDanger"
                     onClick={handleDelete}
                     disabled={deleting || saving}
                     title="Удалить мастера"
@@ -317,13 +312,13 @@ const Masters = () => {
                     <FaTrash /> {deleting ? "Удаление..." : "Удалить"}
                   </button>
                 ) : (
-                  <span className={styles.actionsSpacer} />
+                  <span className="actionsSpacer" />
                 )}
 
-                <div className={styles.actionsRight}>
+                <div className="actionsRight">
                   <button
                     type="button"
-                    className={`${styles.btn} ${styles.btnSecondary}`}
+                    className="btn btnSecondary"
                     onClick={closeModal}
                     disabled={saving || deleting}
                   >
@@ -332,7 +327,7 @@ const Masters = () => {
                   <button
                     type="submit"
                     disabled={saving || deleting}
-                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    className="btn btnPrimary"
                   >
                     {saving ? "Сохранение..." : "Сохранить"}
                   </button>
