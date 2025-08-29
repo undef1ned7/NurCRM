@@ -35,7 +35,7 @@ const getInitials = (fullName = "") =>
     .map((p) => p[0]?.toUpperCase() || "")
     .join("");
 
-const Clients = () => {
+const BarberClients = () => {
   const [clients, setClients] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [search, setSearch] = useState("");
@@ -495,4 +495,4 @@ const Clients = () => {
   );
 };
 
-export default Clients;
+export default BarberClients;

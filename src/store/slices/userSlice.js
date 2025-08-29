@@ -8,6 +8,7 @@ import {
   getCompany,
   getApplicationList,
   submitApplicationAsync,
+  updateUserData,
 } from "../creators/userCreators";
 import { useSelector } from "react-redux";
 import ApplicationList from "../../Components/pages/SubmitApplication/ApplicationList";
@@ -23,6 +24,7 @@ const initialState = {
   userId: localStorage.getItem("userId") || "",
   tariff: "",
   sector: "",
+  companyLoading: true,
   submitApplication: null,
   applicationList: [],
   company: null,
@@ -104,20 +106,20 @@ const userSlice = createSlice({
         state.error = null;
       })
       .addCase(getCompany.pending, (state) => {
-        state.loading = true;
+        state.companyLoading = true;
       })
       .addCase(getCompany.fulfilled, (state, { payload }) => {
-        state.loading = false;
+        state.companyLoading = false;
+        state.company = payload;
         state.sector = payload?.sector?.name;
         state.tariff = payload?.subscription_plan?.name;
-        // console.log(payload);
-        state.company = payload;
-        state.subscriptionPlans = payload;
       })
       .addCase(getCompany.rejected, (state, { payload }) => {
-        state.loading = false;
+        state.companyLoading = false;
+        state.company = null;
         state.error = payload;
       })
+
       .addCase(submitApplicationAsync.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -139,6 +141,18 @@ const userSlice = createSlice({
         state.applicationList = payload.results;
       })
       .addCase(getApplicationList.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
+      })
+      .addCase(updateUserData.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUserData.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        // state.applicationList = payload.results;
+      })
+      .addCase(updateUserData.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
       });

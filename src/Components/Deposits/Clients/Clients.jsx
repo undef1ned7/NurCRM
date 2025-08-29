@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import Suppliers from "../../Contact/Suppliers/Suppliers";
 import ContactClient from "../../Contact/ContactClient/ContactClient";
 import Implementers from "../../Contact/Implementers/Implementers";
+import { useUser } from "../../../store/slices/userSlice";
 
 /* ---------- EditModal ---------- */
 const EditModal = ({ client, onClose }) => {
@@ -138,6 +139,7 @@ const EditModal = ({ client, onClose }) => {
 
 /* ---------- Main table ---------- */
 export default function ClientsTable() {
+  const { company } = useUser();
   const [activeTab, setActiveTab] = useState(1);
   const tabs = [
     {
@@ -148,10 +150,14 @@ export default function ClientsTable() {
       label: "Поставщики",
       content: <Suppliers />,
     },
-    {
-      label: "Реализаторы",
-      content: <Implementers />,
-    },
+    ...(company?.sector?.name === "Гостиница"
+      ? []
+      : [
+          {
+            label: "Реализаторы",
+            content: <Implementers />,
+          },
+        ]),
   ];
 
   const navigate = useNavigate();

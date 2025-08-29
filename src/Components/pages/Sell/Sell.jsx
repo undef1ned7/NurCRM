@@ -14,6 +14,7 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import {
   deleteProductInCart,
   doSearch,
+  getProductCheckout,
   historySellProduct,
   manualFilling,
   productCheckout,
@@ -53,7 +54,7 @@ const SellModal = ({ onClose, id }) => {
           <div className="sell__manual">
             <input
               type="text"
-              placeholder="штрих код"
+              placeholder="Введите название товара"
               className="add-modal__input"
               name="search"
               onChange={onChange}
@@ -93,6 +94,40 @@ const SellModal = ({ onClose, id }) => {
     setActiveTab(index);
     setIsTabSelected(true); // включаем отображение контента
   };
+
+  useEffect(() => {
+    dispatch(doSearch({ search: "" }));
+  }, [activeTab, dispatch]);
+
+  const handlePrintReceipt = async () => {
+    try {
+      const result = await dispatch(
+        productCheckout({ id: start?.id, bool: true })
+      ).unwrap();
+
+      if (result?.sale_id) {
+        const pdfBlob = await dispatch(
+          getProductCheckout(result.sale_id)
+        ).unwrap();
+
+        // Создаём ссылку и скачиваем файл
+        const url = window.URL.createObjectURL(pdfBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "receipt.pdf";
+        link.click();
+
+        window.URL.revokeObjectURL(url);
+      } else {
+        console.error("Не удалось получить sale_id", result);
+      }
+
+      onClose();
+    } catch (err) {
+      alert(err.detail);
+    }
+  };
+
   return (
     <div className="add-modal">
       <div className="add-modal__overlay" onClick={onClose} />
@@ -110,6 +145,7 @@ const SellModal = ({ onClose, id }) => {
                   ? "add-modal__button-active"
                   : ""
               }`}
+              key={index}
               onClick={() => handleTabClick(index)}
             >
               {tab.label}
@@ -151,16 +187,10 @@ const SellModal = ({ onClose, id }) => {
               <b>≡ {start?.total}</b>
             </div>
             <div className="receipt__row">
-              <button
-                className="receipt__row-btn"
-                onClick={() => {
-                  dispatch(productCheckout({ id: start?.id, bool: true }));
-
-                  onClose();
-                }}
-              >
+              <button className="receipt__row-btn" onClick={handlePrintReceipt}>
                 Печать чека
               </button>
+
               <button
                 className="receipt__row-btn"
                 onClick={() => {
@@ -396,7 +426,7 @@ const Sell = () => {
             <tbody>
               {history?.map((item, index) => (
                 <tr
-                  onClick={() => navigate(`/crm/sell/${item.id}`)}
+                  // onClick={() => navigate(`/crm/sell/${item.id}`)}
                   key={item.id}
                 >
                   <td>

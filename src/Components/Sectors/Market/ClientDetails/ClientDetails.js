@@ -6,7 +6,7 @@ import {
   useParams,
 } from "react-router-dom";
 import api from "../../../../api";
-import s from "./ClientDetails.module.scss";
+import "./ClientDetails.scss";
 
 /* ===== helpers ===== */
 const listFrom = (res) => res?.data?.results || res?.data || [];
@@ -385,8 +385,8 @@ export default function MarketClientDetails() {
   const clientName = client?.fio || client?.full_name || "—";
 
   return (
-    <div className={s["client-details"]}>
-      <div className={s["details-top"]}>
+    <div className="client-details">
+      <div className="details-top">
         <button onClick={() => navigate(-1)} className="btn btn--ghost">
           ← Назад
         </button>
@@ -395,25 +395,25 @@ export default function MarketClientDetails() {
         </button>
       </div>
 
-      <div className={s.panel}>
-        <h2 className={s.title}>{clientName}</h2>
+      <div className="panel">
+        <h2 className="title">{clientName}</h2>
         {clientErr && (
           <div className="alert alert--error" style={{ marginTop: 8 }}>
             {clientErr}
           </div>
         )}
-        <div className={s.divider}></div>
+        <div className="divider"></div>
 
-        <div className={s["content-wrapper"]}>
-          <div className={s.rows}>
-            <div className={s.row}>
-              <div className={s.label}>ФИО</div>
-              <div className={s.value}>{clientName}</div>
+        <div className="content-wrapper">
+          <div className="rows">
+            <div className="row">
+              <div className="label">ФИО</div>
+              <div className="value">{clientName}</div>
             </div>
 
-            <div className={s.row}>
-              <div className={s.label}>Телефон</div>
-              <div className={s.value}>
+            <div className="row">
+              <div className="label">Телефон</div>
+              <div className="value">
                 {client?.phone ? (
                   <a href={`tel:${String(client.phone).replace(/\D/g, "")}`}>
                     {client.phone}
@@ -424,49 +424,42 @@ export default function MarketClientDetails() {
               </div>
             </div>
 
-            <div className={s.row}>
-              <div className={s.label}>Тип</div>
-              <div className={s.value}>{typeLabel(client?.type)}</div>
+            <div className="row">
+              <div className="label">Тип</div>
+              <div className="value">{typeLabel(client?.type)}</div>
             </div>
 
-            <div className={s.row}>
-              <div className={s.label}>Сумма покупки</div>
-              <div className={s.value}>
+            <div className="row">
+              <div className="label">Сумма покупки</div>
+              <div className="value">
                 {Number(client?.amount || 0).toFixed(2)} сом
               </div>
-              <button
-                className={`btn ${s["edit-btn"]}`}
-                onClick={openClientForm}
-              >
+              <button className="btn edit-btn" onClick={openClientForm}>
                 Редактировать
               </button>
             </div>
           </div>
 
-          <div className={s["debts-wrapper"]}>
-            <div className={`${s.debts} ${s["debts--red"]}`}>
-              <div className={s["debts-title"]}>Долги</div>
-              <div className={s["debts-amount"]}>
-                {totals.debt.toFixed(2)} сом
-              </div>
+          <div className="debts-wrapper">
+            <div className="debts debts--red">
+              <div className="debts-title">Долги</div>
+              <div className="debts-amount">{totals.debt.toFixed(2)} сом</div>
             </div>
-            <div className={`${s.debts} ${s["debts--green"]}`}>
-              <div className={s["debts-title"]}>Аванс</div>
-              <div className={s["debts-amount"]}>
+            <div className="debts debts--green">
+              <div className="debts-title">Аванс</div>
+              <div className="debts-amount">
                 {totals.prepayment.toFixed(2)} сом
               </div>
             </div>
-            <div className={`${s.debts} ${s["debts--orange"]}`}>
-              <div className={s["debts-title"]}>Продажи</div>
-              <div className={s["debts-amount"]}>
-                {totals.sale.toFixed(2)} сом
-              </div>
+            <div className="debts debts--orange">
+              <div className="debts-title">Продажи</div>
+              <div className="debts-amount">{totals.sale.toFixed(2)} сом</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className={s["deals-list"]}>
+      <div className="deals-list">
         <h3>Сделки</h3>
         {dealsLoading && (
           <div className="muted" style={{ padding: "8px 0" }}>
@@ -485,20 +478,20 @@ export default function MarketClientDetails() {
         {deals.map((deal) => (
           <div
             key={deal.id}
-            className={s["deal-item"]}
+            className="deal-item"
             onClick={() => openDealForm(deal)}
           >
-            <span className={s["deal-name"]}>{deal.title}</span>
-            <span className={s["deal-budget"]}>
+            <span className="deal-name">{deal.title}</span>
+            <span className="deal-budget">
               {Number(deal.amount || 0).toFixed(2)}с
             </span>
-            <span className={s["deal-status"]}>{kindLabel(deal.kind)}</span>
-            <span className={s["deal-tasks"]}>Нет задач</span>
+            <span className="deal-status">{kindLabel(deal.kind)}</span>
+            <span className="deal-tasks">Нет задач</span>
           </div>
         ))}
       </div>
 
-      {/* ===== Modal: Редактировать клиента (без статуса) ===== */}
+      {/* ===== Modal: Редактировать клиента ===== */}
       {isClientFormOpen && (
         <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true">

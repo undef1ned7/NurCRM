@@ -32,7 +32,7 @@ export const loginUserAsync = createAsyncThunk(
       const response = await loginUser(props.formData);
       if (response.access) {
         localStorage.setItem("accessToken", response.access);
-        props.navigate("/crm/obzor/");
+        props.navigate("/crm/analytics/");
       }
       return response;
     } catch (error) {
@@ -115,6 +115,18 @@ export const updateApplication = createAsyncThunk(
         `/main/applications/${id}/`,
         updatedData
       );
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const updateUserData = createAsyncThunk(
+  "user/updateUserData",
+  async (userData, { rejectWithValue }) => {
+    try {
+      const { data } = await api.patch(`/users/profile/`, userData);
       return data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);

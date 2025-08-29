@@ -12,14 +12,13 @@ import { useUser } from "../../store/slices/userSlice";
 import { getCompany } from "../../store/creators/userCreators";
 import { useDispatch } from "react-redux";
 
-// хук возвращает оставшиеся дни
-const useAnnouncement = (company) => {
+const useAnnouncement = (company, setHideAnnouncement) => {
   const [daysLeft, setDaysLeft] = useState(null);
 
   useEffect(() => {
     if (!company?.end_date) return;
 
-    const endDate = new Date(company?.end_date);
+    const endDate = new Date(company.end_date);
     const now = new Date();
 
     const diff = endDate - now;
@@ -27,10 +26,16 @@ const useAnnouncement = (company) => {
 
     if (days <= 3 && days >= 0) {
       setDaysLeft(days);
+
+      const timer = setTimeout(() => {
+        setHideAnnouncement(true);
+      }, 10000);
+
+      return () => clearTimeout(timer);
     } else {
       setDaysLeft(null);
     }
-  }, [company]);
+  }, [company, setHideAnnouncement]);
 
   return daysLeft;
 };
@@ -55,50 +60,56 @@ const Layout = () => {
     if (lan === "en") return "app-en";
   };
 
-  const daysLeft = useAnnouncement(company);
+  const daysLeft = useAnnouncement(company, setHideAnnouncement);
 
   return (
-    <div className={`App ${isSidebarOpen ? "App--sidebar-open" : ""}`}>
-      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+    <div className="layout-wrapper">
       <div
-        className={`content ${languageFunc()}`}
         style={{
           backgroundImage: lan === "ky" ? `url(${arnament4})` : "none",
         }}
-        onClick={isSidebarOpen ? closeSidebar : undefined}
-      >
-        {daysLeft !== null && !hideAnnouncement && (
-          <div className="announcement">
-            <span></span>
-            <div className="announcement__content">
-              <p>
-                ⚠️ Уведомляем, что срок вашей <br />
-                подписки истекает через <b>{daysLeft}</b>{" "}
-                {daysLeft === 1 ? "день" : "дня(ей)"}. <br />
-                Рекомендуем продлить её заранее, <br />
-                чтобы сохранить доступ ко всем функциям.
-              </p>
-            </div>
-            <button
-              className="announcement__close"
-              onClick={() => setHideAnnouncement(true)}
-            >
-              <X />
-            </button>
-          </div>
-        )}
+        className="content_background"
+      ></div>
+      <div className={`App ${isSidebarOpen ? "App--sidebar-open" : ""}`}>
+        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-        <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
-        <hr />
-        <div className="content_content">
-          <Outlet />
-          {lan === "ru" && (
-            <>
-              <img src={arnament} className="content_image1" alt="" />
-              <img src={arnament2} className="content_image2" alt="" />
-              <img src={arnament3} className="content_image3" alt="" />
-            </>
+        <div
+          className={`content ${languageFunc()}`}
+          onClick={isSidebarOpen ? closeSidebar : undefined}
+        >
+          {daysLeft !== null && !hideAnnouncement && (
+            <div className="announcement">
+              <span></span>
+              <div className="announcement__content">
+                <p>
+                  ⚠️ Уведомляем, что срок вашей <br />
+                  подписки истекает через <b>{daysLeft}</b>{" "}
+                  {daysLeft === 1 ? "день" : "дня(ей)"}. <br />
+                  Рекомендуем продлить её заранее, <br />
+                  чтобы сохранить доступ ко всем функциям.
+                </p>
+              </div>
+              <button
+                className="announcement__close"
+                onClick={() => setHideAnnouncement(true)}
+              >
+                <X />
+              </button>
+            </div>
           )}
+
+          <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+          <hr />
+          <div className="content_content">
+            <Outlet />
+            {lan === "ru" && (
+              <>
+                <img src={arnament} className="content_image1" alt="" />
+                <img src={arnament2} className="content_image2" alt="" />
+                <img src={arnament3} className="content_image3" alt="" />
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

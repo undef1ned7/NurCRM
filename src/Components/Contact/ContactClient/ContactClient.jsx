@@ -177,7 +177,7 @@ const AddModal = ({ onClose }) => {
             required
           />
         </div>
-        <div className="add-modal__section">
+        {/* <div className="add-modal__section">
           <label>Статус *</label>
           <select
             name="status"
@@ -192,7 +192,7 @@ const AddModal = ({ onClose }) => {
               </option>
             ))}
           </select>
-        </div>
+        </div> */}
 
         <div className="add-modal__footer">
           <button

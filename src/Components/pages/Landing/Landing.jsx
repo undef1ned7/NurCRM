@@ -1,6 +1,6 @@
 import React from "react";
 import styles from "./Landing.module.scss";
-import logo from "../../Photo/Logo.png"; // Убедитесь, что путь к логотипу корректен
+import logo from "../../Photo/logo2.png"; // Убедитесь, что путь к логотипу корректен
 import { Link } from "react-router-dom"; // Импортируем Link для навигации
 import Lang from "../../Lang/Lang";
 

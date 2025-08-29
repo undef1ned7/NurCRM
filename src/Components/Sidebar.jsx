@@ -1,36 +1,36 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { NavLink } from "react-router-dom";
 import {
-  FaRegClipboard,
-  FaRegListAlt,
-  FaRegCalendarAlt,
-  FaRegUser,
-  FaRegChartBar,
-  FaCog,
-  FaComments,
-  FaRobot,
-  FaGlobe,
-  FaHeadset,
-  FaTags,
-} from "react-icons/fa";
-import { BsFileEarmarkPerson } from "react-icons/bs";
-import {
-  Warehouse,
-  Landmark,
-  Users,
   Instagram,
   InstagramIcon,
-  Contact,
+  Landmark,
   ScaleIcon,
+  Users,
+  Warehouse,
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BsFileEarmarkPerson } from "react-icons/bs";
+import {
+  FaCog,
+  FaComments,
+  FaGlobe,
+  FaHeadset,
+  FaRegCalendarAlt,
+  FaRegChartBar,
+  FaRegClipboard,
+  FaRegListAlt,
+  FaRegUser,
+  FaRobot,
+  FaTags,
+} from "react-icons/fa";
+import { NavLink } from "react-router-dom";
 import "./Sidebar.scss";
 
-import Logo from "./Photo/Logo.png";
+import { MdDocumentScanner } from "react-icons/md";
+import { useUser } from "../store/slices/userSlice";
+import Lang from "./Lang/Lang";
 import arnament1 from "./Photo/Group 1203.png";
 import arnament2 from "./Photo/Group 1204 (1).png";
-import Lang from "./Lang/Lang";
-import { useUser } from "../store/slices/userSlice";
-import { MdDocumentScanner } from "react-icons/md";
+import Logo from "./Photo/logo2.png";
+import { ta } from "date-fns/locale";
 
 // --- API Configuration ---
 const BASE_URL = "https://app.nurcrm.kg/api";
@@ -64,17 +64,50 @@ const ALL_ACCESS_TYPES_MAPPING = [
     label: "Сотрудники",
     backendKey: "can_view_employees",
   },
+  {
+    value: "Доп услуги",
+    label: "Доп услуги",
+    backendKey: "can_view_additional_services",
+  },
 ];
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [tariff, setTariff] = useState(null);
   const [sector, setSector] = useState(null);
-  const { user } = useUser();
+  const { user, company } = useUser();
 
   const [userAccesses, setUserAccesses] = useState({});
   const [loadingAccesses, setLoadingAccesses] = useState(true);
 
-  const accessMap = {
+  // --- Секторные фичи ---
+  const sectorFeatures = {
+    Барбершоп: [
+      "Клиенты",
+      "Услуги",
+      "Мастера",
+      "История",
+      "Записи",
+      "Кассовые отчёты",
+    ],
+    Гостиница: ["Комнаты", "Бронирования", "Бар", "Аналитика"],
+    Школа: ["Ученики", "Группы", "Уроки", "Учителя", "Лиды", "Счета"],
+    Магазин: ["Бар", "История", "Аналитика"],
+    Кафе: [
+      "Аналитика выплат",
+      "Меню",
+      "Заказы",
+      "Зарплата",
+      "Закупки",
+      "Отчёты",
+      "Бронь",
+      "Сотрудники",
+      "Склад",
+      "Столы",
+    ],
+  };
+
+  // --- Карта доступов по тарифу (с "Доп услуги" для всех кроме Старт) ---
+  const baseAccessMap = {
     Старт: [
       "Бренд,Категория",
       "Заказы",
@@ -87,7 +120,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     Стандарт: [
       "Бренд,Категория",
       "Клиенты",
-      // "Обзор",
       "Регистрация",
       "Заказы",
       "Аналитика",
@@ -98,11 +130,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       "Настройки",
       "Касса",
       "Отделы",
+      "Доп услуги",
     ],
     Прайм: [
       "Бренд,Категория",
       "Клиенты",
-      // "Обзор",
       "Регистрация",
       "Заказы",
       "Аналитика",
@@ -116,10 +148,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       "Настройки",
       "Касса",
       "Отделы",
+      "Доп услуги",
     ],
     Индивидуальный: [
       "Клиенты",
-      // "Обзор",
       "Регистрация",
       "Заказы",
       "Аналитика",
@@ -133,6 +165,35 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       "Сайт",
       "Личный помощник",
       "Настройки",
+      "Доп услуги",
+    ],
+  };
+
+  // --- Финальный accessMap (объединяем базовые + секторные) ---
+  const accessMap = Object.fromEntries(
+    Object.entries(baseAccessMap).map(([tariffName, features]) => {
+      if (tariffName === "Старт") return [tariffName, features];
+      let extended = [...features];
+      Object.values(sectorFeatures).forEach((sectorArr) => {
+        extended = [...extended, ...sectorArr];
+      });
+      return [tariffName, extended];
+    })
+  );
+
+  // --- Что убирать по секторам ---
+  const sectorRemovals = {
+    Барбершоп: ["Заказы", "Продажа", "Бронирование", "Отделы", "Касса"],
+    Школа: ["Бронирование", "Сотрудники", "Отделы", "Клиенты"],
+    Гостиница: ["Аналитика", "Заказы"], // убираем старую аналитику
+    Магазин: ["Бар", "История", "Заказы", "Аналитика", "Бронирование"],
+    Кафе: [
+      "Заказы",
+      "Продажа",
+      "Аналитика",
+      "Клиенты",
+      "Бронирование",
+      "Сотрудники",
     ],
   };
 
@@ -143,7 +204,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         const res = await fetch(`${BASE_URL}/users/company/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         const data = await res.json();
         setSector(data.sector.name);
         setTariff(data.subscription_plan.name || "Старт");
@@ -152,7 +212,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         setTariff("Старт");
       }
     };
-
     fetchCompany();
   }, []);
 
@@ -164,7 +223,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         setUserAccesses({});
         return;
       }
-
       const response = await fetch(`${BASE_URL}/users/profile/`, {
         method: "GET",
         headers: {
@@ -172,7 +230,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           Authorization: `Bearer ${token}`,
         },
       });
-
       const data = await response.json();
       setUserAccesses(data);
     } catch (err) {
@@ -187,6 +244,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     fetchUserAccesses();
   }, [fetchUserAccesses]);
 
+  const [openDropdown, setOpenDropdown] = useState(false);
+
+  // --- Базовые фичи ---
   const baseFeatures = [
     {
       label: "Обзор",
@@ -216,6 +276,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: "Склад",
       to: "/crm/sklad",
       icon: <Warehouse className="sidebar__menu-icon" />,
+      implemented: true,
+    },
+    {
+      label: "Касса",
+      to: "/crm/kassa",
+      icon: <Landmark className="sidebar__menu-icon" />,
       implemented: true,
     },
     {
@@ -261,27 +327,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       implemented: true,
     },
     {
+      label: "Отделы",
+      to: "/crm/departments",
+      icon: <Users className="sidebar__menu-icon" />,
+      implemented: true,
+    },
+    {
       label: "Бренд,Категория",
       to: "/crm/brand-category",
       icon: <Instagram className="sidebar__menu-icon" />,
-      implemented: true,
-    },
-    {
-      label: "Инстаграм",
-      to: "/crm/instagram",
-      icon: <InstagramIcon className="sidebar__menu-icon" />,
-      implemented: true,
-    },
-    // {
-    //   label: "Контакты",
-    //   to: "/crm/contact",
-    //   icon: <Contact className="sidebar__menu-icon" />,
-    //   implemented: true,
-    // },
-    {
-      label: "Документы",
-      to: "/crm/documents",
-      icon: <MdDocumentScanner className="sidebar__menu-icon" />,
       implemented: true,
     },
     {
@@ -291,228 +345,261 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       implemented: true,
     },
   ];
-
   let dynamicFeatures = [...baseFeatures];
-  // console.log(dynamicFeatures);
 
-  // Строительная компания
-  if (sector === "Строительная компания") {
-    dynamicFeatures.splice(
-      1,
-      0,
-      {
-        label: "Касса",
-        to: "/crm/kassa",
-        icon: <Landmark className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Отделы",
-        to: "/crm/departments",
-        icon: <Users className="sidebar__menu-icon" />,
-        implemented: true,
-      }
+  // --- Доп услуги ---
+  if (tariff !== "Старт") {
+    const dopUslugi = {
+      label: "Доп услуги",
+      to: "/crm/additional-services",
+      icon: <FaRegClipboard className="sidebar__menu-icon" />,
+      implemented: true,
+      children: [
+        {
+          label: "WhatsApp",
+          to: "/crm/",
+          icon: <FaComments className="sidebar__menu-icon" />,
+          implemented: true,
+          requires: "can_view_whatsapp",
+        },
+        {
+          label: "Instagram",
+          to: "/crm/instagram",
+          icon: <InstagramIcon className="sidebar__menu-icon" />,
+          implemented: true,
+          requires: "can_view_instagram",
+        },
+        {
+          label: "Telegram",
+          to: "/crm/",
+          icon: <FaComments className="sidebar__menu-icon" />,
+          implemented: true,
+          requires: "can_view_telegram",
+        },
+        {
+          label: "Документы",
+          to: "/crm/documents",
+          icon: <MdDocumentScanner className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+      ],
+    };
+    const settingsIndex = dynamicFeatures.findIndex(
+      (f) => f.label === "Настройки"
     );
+    if (settingsIndex !== -1) {
+      dynamicFeatures.splice(settingsIndex, 0, dopUslugi);
+    } else {
+      dynamicFeatures.push(dopUslugi);
+    }
   }
 
-  // Барбершоп
-  if (sector === "Барбершоп") {
-    dynamicFeatures.splice(
-      1,
-      0,
-      {
-        label: "Услуги",
-        to: "/crm/barber/services",
-        icon: <FaTags className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Мастера",
-        to: "/crm/barber/masters",
-        icon: <FaRegUser className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "История",
-        to: "/crm/barber/history",
-        icon: <FaRegClipboard className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Записи",
-        to: "/crm/barber/records",
-        icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Кассовые отчёты",
-        to: "/crm/barber/cash-reports",
-        icon: <FaRegChartBar className="sidebar__menu-icon" />,
-        implemented: true,
-      }
-    );
-  }
-
-  // Гостиница
-  if (sector === "Гостиница") {
-    dynamicFeatures.splice(
-      1,
-      0,
-      {
-        label: "Комнаты",
-        to: "/crm/hostel/rooms",
-        icon: <FaRegListAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Бронирования",
-        to: "/crm/hostel/bookings",
-        icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Бар",
-        to: "/crm/hostel/bar",
-        icon: <FaRegClipboard className="sidebar__menu-icon" />,
-        implemented: true,
-      }
-    );
-  }
-
-  // Школа
-  if (sector === "Школа") {
-    dynamicFeatures.splice(
-      1,
-      0,
-      {
-        label: "Ученики",
-        to: "/crm/school/students",
-        icon: <BsFileEarmarkPerson className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Группы",
-        to: "/crm/school/groups",
-        icon: <FaRegListAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Уроки",
-        to: "/crm/school/lessons",
-        icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Учителя",
-        to: "/crm/school/teachers",
-        icon: <FaRegUser className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Лиды",
-        to: "/crm/school/leads",
-        icon: <FaComments className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Счета",
-        to: "/crm/school/invoices",
-        icon: <FaRegClipboard className="sidebar__menu-icon" />,
-        implemented: true,
-      }
-    );
-  }
-
-  if (sector === "Магазин") {
-    dynamicFeatures.splice(
-      1,
-      0,
-      {
-        label: "Бар",
-        to: "/crm/market/bar",
-        icon: <FaRegListAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "История",
-        to: "/crm/market/history",
-        icon: <FaRegClipboard className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Аналитика",
-        to: "/crm/market/analytics",
-        icon: <FaRegChartBar className="sidebar__menu-icon" />,
-        implemented: true,
-      }
-    );
-  }
-
-  if (sector === "Кафе") {
-    dynamicFeatures.splice(
-      1,
-      0,
-      {
-        label: "Аналитика",
-        to: "/crm/cafe/analytics",
-        icon: <FaRegChartBar className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Меню",
-        to: "/crm/cafe/menu",
-        icon: <FaRegListAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Заказы",
-        to: "/crm/cafe/orders",
-        icon: <FaRegListAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Зарплата",
-        to: "/crm/cafe/payroll",
-        icon: <FaRegUser className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Закупки",
-        to: "/crm/cafe/purchasing",
-        icon: <FaRegChartBar className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Отчёты",
-        to: "/crm/cafe/reports",
-        icon: <FaRegChartBar className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Бронирования",
-        to: "/crm/cafe/reservations",
-        icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Сотрудники",
-        to: "/crm/cafe/staff",
-        icon: <FaRegUser className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Склад",
-        to: "/crm/cafe/stock",
-        icon: <FaRegChartBar className="sidebar__menu-icon" />,
-        implemented: true,
-      },
-      {
-        label: "Столы",
-        to: "/crm/cafe/tables",
-        icon: <FaRegListAlt className="sidebar__menu-icon" />,
-        implemented: true,
-      }
-    );
+  // --- Секторы (если тариф != "Старт") ---
+  if (tariff !== "Старт") {
+    if (sector === "Барбершоп") {
+      dynamicFeatures.splice(
+        1,
+        0,
+        {
+          label: "Клиенты",
+          to: "/crm/barber/clients",
+          icon: <BsFileEarmarkPerson className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Услуги",
+          to: "/crm/barber/services",
+          icon: <FaTags className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Мастера",
+          to: "/crm/barber/masters",
+          icon: <FaRegUser className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "История",
+          to: "/crm/barber/history",
+          icon: <FaRegClipboard className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Записи",
+          to: "/crm/barber/records",
+          icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Кассовые отчёты",
+          to: "/crm/barber/cash-reports",
+          icon: <FaRegChartBar className="sidebar__menu-icon" />,
+          implemented: true,
+        }
+      );
+    }
+    if (sector === "Гостиница") {
+      dynamicFeatures.splice(
+        1,
+        0,
+        {
+          label: "Комнаты",
+          to: "/crm/hostel/rooms",
+          icon: <FaRegListAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Бронирования",
+          to: "/crm/hostel/bookings",
+          icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Бар",
+          to: "/crm/hostel/bar",
+          icon: <FaRegClipboard className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Аналитика",
+          to: "/crm/hostel/analytics",
+          icon: <FaRegChartBar className="sidebar__menu-icon" />,
+          implemented: true,
+        }
+      );
+    }
+    if (sector === "Школа") {
+      dynamicFeatures.splice(
+        1,
+        0,
+        {
+          label: "Ученики",
+          to: "/crm/school/students",
+          icon: <BsFileEarmarkPerson className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Группы",
+          to: "/crm/school/groups",
+          icon: <FaRegListAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Уроки",
+          to: "/crm/school/lessons",
+          icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Учителя",
+          to: "/crm/school/teachers",
+          icon: <FaRegUser className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Лиды",
+          to: "/crm/school/leads",
+          icon: <FaComments className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Счета",
+          to: "/crm/school/invoices",
+          icon: <FaRegClipboard className="sidebar__menu-icon" />,
+          implemented: true,
+        }
+      );
+    }
+    if (sector === "Магазин") {
+      dynamicFeatures.splice(
+        1,
+        0,
+        {
+          label: "Бар",
+          to: "/crm/market/bar",
+          icon: <FaRegListAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "История",
+          to: "/crm/market/history",
+          icon: <FaRegClipboard className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Аналитика",
+          to: "/crm/market/analytics",
+          icon: <FaRegChartBar className="sidebar__menu-icon" />,
+          implemented: true,
+        }
+      );
+    }
+    if (sector === "Кафе") {
+      dynamicFeatures.splice(
+        1,
+        0,
+        {
+          label: "Аналитика выплат",
+          to: "/crm/cafe/analytics",
+          icon: <FaRegChartBar className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Меню",
+          to: "/crm/cafe/menu",
+          icon: <FaRegListAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Заказы",
+          to: "/crm/cafe/orders",
+          icon: <FaRegListAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Зарплата",
+          to: "/crm/cafe/payroll",
+          icon: <FaRegUser className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Закупки",
+          to: "/crm/cafe/purchasing",
+          icon: <FaRegChartBar className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Отчёты",
+          to: "/crm/cafe/reports",
+          icon: <FaRegChartBar className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Бронь",
+          to: "/crm/cafe/reservations",
+          icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Сотрудники",
+          to: "/crm/cafe/staff",
+          icon: <FaRegUser className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Склад",
+          to: "/crm/cafe/stock",
+          icon: <FaRegChartBar className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Столы",
+          to: "/crm/cafe/tables",
+          icon: <FaRegListAlt className="sidebar__menu-icon" />,
+          implemented: true,
+        }
+      );
+    }
   }
 
   const availableByTariff =
@@ -526,42 +613,74 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const filteredFeatures = dynamicFeatures.filter((feature) => {
     if (!feature.implemented) return false;
 
-    const backendKey = getBackendKeyByLabel(feature.label);
-
-    if (backendKey) {
-      const isAllowedByTariff = availableByTariff.includes(feature.label);
-      if (!isAllowedByTariff) return false;
-
-      return !loadingAccesses && userAccesses[backendKey] === true;
-    } else {
+    // --- Исключение для "Доп услуги" ---
+    if (
+      feature.label === "Доп услуги" &&
+      ["Стандарт", "Прайм", "Индивидуальный"].includes(tariff)
+    ) {
       return true;
     }
+
+    // --- Фильтруем по accessMap ---
+    if (tariff && accessMap[tariff]) {
+      if (!accessMap[tariff].includes(feature.label)) return false;
+    }
+
+    // --- Убираем по sectorRemovals ---
+    if (sector && sectorRemovals[sector]?.includes(feature.label)) {
+      return false;
+    }
+
+    // --- Проверка соц. сетей ---
+    if (feature.requires) {
+      if (tariff === "Старт") return false;
+      if (tariff === "Прайм") return true;
+      if (tariff === "Стандарт" || tariff === "Индивидуальный") {
+        return company?.[feature.requires] === true;
+      }
+    }
+
+    // --- Проверка доступов пользователя ---
+    const backendKey = getBackendKeyByLabel(feature.label);
+    if (backendKey) {
+      return !loadingAccesses && userAccesses[backendKey] === true;
+    }
+
+    return true;
   });
+
+  const dropdownRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpenDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className={`sidebar ${isOpen ? "sidebar--visible" : ""}`}>
       <div className="sidebar__wrapper">
-        <img
-          src={arnament1}
-          className="sidebar__arnament1"
-          alt="Декоративный элемент"
-        />
-        <img
-          src={arnament2}
-          className="sidebar__arnament2"
-          alt="Декоративный элемент"
-        />
+        <img src={arnament1} className="sidebar__arnament1" alt="Декор" />
+        <img src={arnament2} className="sidebar__arnament2" alt="Декор" />
         <div className="sidebar__logo">
           <img src={Logo} alt="Логотип" />
         </div>
-
         {(!tariff || loadingAccesses) && <p>Загрузка данных...</p>}
-
         <ul className="sidebar__menu">
           {tariff &&
             !loadingAccesses &&
-            filteredFeatures.map(({ label, to, icon }) => (
-              <li key={label}>
+            filteredFeatures.map(({ label, to, icon, children }) => (
+              <li
+                key={label}
+                className={`sidebar__menu-item-wrapper ${
+                  children ? "has-children" : ""
+                }`}
+              >
                 <NavLink
                   to={to}
                   className={({ isActive }) =>
@@ -569,11 +688,44 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                       isActive ? "sidebar__menu-item--active" : ""
                     }`
                   }
-                  onClick={toggleSidebar}
+                  onClick={(e) => {
+                    if (children) {
+                      if (!openDropdown) {
+                        e.preventDefault();
+                        setOpenDropdown(true);
+                      } else {
+                        toggleSidebar();
+                      }
+                    } else {
+                      toggleSidebar();
+                    }
+                  }}
                 >
                   {icon}
                   <span>{label}</span>
                 </NavLink>
+                {children && (
+                  <ul
+                    className={`sidebar__submenu ${openDropdown ? "open" : ""}`}
+                  >
+                    {children.map(({ label, to, icon }) => (
+                      <li key={label}>
+                        <NavLink
+                          to={to}
+                          className={({ isActive }) =>
+                            `sidebar__submenu-item ${
+                              isActive ? "sidebar__submenu-item--active" : ""
+                            }`
+                          }
+                          onClick={toggleSidebar}
+                        >
+                          {icon}
+                          <span>{label}</span>
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           <Lang />
@@ -585,35 +737,42 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
 export default Sidebar;
 
-// import React, { useEffect, useState, useCallback } from "react";
-// import { NavLink } from "react-router-dom";
 // import {
-//   FaRegClipboard,
-//   FaRegListAlt,
-//   FaRegCalendarAlt,
-//   FaRegUser,
-//   FaRegChartBar, // Иконка для общей Аналитики
+//   Instagram,
+//   InstagramIcon,
+//   Landmark,
+//   ScaleIcon,
+//   Users,
+//   Warehouse,
+// } from "lucide-react";
+// import { useCallback, useEffect, useRef, useState } from "react";
+// import { BsFileEarmarkPerson } from "react-icons/bs";
+// import {
 //   FaCog,
 //   FaComments,
-//   FaRobot,
 //   FaGlobe,
 //   FaHeadset,
+//   FaRegCalendarAlt,
+//   FaRegChartBar,
+//   FaRegClipboard,
+//   FaRegListAlt,
+//   FaRegUser,
+//   FaRobot,
 //   FaTags,
 // } from "react-icons/fa";
-// import { BsFileEarmarkPerson } from "react-icons/bs";
-// import { TbBrandAppleFilled } from "react-icons/tb";
-
-// import { Warehouse, Landmark, Users, Instagram } from "lucide-react";
+// import { NavLink } from "react-router-dom";
 // import "./Sidebar.scss";
 
-// import Logo from "./Photo/Logo.png";
+// import { MdDocumentScanner } from "react-icons/md";
+// import { useUser } from "../store/slices/userSlice";
+// import Lang from "./Lang/Lang";
 // import arnament1 from "./Photo/Group 1203.png";
 // import arnament2 from "./Photo/Group 1204 (1).png";
-// import Lang from "./Lang/Lang";
+// import Logo from "./Photo/logo2.png";
+// import { ta } from "date-fns/locale";
 
 // // --- API Configuration ---
 // const BASE_URL = "https://app.nurcrm.kg/api";
-// const AUTH_TOKEN = localStorage.getItem("accessToken"); // Получаем токен
 
 // const ALL_ACCESS_TYPES_MAPPING = [
 //   { value: "Обзор", label: "Обзор", backendKey: "can_view_dashboard" },
@@ -639,47 +798,71 @@ export default Sidebar;
 //     label: "Бренд,Категория",
 //     backendKey: "can_view_brand_category",
 //   },
-//   // { value: "Настройки", label: "Настройки", backendKey: "can_view_settings" },
 //   {
 //     value: "Сотрудники",
 //     label: "Сотрудники",
 //     backendKey: "can_view_employees",
+//   },
+//   {
+//     value: "Доп услуги",
+//     label: "Доп услуги",
+//     backendKey: "can_view_additional_services",
 //   },
 // ];
 
 // const Sidebar = ({ isOpen, toggleSidebar }) => {
 //   const [tariff, setTariff] = useState(null);
 //   const [sector, setSector] = useState(null);
+//   const { user, company } = useUser();
 
 //   const [userAccesses, setUserAccesses] = useState({});
 //   const [loadingAccesses, setLoadingAccesses] = useState(true);
 
-//   // console.log("start");
-//   // console.log(tariff);
+//   // --- Карта доступов по тарифу ---
+//   // --- Секторные фичи ---
+//   const sectorFeatures = {
+//     Барбершоп: [
+//       "Клиенты",
+//       "Услуги",
+//       "Мастера",
+//       "История",
+//       "Записи",
+//       "Кассовые отчёты",
+//     ],
+//     Гостиница: ["Комнаты", "Бронирования", "Бар", "Аналитика"],
+//     Школа: ["Ученики", "Группы", "Уроки", "Учителя", "Лиды", "Счета"],
+//     Магазин: ["Бар", "История", "Аналитика"],
+//     Кафе: [
+//       "Аналитика выплат",
+//       "Меню",
+//       "Заказы",
+//       "Зарплата",
+//       "Закупки",
+//       "Отчёты",
+//       "Бронь",
+//       "Сотрудники",
+//       "Склад",
+//       "Столы",
+//     ],
+//   };
 
-//   const accessMap = {
+//   // --- Карта доступов по тарифу (только базовые модули) ---
+//   const baseAccessMap = {
 //     Старт: [
 //       "Бренд,Категория",
-//       // "Клиенты",
-//       // "Обзор",
-//       // "Регистрация",
 //       "Заказы",
 //       "Аналитика",
-//       // "Аналитика Отделов",
 //       "Склад",
 //       "Продажа",
 //       "Настройки",
 //       "Касса",
-//       // "Отделы",
 //     ],
 //     Стандарт: [
 //       "Бренд,Категория",
 //       "Клиенты",
-//       "Обзор",
 //       "Регистрация",
 //       "Заказы",
 //       "Аналитика",
-//       // "Аналитика Отделов",
 //       "Склад",
 //       "Продажа",
 //       "Сотрудники",
@@ -687,15 +870,14 @@ export default Sidebar;
 //       "Настройки",
 //       "Касса",
 //       "Отделы",
+//       "Доп услуги",
 //     ],
 //     Прайм: [
 //       "Бренд,Категория",
 //       "Клиенты",
-//       "Обзор",
 //       "Регистрация",
 //       "Заказы",
 //       "Аналитика",
-//       // "Аналитика Отделов",
 //       "Склад",
 //       "Продажа",
 //       "Сотрудники",
@@ -706,10 +888,10 @@ export default Sidebar;
 //       "Настройки",
 //       "Касса",
 //       "Отделы",
+//       "Доп услуги",
 //     ],
 //     Индивидуальный: [
 //       "Клиенты",
-//       "Обзор",
 //       "Регистрация",
 //       "Заказы",
 //       "Аналитика",
@@ -723,6 +905,49 @@ export default Sidebar;
 //       "Сайт",
 //       "Личный помощник",
 //       "Настройки",
+//       "Доп услуги",
+//     ],
+//   };
+
+//   // --- Финальный accessMap (объединяем базовые + секторные) ---
+//   const accessMap = Object.fromEntries(
+//     Object.entries(baseAccessMap).map(([tariffName, features]) => {
+//       // Если тариф "Старт" — только базовые
+//       if (tariffName === "Старт") {
+//         return [tariffName, features];
+//       }
+
+//       // Для остальных тарифов — добавляем секторные фичи
+//       let extended = [...features];
+//       Object.values(sectorFeatures).forEach((sectorArr) => {
+//         extended = [...extended, ...sectorArr];
+//       });
+
+//       return [tariffName, extended];
+//     })
+//   );
+
+//   // --- Что убирать по секторам ---
+//   const sectorRemovals = {
+//     Барбершоп: [
+//       "Заказы",
+//       "Продажа",
+//       "Бронирование",
+//       "Отделы",
+//       "Касса",
+//       // "Отделы",
+//     ], // уберёт заказы и продажу
+//     Школа: ["Бронирование", "Сотрудники", "Отделы", "Клиенты"],
+//     Гостиница: ["Бронирование", "Заказы", "Бар", "Аналитика"],
+//     Магазин: ["Бар", "История", "Заказы", "Аналитика", "Бронирование"],
+//     Кафе: [
+//       "Заказы",
+//       "Продажа",
+//       "Аналитика",
+//       // "Склад",
+//       "Клиенты",
+//       "Бронирование",
+//       "Сотрудники",
 //     ],
 //   };
 
@@ -735,7 +960,6 @@ export default Sidebar;
 //         });
 
 //         const data = await res.json();
-//         // console.log("Company Data:", data);
 //         setSector(data.sector.name);
 //         setTariff(data.subscription_plan.name || "Старт");
 //       } catch (err) {
@@ -752,9 +976,6 @@ export default Sidebar;
 //     try {
 //       const token = localStorage.getItem("accessToken");
 //       if (!token) {
-//         console.warn(
-//           "Токен доступа не найден. Невозможно получить доступы пользователя."
-//         );
 //         setUserAccesses({});
 //         return;
 //       }
@@ -767,16 +988,7 @@ export default Sidebar;
 //         },
 //       });
 
-//       if (!response.ok) {
-//         const errorData = await response.json();
-//         throw new Error(
-//           errorData.detail || "Не удалось получить доступы пользователя"
-//         );
-//       }
-
 //       const data = await response.json();
-//       // console.log("User Profile Accesses Data:", data);
-
 //       setUserAccesses(data);
 //     } catch (err) {
 //       console.error("Ошибка при получении доступов пользователя:", err);
@@ -790,12 +1002,9 @@ export default Sidebar;
 //     fetchUserAccesses();
 //   }, [fetchUserAccesses]);
 
-//   const disabledStyle = {
-//     opacity: 0.5,
-//     pointerEvents: "none",
-//     cursor: "not-allowed",
-//   };
+//   const [openDropdown, setOpenDropdown] = useState(false);
 
+//   // --- Базовые фичи ---
 //   const baseFeatures = [
 //     {
 //       label: "Обзор",
@@ -812,7 +1021,7 @@ export default Sidebar;
 //     {
 //       label: "Продажа",
 //       to: "/crm/sell",
-//       icon: <FaRegListAlt className="sidebar__menu-icon" />,
+//       icon: <ScaleIcon className="sidebar__menu-icon" />,
 //       implemented: true,
 //     },
 //     {
@@ -820,12 +1029,17 @@ export default Sidebar;
 //       to: "/crm/analytics",
 //       icon: <FaRegChartBar className="sidebar__menu-icon" />,
 //       implemented: true,
-//     }, // Общая аналитика
-//     // { label: "Аналитика Отделов", to: "/crm/departament/analytics", icon: <FaRegChartBar className="sidebar__menu-icon" />, implemented: true }, // НОВАЯ: Аналитика по отделам
+//     },
 //     {
 //       label: "Склад",
 //       to: "/crm/sklad",
 //       icon: <Warehouse className="sidebar__menu-icon" />,
+//       implemented: true,
+//     },
+//     {
+//       label: "Касса",
+//       to: "/crm/kassa",
+//       icon: <Landmark className="sidebar__menu-icon" />,
 //       implemented: true,
 //     },
 //     {
@@ -871,11 +1085,18 @@ export default Sidebar;
 //       implemented: true,
 //     },
 //     {
+//       label: "Отделы",
+//       to: "/crm/departments",
+//       icon: <Users className="sidebar__menu-icon" />,
+//       implemented: true,
+//     },
+//     {
 //       label: "Бренд,Категория",
 //       to: "/crm/brand-category",
 //       icon: <Instagram className="sidebar__menu-icon" />,
 //       implemented: true,
 //     },
+
 //     {
 //       label: "Настройки",
 //       to: "/crm/set",
@@ -883,25 +1104,265 @@ export default Sidebar;
 //       implemented: true,
 //     },
 //   ];
-
 //   let dynamicFeatures = [...baseFeatures];
-//   if (sector === "Строительная компания") {
-//     dynamicFeatures.splice(
-//       1,
-//       0,
-//       {
-//         label: "Касса",
-//         to: "/crm/kassa",
-//         icon: <Landmark className="sidebar__menu-icon" />,
-//         implemented: true,
-//       },
-//       {
-//         label: "Отделы",
-//         to: "/crm/departments",
-//         icon: <Users className="sidebar__menu-icon" />,
-//         implemented: true,
-//       }
+
+//   // --- Доп услуги ---
+//   if (tariff !== "Старт") {
+//     const dopUslugi = {
+//       label: "Доп услуги",
+//       to: "/crm/additional-services",
+//       icon: <FaRegClipboard className="sidebar__menu-icon" />,
+//       implemented: true,
+//       children: [
+//         {
+//           label: "WhatsApp",
+//           to: "/crm/whatsapp",
+//           icon: <FaComments className="sidebar__menu-icon" />,
+//           implemented: true,
+//           requires: "can_view_whatsapp",
+//         },
+//         {
+//           label: "Instagram",
+//           to: "/crm/instagram",
+//           icon: <InstagramIcon className="sidebar__menu-icon" />,
+//           implemented: true,
+//           requires: "can_view_instagram",
+//         },
+//         {
+//           label: "Telegram",
+//           to: "/crm/telegram",
+//           icon: <FaComments className="sidebar__menu-icon" />,
+//           implemented: true,
+//           requires: "can_view_telegram",
+//         },
+//         {
+//           label: "Документы",
+//           to: "/crm/documents",
+//           icon: <MdDocumentScanner className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//       ],
+//     };
+//     const settingsIndex = dynamicFeatures.findIndex(
+//       (f) => f.label === "Настройки"
 //     );
+//     if (settingsIndex !== -1) {
+//       dynamicFeatures.splice(settingsIndex, 0, dopUslugi);
+//     } else {
+//       dynamicFeatures.push(dopUslugi);
+//     }
+//   }
+
+//   // --- Секторы (если тариф != "Старт") ---
+//   if (tariff !== "Старт") {
+//     if (sector === "Барбершоп") {
+//       dynamicFeatures.splice(
+//         1,
+//         0,
+//         {
+//           label: "Клиенты",
+//           to: "/crm/barber/clients",
+//           icon: <BsFileEarmarkPerson className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Услуги",
+//           to: "/crm/barber/services",
+//           icon: <FaTags className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Мастера",
+//           to: "/crm/barber/masters",
+//           icon: <FaRegUser className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "История",
+//           to: "/crm/barber/history",
+//           icon: <FaRegClipboard className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Записи",
+//           to: "/crm/barber/records",
+//           icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Кассовые отчёты",
+//           to: "/crm/barber/cash-reports",
+//           icon: <FaRegChartBar className="sidebar__menu-icon" />,
+//           implemented: true,
+//         }
+//       );
+//     }
+
+//     if (sector === "Гостиница") {
+//       dynamicFeatures.splice(
+//         1,
+//         0,
+//         {
+//           label: "Комнаты",
+//           to: "/crm/hostel/rooms",
+//           icon: <FaRegListAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Бронирования",
+//           to: "/crm/hostel/bookings",
+//           icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Бар",
+//           to: "/crm/hostel/bar",
+//           icon: <FaRegClipboard className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Аналитика",
+//           to: "/crm/hostel/analytics",
+//           icon: <FaRegChartBar className="sidebar__menu-icon" />,
+//           implemented: true,
+//         }
+//       );
+//     }
+
+//     if (sector === "Школа") {
+//       dynamicFeatures.splice(
+//         1,
+//         0,
+//         {
+//           label: "Ученики",
+//           to: "/crm/school/students",
+//           icon: <BsFileEarmarkPerson className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Группы",
+//           to: "/crm/school/groups",
+//           icon: <FaRegListAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Уроки",
+//           to: "/crm/school/lessons",
+//           icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Учителя",
+//           to: "/crm/school/teachers",
+//           icon: <FaRegUser className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Лиды",
+//           to: "/crm/school/leads",
+//           icon: <FaComments className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Счета",
+//           to: "/crm/school/invoices",
+//           icon: <FaRegClipboard className="sidebar__menu-icon" />,
+//           implemented: true,
+//         }
+//       );
+//     }
+
+//     if (sector === "Магазин") {
+//       dynamicFeatures.splice(
+//         1,
+//         0,
+//         {
+//           label: "Бар",
+//           to: "/crm/market/bar",
+//           icon: <FaRegListAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "История",
+//           to: "/crm/market/history",
+//           icon: <FaRegClipboard className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Аналитика",
+//           to: "/crm/market/analytics",
+//           icon: <FaRegChartBar className="sidebar__menu-icon" />,
+//           implemented: true,
+//         }
+//       );
+//     }
+
+//     if (sector === "Кафе") {
+//       dynamicFeatures.splice(
+//         1,
+//         0,
+//         {
+//           label: "Аналитика выплат",
+//           to: "/crm/cafe/analytics",
+//           icon: <FaRegChartBar className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Меню",
+//           to: "/crm/cafe/menu",
+//           icon: <FaRegListAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Заказы",
+//           to: "/crm/cafe/orders",
+//           icon: <FaRegListAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Зарплата",
+//           to: "/crm/cafe/payroll",
+//           icon: <FaRegUser className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Закупки",
+//           to: "/crm/cafe/purchasing",
+//           icon: <FaRegChartBar className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Отчёты",
+//           to: "/crm/cafe/reports",
+//           icon: <FaRegChartBar className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Бронь",
+//           to: "/crm/cafe/reservations",
+//           icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Сотрудники",
+//           to: "/crm/cafe/staff",
+//           icon: <FaRegUser className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Склад",
+//           to: "/crm/cafe/stock",
+//           icon: <FaRegChartBar className="sidebar__menu-icon" />,
+//           implemented: true,
+//         },
+//         {
+//           label: "Столы",
+//           to: "/crm/cafe/tables",
+//           icon: <FaRegListAlt className="sidebar__menu-icon" />,
+//           implemented: true,
+//         }
+//       );
+//     }
 //   }
 
 //   const availableByTariff =
@@ -913,41 +1374,58 @@ export default Sidebar;
 //   }, []);
 
 //   const filteredFeatures = dynamicFeatures.filter((feature) => {
-//     if (!feature.implemented) {
+//     if (!feature.implemented) return false;
+
+//     // --- Фильтруем по accessMap ---
+//     if (tariff && accessMap[tariff]) {
+//       if (!accessMap[tariff].includes(feature.label)) {
+//         return false;
+//       }
+//     }
+
+//     // --- Убираем по sectorRemovals ---
+//     if (sector && sectorRemovals[sector]?.includes(feature.label)) {
 //       return false;
 //     }
 
-//     const isAllowedByTariff = availableByTariff.includes(feature.label);
-//     if (!isAllowedByTariff) {
-//       return false;
+//     // --- Проверка соц. сетей ---
+//     if (feature.requires) {
+//       if (tariff === "Старт") return false;
+//       if (tariff === "Прайм") return true;
+//       if (tariff === "Стандарт" || tariff === "Индивидуальный") {
+//         return company?.[feature.requires] === true;
+//       }
 //     }
 
+//     // --- Проверка доступов пользователя ---
 //     const backendKey = getBackendKeyByLabel(feature.label);
-
 //     if (backendKey) {
-//       // console.log(backendKey);
-
 //       return !loadingAccesses && userAccesses[backendKey] === true;
-//     } else {
-//       return true;
 //     }
+
+//     return true;
 //   });
 
-//   // console.log(filteredFeatures, "dsdsf");
+//   const dropdownRef = useRef(null);
+
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+//         setOpenDropdown(false);
+//       }
+//     };
+
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => {
+//       document.removeEventListener("mousedown", handleClickOutside);
+//     };
+//   }, []);
 
 //   return (
 //     <div className={`sidebar ${isOpen ? "sidebar--visible" : ""}`}>
 //       <div className="sidebar__wrapper">
-//         <img
-//           src={arnament1}
-//           className="sidebar__arnament1"
-//           alt="Декоративный элемент"
-//         />
-//         <img
-//           src={arnament2}
-//           className="sidebar__arnament2"
-//           alt="Декоративный элемент"
-//         />
+//         <img src={arnament1} className="sidebar__arnament1" alt="Декор" />
+//         <img src={arnament2} className="sidebar__arnament2" alt="Декор" />
 //         <div className="sidebar__logo">
 //           <img src={Logo} alt="Логотип" />
 //         </div>
@@ -957,8 +1435,13 @@ export default Sidebar;
 //         <ul className="sidebar__menu">
 //           {tariff &&
 //             !loadingAccesses &&
-//             filteredFeatures.map(({ label, to, icon }) => (
-//               <li key={label}>
+//             filteredFeatures.map(({ label, to, icon, children }) => (
+//               <li
+//                 key={label}
+//                 className={`sidebar__menu-item-wrapper ${
+//                   children ? "has-children" : ""
+//                 }`}
+//               >
 //                 <NavLink
 //                   to={to}
 //                   className={({ isActive }) =>
@@ -966,11 +1449,45 @@ export default Sidebar;
 //                       isActive ? "sidebar__menu-item--active" : ""
 //                     }`
 //                   }
-//                   onClick={toggleSidebar}
+//                   onClick={(e) => {
+//                     if (children) {
+//                       if (!openDropdown) {
+//                         e.preventDefault();
+//                         setOpenDropdown(true);
+//                       } else {
+//                         toggleSidebar();
+//                       }
+//                     } else {
+//                       toggleSidebar();
+//                     }
+//                   }}
 //                 >
 //                   {icon}
 //                   <span>{label}</span>
 //                 </NavLink>
+
+//                 {children && (
+//                   <ul
+//                     className={`sidebar__submenu ${openDropdown ? "open" : ""}`}
+//                   >
+//                     {children.map(({ label, to, icon }) => (
+//                       <li key={label}>
+//                         <NavLink
+//                           to={to}
+//                           className={({ isActive }) =>
+//                             `sidebar__submenu-item ${
+//                               isActive ? "sidebar__submenu-item--active" : ""
+//                             }`
+//                           }
+//                           onClick={toggleSidebar}
+//                         >
+//                           {icon}
+//                           <span>{label}</span>
+//                         </NavLink>
+//                       </li>
+//                     ))}
+//                   </ul>
+//                 )}
 //               </li>
 //             ))}
 //           <Lang />

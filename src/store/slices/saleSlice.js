@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import {
   deleteProductInCart,
   doSearch,
+  getProductCheckout,
   historySellProduct,
   historySellProductDetail,
   manualFilling,
@@ -23,6 +24,7 @@ const initialState = {
   checkout: null,
   history: [],
   historyDetail: null,
+  pdf: null,
 };
 
 const saleSlice = createSlice({
@@ -127,6 +129,17 @@ const saleSlice = createSlice({
         state.loading = false;
       })
       .addCase(productCheckout.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.loading = false;
+      })
+      .addCase(getProductCheckout.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getProductCheckout.fulfilled, (state, { payload }) => {
+        // state.pdf = payload;
+        state.loading = false;
+      })
+      .addCase(getProductCheckout.rejected, (state, { payload }) => {
         state.error = payload;
         state.loading = false;
       });

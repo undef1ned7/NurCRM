@@ -1,18 +1,17 @@
-
-import { createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk } from "@reduxjs/toolkit";
 import {
   fetchEventsApi,
   createEventApi,
   updateEventApi,
   deleteEventApi,
-} from '../../api/event'; 
+} from "../../api/event";
 
 export const fetchEventsAsync = createAsyncThunk(
-  'events/fetchEvents',
+  "events/fetchEvents",
   async (params, { rejectWithValue }) => {
     try {
       const response = await fetchEventsApi(params);
-      return response; 
+      return response;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -20,7 +19,7 @@ export const fetchEventsAsync = createAsyncThunk(
 );
 
 export const createEventAsync = createAsyncThunk(
-  'events/createEvent',
+  "events/createEvent",
   async (eventData, { rejectWithValue }) => {
     try {
       const newEvent = await createEventApi(eventData);
@@ -32,7 +31,7 @@ export const createEventAsync = createAsyncThunk(
 );
 
 export const updateEventAsync = createAsyncThunk(
-  'events/updateEvent',
+  "events/updateEvent",
   async ({ eventId, updatedData }, { rejectWithValue }) => {
     try {
       const updatedEvent = await updateEventApi(eventId, updatedData);
@@ -43,13 +42,12 @@ export const updateEventAsync = createAsyncThunk(
   }
 );
 
-
 export const deleteEventAsync = createAsyncThunk(
-  'events/deleteEvent',
+  "events/deleteEvent",
   async (eventId, { rejectWithValue }) => {
     try {
       await deleteEventApi(eventId);
-      return eventId; 
+      return eventId;
     } catch (error) {
       return rejectWithValue(error.message);
     }

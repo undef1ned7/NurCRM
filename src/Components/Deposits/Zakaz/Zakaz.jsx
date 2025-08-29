@@ -453,33 +453,87 @@ const AddModal = ({ onClose }) => {
     status: "new",
     phone: "",
     department: "",
-    items: [], // Теперь это массив объектов { product_id: ..., quantity: ... }
+    items: [],
   });
 
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
-  const [itemAddError, setItemAddError] = useState(null); // Для ошибок при добавлении товара
+  const [itemAddError, setItemAddError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setNewOrderData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    setNewOrderData((prevData) => {
+      const newData = {
+        ...prevData,
+        [name]: value,
+      };
+      if (
+        name === "order_number" ||
+        name === "customer_name" ||
+        name === "phone" ||
+        name === "department"
+      ) {
+        console.log(`Поле ${name} изменено на:`, value);
+        console.log("Текущее состояние формы:", newData);
+      }
+      return newData;
+    });
   };
 
+  // выбор продукта сразу добавляет его в items
   const handleProductSelectChange = (e) => {
-    setSelectedProductId(e.target.value);
-    setItemAddError(null); // Сброс ошибки при изменении выбора продукта
+    const selectedValue = e.target.value;
+    if (!selectedValue) return;
+
+    setNewOrderData((prevData) => {
+      // проверяем, есть ли уже такой товар
+      const existingItemIndex = prevData.items.findIndex(
+        (item) => item.product === selectedValue
+      );
+
+      let updatedItems;
+      if (existingItemIndex > -1) {
+        // если уже есть — просто увеличиваем на 1
+        updatedItems = prevData.items.map((item, index) =>
+          index === existingItemIndex
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        // если нет — добавляем новый с количеством 1
+        updatedItems = [
+          ...prevData.items,
+          { product: selectedValue, quantity: 1 },
+        ];
+      }
+
+      return { ...prevData, items: updatedItems };
+    });
+
+    // сбрасываем селект
+    setSelectedProductId("");
   };
 
+  // изменение количества в input
   const handleQuantityChange = (e) => {
-    // Убедитесь, что количество всегда >= 1
-    const value = Math.max(1, parseInt(e.target.value, 10) || 1);
+    let value = e.target.value;
+
+    if (value === "") {
+      setSelectedProductQuantity("");
+      return;
+    }
+
+    value = Math.max(1, parseInt(value, 10) || 1);
+    console.log("Установлено количество:", value);
     setSelectedProductQuantity(value);
   };
 
   const handleAddItem = () => {
+    console.log("Попытка добавить товар:");
+    console.log("selectedProductId:", selectedProductId);
+    console.log("selectedProductQuantity:", selectedProductQuantity);
+    console.log("Текущие items:", newOrderData.items);
+
     if (!selectedProductId) {
       setItemAddError("Пожалуйста, выберите продукт.");
       return;
@@ -490,7 +544,7 @@ const AddModal = ({ onClose }) => {
     }
 
     const existingItemIndex = newOrderData.items.findIndex(
-      (item) => item.product_id === selectedProductId
+      (item) => item.product === selectedProductId
     );
 
     if (existingItemIndex > -1) {
@@ -505,13 +559,21 @@ const AddModal = ({ onClose }) => {
       }));
     } else {
       // Если товара нет в списке, добавляем его
-      setNewOrderData((prevData) => ({
-        ...prevData,
-        items: [
+      setNewOrderData((prevData) => {
+        const newItems = [
           ...prevData.items,
-          { product_id: selectedProductId, quantity: selectedProductQuantity },
-        ],
-      }));
+          { product: selectedProductId, quantity: selectedProductQuantity },
+        ];
+        console.log("Добавлен новый товар:", {
+          product: selectedProductId,
+          quantity: selectedProductQuantity,
+        });
+        console.log("Обновленный список товаров:", newItems);
+        return {
+          ...prevData,
+          items: newItems,
+        };
+      });
     }
 
     // Сброс полей после добавления
@@ -521,15 +583,24 @@ const AddModal = ({ onClose }) => {
   };
 
   const handleRemoveItem = (productIdToRemove) => {
-    setNewOrderData((prevData) => ({
-      ...prevData,
-      items: prevData.items.filter(
-        (item) => item.product_id !== productIdToRemove
-      ),
-    }));
+    setNewOrderData((prevData) => {
+      const filteredItems = prevData.items.filter(
+        (item) => item.product !== productIdToRemove
+      );
+      console.log("Удален товар с ID:", productIdToRemove);
+      console.log("Обновленный список товаров:", filteredItems);
+      return {
+        ...prevData,
+        items: filteredItems,
+      };
+    });
   };
 
   const handleSubmit = async () => {
+    console.log("Попытка отправить заказ:");
+    console.log("newOrderData:", newOrderData);
+    console.log("items:", newOrderData.items);
+
     if (
       !newOrderData.order_number ||
       !newOrderData.customer_name ||
@@ -546,7 +617,7 @@ const AddModal = ({ onClose }) => {
 
     // --- Изменения начинаются здесь ---
     const itemsToSend = newOrderData.items.map((item) => ({
-      product: item.product_id, // Переименовываем product_id в product
+      product: item.product, // Используем правильное поле product
       quantity: item.quantity,
     }));
 
@@ -555,7 +626,8 @@ const AddModal = ({ onClose }) => {
       items: itemsToSend, // Используем преобразованный массив items
     };
 
-    // console.log(payload);
+    console.log("Payload для отправки:", payload);
+    console.log("Items в payload:", payload.items);
 
     try {
       await dispatch(createOrderAsync(payload)).unwrap();
@@ -571,6 +643,11 @@ const AddModal = ({ onClose }) => {
   useEffect(() => {
     dispatch(fetchProductsAsync()); // Загружаем все продукты
   }, [dispatch]);
+
+  // Отслеживаем изменения в items для отладки
+  useEffect(() => {
+    console.log("Состояние items изменилось:", newOrderData.items);
+  }, [newOrderData.items]);
 
   // Функция для получения названия продукта по ID (для отображения в списке)
   const getProductNameById = (productId) => {
@@ -693,7 +770,7 @@ const AddModal = ({ onClose }) => {
 
             <input
               type="number"
-              min="1"
+              // min="1"
               value={selectedProductQuantity}
               onChange={handleQuantityChange}
               placeholder="Кол-во"
@@ -717,12 +794,11 @@ const AddModal = ({ onClose }) => {
               <h4>Выбранные товары:</h4>
               <ul>
                 {newOrderData.items.map((item) => (
-                  <li key={item.product_id}>
-                    {getProductNameById(item.product_id)} - **{item.quantity}{" "}
-                    шт.**
+                  <li key={item.product}>
+                    {getProductNameById(item.product)} - **{item.quantity} шт.**
                     <button
                       type="button"
-                      onClick={() => handleRemoveItem(item.product_id)}
+                      onClick={() => handleRemoveItem(item.product)}
                       className="add-modal__remove-item-btn"
                     >
                       <MinusCircle size={16} />

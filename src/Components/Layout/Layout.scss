@@ -2,6 +2,7 @@
   display: flex;
   position: relative;
   transition: transform 0.3s ease-in-out;
+  min-height: 100vh;
 
   &--sidebar-open {
     transform: translateX(60%);
@@ -10,6 +11,16 @@
       transform: translateX(0);
     }
   }
+}
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 .announcement {
   position: absolute;
@@ -23,10 +34,15 @@
   z-index: 1000;
   display: flex;
   align-items: center;
-  // height: max-content;
+  max-width: 90vw;
+  overflow: hidden;
+
   &__content {
     margin: 10px 0;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
   }
+
   span {
     display: block;
     width: 6px;
@@ -34,26 +50,45 @@
     border-radius: 38px;
     background-color: #fce000;
     margin-right: 20px;
+    flex-shrink: 0;
   }
+
   &__close {
     align-self: flex-start;
     background: none;
     border: none;
     cursor: pointer;
+    flex-shrink: 0;
   }
 }
 
+.App,
+#root,
+body {
+  // height: auto;
+}
+.content_background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+  overflow: hidden;
+}
 .content {
   width: 100%;
-  // height: 100%;
-  // max-height: 100vh;
+  min-height: 100vh;
   padding: 0 20px 20px 20px;
-  // position: relative;
   transition: transform 0.3s ease-in-out;
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-size: cover;
-  // background-position: ;
+  flex: 1;
+
   @media (min-width: 769px) {
     margin-left: 250px;
   }
@@ -210,7 +245,20 @@
   .tables,
   .tables__card,
   .tables__modal,
-  .menu__modal {
+  .menu__modal,
+  .zakaz__table,
+  .additional-services__header,
+  .additional-services__wrapper,
+  .bar__tableWrap,
+  .deals-list,
+  .deal-item,
+  .client-details .row,
+  .clients,
+  .tableContainer,
+  .settings,
+  .settings__header,
+  .settings__footer,
+  .settings__section {
     border-radius: 10px;
     background: #ffffff66 !important;
   }
@@ -250,7 +298,10 @@
   .bar__list,
   .table__body,
   .analytics__panel .analytics__head,
-  .table__head {
+  .table__head,
+  .additional-services__social-card,
+  .social-modal-content,
+  .debts {
     background: #ffffff66 !important;
   }
   .company__input,
@@ -314,7 +365,10 @@
   .tables__textarea,
   .tables__search-input,
   .menu__input,
-  .menu__textarea {
+  .menu__textarea,
+  .search,
+  .date,
+  .settings__input {
     &::placeholder {
       color: #fff !important;
     }
@@ -342,4 +396,90 @@
 }
 .bookings__input {
   width: 100%;
+}
+
+// Добавляем стили для улучшения скроллинга
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* Предотвращаем горизонтальный скролл */
+* {
+  max-width: 100%;
+}
+
+// Улучшаем поведение на мобильных устройствах
+@media (max-width: 768px) {
+  .content {
+    padding: 0 15px 15px 15px;
+  }
+
+  .layout-wrapper {
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  .content_background {
+    background-attachment: scroll;
+  }
+
+  .App {
+    &--sidebar-open {
+      transform: translateX(60%);
+    }
+  }
+
+  .announcement {
+    right: 10px;
+    left: 10px;
+    max-width: calc(100vw - 20px);
+
+    &__content {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+  }
+}
+
+/* Улучшения для очень маленьких экранов */
+@media (max-width: 480px) {
+  .content {
+    padding: 0 10px 10px 10px;
+  }
+
+  .announcement {
+    right: 5px;
+    left: 5px;
+    max-width: calc(100vw - 10px);
+    padding: 8px 15px;
+
+    &__content {
+      font-size: 13px;
+      line-height: 1.3;
+    }
+  }
+}
+
+// Улучшаем поведение на планшетах
+@media (min-width: 769px) and (max-width: 1024px) {
+  .content {
+    padding: 0 18px 18px 18px;
+  }
+
+  .sidebar {
+    width: 250px;
+  }
+}
+
+// Улучшаем поведение на больших экранах
+@media (min-width: 1025px) {
+  .content {
+    padding: 0 20px 20px 20px;
+  }
+
+  .sidebar {
+    width: 250px;
+  }
 }
