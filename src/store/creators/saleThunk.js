@@ -55,10 +55,9 @@ export const sendBarCode = createAsyncThunk(
   "products/sendBarcode",
   async ({ barcode, id }, { rejectWithValue }) => {
     try {
-      const { data } = await api.post(
-        `/api/main/pos/sales/${id}/scan/`,
-        barcode
-      );
+      const { data } = await api.post(`/main/pos/sales/${id}/scan/`, {
+        barcode,
+      });
       return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

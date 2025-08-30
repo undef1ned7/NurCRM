@@ -1,12 +1,12 @@
-
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 import {
   fetchEmployeesAsync,
   fetchEmployeeByIdAsync,
   createEmployeeAsync,
   updateEmployeeAsync,
   deleteEmployeeAsync,
-} from '../creators/employeeCreators';
+  getDepartments,
+} from "../creators/employeeCreators";
 
 const initialState = {
   list: [],
@@ -22,10 +22,11 @@ const initialState = {
   updateError: null,
   deleting: false,
   deleteError: null,
+  department: null,
 };
 
 const employeeSlice = createSlice({
-  name: 'employee',
+  name: "employee",
   initialState,
   reducers: {
     clearEmployees: (state) => {
@@ -71,14 +72,26 @@ const employeeSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      .addCase(getDepartments.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getDepartments.fulfilled, (state, action) => {
+        state.loading = false;
+        state.department = action.payload;
+      })
+      .addCase(getDepartments.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       .addCase(createEmployeeAsync.pending, (state) => {
         state.creating = true;
         state.createError = null;
       })
       .addCase(createEmployeeAsync.fulfilled, (state, action) => {
         state.creating = false;
-        // state.list.unshift(action.payload); 
-        // state.count += 1; 
+        // state.list.unshift(action.payload);
+        // state.count += 1;
       })
       .addCase(createEmployeeAsync.rejected, (state, action) => {
         state.creating = false;
@@ -90,11 +103,16 @@ const employeeSlice = createSlice({
       })
       .addCase(updateEmployeeAsync.fulfilled, (state, action) => {
         state.updating = false;
-        const index = state.list.findIndex(employee => employee.id === action.payload.id);
+        const index = state.list.findIndex(
+          (employee) => employee.id === action.payload.id
+        );
         if (index !== -1) {
           state.list[index] = action.payload;
         }
-        if (state.currentEmployee && state.currentEmployee.id === action.payload.id) {
+        if (
+          state.currentEmployee &&
+          state.currentEmployee.id === action.payload.id
+        ) {
           state.currentEmployee = action.payload;
         }
       })
@@ -108,8 +126,10 @@ const employeeSlice = createSlice({
       })
       .addCase(deleteEmployeeAsync.fulfilled, (state, action) => {
         state.deleting = false;
-        state.list = state.list.filter(employee => employee.id !== action.payload); 
-        state.count -= 1; 
+        state.list = state.list.filter(
+          (employee) => employee.id !== action.payload
+        );
+        state.count -= 1;
       })
       .addCase(deleteEmployeeAsync.rejected, (state, action) => {
         state.deleting = false;

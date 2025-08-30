@@ -6,6 +6,7 @@ import {
   updateEmployeeApi,
   deleteEmployeeApi,
 } from "../../api/employees";
+import api from "../../api";
 
 export const fetchEmployeesAsync = createAsyncThunk(
   "employees/fetchEmployees",
@@ -15,6 +16,28 @@ export const fetchEmployeesAsync = createAsyncThunk(
       return response;
     } catch (error) {
       return rejectWithValue(error);
+    }
+  }
+);
+
+export const getDepartments = createAsyncThunk(
+  "employees/getDepartments",
+  async (id) => {
+    try {
+      const response = await api.get(`/users/users/${id}/`);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        console.error(
+          `Fetch Employee (ID: ${id}) Error Data:`,
+          error.response.data
+        );
+        console.error(
+          `Fetch Employee (ID: ${id}) Error Status:`,
+          error.response.status
+        );
+        return Promise.reject(error.response.data);
+      }
     }
   }
 );

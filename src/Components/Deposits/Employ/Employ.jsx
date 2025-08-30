@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Search,
   MoreVertical,
@@ -16,6 +16,11 @@ import {
 } from "../../../store/creators/employeeCreators";
 import { clearEmployees } from "../../../store/slices/employeeSlice";
 import "./Employ.scss";
+import { useUser } from "../../../store/slices/userSlice";
+import AccessList from "../../DepartmentDetails/AccessList";
+import { ALL_ACCESS_TYPES_MAPPING } from "../../DepartmentDetails/DepartmentDetails";
+const BASE_URL = "https://app.nurcrm.kg/api";
+const AUTH_TOKEN = localStorage.getItem("accessToken");
 
 const EditModal = ({ employee, onClose, onSaveSuccess, onDeleteConfirm }) => {
   const dispatch = useDispatch();
@@ -534,8 +539,8 @@ export default function EmployeeTable() {
   const dispatch = useDispatch();
   const {
     list: employees,
-    loading,
-    error,
+    loading: loading1,
+    error: error1,
     count,
     next,
     previous,
@@ -544,14 +549,19 @@ export default function EmployeeTable() {
     updating,
     updateError,
     deleting,
+    department,
     deleteError,
   } = useSelector((state) => state.employee);
-
+  const { company: profile } = useUser();
+  // console.log("====================================");
+  // console.log(employees);
+  // console.log("====================================");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [currentFilters, setCurrentFilters] = useState({
@@ -655,6 +665,94 @@ export default function EmployeeTable() {
     setCurrentPage(1);
   };
 
+  const convertBackendAccessesToLabels = useCallback((accessData) => {
+    const labelsArray = [];
+    ALL_ACCESS_TYPES_MAPPING.forEach((type) => {
+      if (accessData && accessData[type.backendKey] === true) {
+        labelsArray.push(type.value);
+      }
+    });
+    return labelsArray;
+  }, []);
+
+  const convertLabelsToBackendAccesses = useCallback((labelsArray) => {
+    const backendAccessObject = {};
+    ALL_ACCESS_TYPES_MAPPING.forEach((type) => {
+      backendAccessObject[type.backendKey] = labelsArray.includes(type.value);
+    });
+    return backendAccessObject;
+  }, []);
+
+  // const fetchDepartmentDetails = useCallback(async () => {
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     const response = await fetch(
+  //       `${BASE_URL}/construction/departments/${departmentId}/`,
+  //       {
+  //         method: "GET",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${AUTH_TOKEN}`,
+  //         },
+  //       }
+  //     );
+
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(
+  //         errorData.detail || "Не удалось получить данные отдела"
+  //       );
+  //     }
+
+  //     const data = await response.json();
+  //     setDepartment(data);
+
+  //     const processedEmployees = (data.employees || []).map((employee) => ({
+  //       ...employee,
+  //       accesses: convertBackendAccessesToLabels(employee),
+  //     }));
+  //     setEmployees(processedEmployees);
+  //   } catch (err) {
+  //     console.error("Ошибка при получении данных отдела:", err);
+  //     setError(err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [departmentId, AUTH_TOKEN, convertBackendAccessesToLabels]);
+
+  const handleSaveEmployeeAccesses = async (employeeId, newAccessesPayload) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `${BASE_URL}/users/employees/${employeeId}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+          },
+          body: JSON.stringify(newAccessesPayload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.detail ||
+            JSON.stringify(errorData) ||
+            "Не удалось обновить доступы сотрудника"
+        );
+      }
+    } catch (err) {
+      console.error("Ошибка при редактировании доступов сотрудника:", err);
+      setError(`Ошибка при редактировании доступов: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const itemsPerPage = employees.length > 0 ? employees.length : 10;
   const calculatedTotalPages = count ? Math.ceil(count / itemsPerPage) : 1;
 
@@ -698,71 +796,87 @@ export default function EmployeeTable() {
         </div>
       </div>
 
-      {loading ? (
+      {loading1 ? (
         <p className="employee__loading-message">Загрузка сотрудников...</p>
-      ) : error ? (
+      ) : error1 ? (
         <p className="employee__error-message">
-          Ошибка загрузки: {error.message || JSON.stringify(error)}
+          Ошибка загрузки: {error1.message || JSON.stringify(error1)}
         </p>
       ) : employees.length === 0 ? (
         <p className="employee__no-employees-message">
           Нет доступных сотрудников.
         </p>
       ) : (
-      <div className="table-wrapper"> 
-
-        <table className="employee__table">
-          <thead>
-            <tr>
-              <th>
-                <input type="checkbox" />
-              </th>
-              <th>№</th>
-              <th>Имя</th>
-              <th>Почта</th>
-              <th>Роль</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.map((e, index) => {
-              const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
-              return (
-                <tr key={e.id}>
-                  <td>
-                    <input type="checkbox" />
-                  </td>
-                  <td>{serialNumber}</td>
-                  <td className="employee__name">
-                    <span>{e.first_name}</span>
-                  </td>
-                  <td>{e.email}</td>
-                  <td>
-                    <span
-                      className={`employee__role ${
-                        e.role === "Маркетолог"
-                          ? "employee__role--red"
-                          : "employee__role--green"
-                      }`}
-                    >
-                      {availableRoles.map((item) => {
-                        return item.value === e.role ? item.label : false;
-                      })}
-                    </span>
-                  </td>
-                  <td>
-                    <MoreVertical
-                      size={18}
-                      onClick={() => handleEdit(e)}
-                      style={{ cursor: "pointer" }}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
+        <div className="table-wrapper">
+          <table className="employee__table">
+            <thead>
+              <tr>
+                <th>
+                  <input type="checkbox" />
+                </th>
+                <th>№</th>
+                <th>Имя</th>
+                <th>Почта</th>
+                <th>Доступы</th>
+                <th>Роль</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {employees.map((e, index) => {
+                const serialNumber =
+                  (currentPage - 1) * itemsPerPage + index + 1;
+                return (
+                  <tr key={e.id}>
+                    <td>
+                      <input type="checkbox" />
+                    </td>
+                    <td>{serialNumber}</td>
+                    <td className="employee__name">
+                      <span>{e.first_name}</span>
+                    </td>
+                    <td>{e.email}</td>
+                    <td>
+                      {profile?.owner?.role === "owner" ||
+                      profile?.owner?.role === "admin" ? (
+                        <AccessList
+                          employeeAccesses={e.accesses}
+                          onSaveAccesses={(newAccessesPayload) =>
+                            handleSaveEmployeeAccesses(e.id, newAccessesPayload)
+                          }
+                        />
+                      ) : (
+                        <span>
+                          {convertBackendAccessesToLabels(e).join(", ") ||
+                            "Нет доступов"}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        className={`employee__role ${
+                          e.role === "Маркетолог"
+                            ? "employee__role--red"
+                            : "employee__role--green"
+                        }`}
+                      >
+                        {availableRoles.map((item) => {
+                          return item.value === e.role ? item.label : false;
+                        })}
+                      </span>
+                    </td>
+                    <td>
+                      <MoreVertical
+                        size={18}
+                        onClick={() => handleEdit(e)}
+                        style={{ cursor: "pointer" }}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -796,7 +910,7 @@ export default function EmployeeTable() {
       <div className="employee__pagination">
         <button
           onClick={handlePreviousPage}
-          disabled={!previous || loading || creating || updating || deleting}
+          disabled={!previous || loading1 || creating || updating || deleting}
         >
           ←
         </button>
@@ -805,7 +919,7 @@ export default function EmployeeTable() {
         </span>
         <button
           onClick={handleNextPage}
-          disabled={!next || loading || creating || updating || deleting}
+          disabled={!next || loading1 || creating || updating || deleting}
         >
           →
         </button>

@@ -8,7 +8,7 @@ import "./DepartmentDetails.scss"; // Импортируем стили для D
 const BASE_URL = "https://app.nurcrm.kg/api";
 const AUTH_TOKEN = localStorage.getItem("accessToken");
 
-const ALL_ACCESS_TYPES_MAPPING = [
+export const ALL_ACCESS_TYPES_MAPPING = [
   { value: "Обзор", label: "Обзор", backendKey: "can_view_dashboard" },
   { value: "Касса", label: "Касса", backendKey: "can_view_cashbox" },
   { value: "Отделы", label: "Отделы", backendKey: "can_view_departments" },
@@ -20,6 +20,7 @@ const ALL_ACCESS_TYPES_MAPPING = [
     backendKey: "can_view_department_analytics",
   },
   { value: "Склад", label: "Склад", backendKey: "can_view_products" },
+  { value: "Продажа", label: "Продажа", backendKey: "can_view_sale" },
   {
     value: "Бронирование",
     label: "Бронирование",
@@ -443,21 +444,25 @@ const DepartmentDetails = () => {
             {employees.length > 0 ? (
               employees.map((employee, index) => (
                 <tr key={employee.id}>
+                  {console.log(employee)}
                   <td>{index + 1}</td>
                   <td>
                     {employee.first_name} {employee.last_name}
                   </td>
                   <td>
                     {profile?.role === "owner" || profile?.role === "admin" ? (
-                      <AccessList
-                        employeeAccesses={employee.accesses}
-                        onSaveAccesses={(newAccessesPayload) =>
-                          handleSaveEmployeeAccesses(
-                            employee.id,
-                            newAccessesPayload
-                          )
-                        }
-                      />
+                      <>
+                        <AccessList
+                          employeeAccesses={employee.accesses}
+                          onSaveAccesses={(newAccessesPayload) =>
+                            handleSaveEmployeeAccesses(
+                              employee.id,
+                              newAccessesPayload
+                            )
+                          }
+                        />
+                        {console.log(employee.accesses)}
+                      </>
                     ) : (
                       <span>
                         {convertBackendAccessesToLabels(employee).join(", ") ||

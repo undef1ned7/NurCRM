@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { FaCheckCircle, FaRegCircle } from "react-icons/fa";
 
 // Обновленный список всех типов доступов с соответствующими ключами для бэкенда
-const ALL_ACCESS_TYPES = [
+export const ALL_ACCESS_TYPES = [
   { value: "Обзор", label: "Обзор", backendKey: "can_view_dashboard" },
   { value: "Касса", label: "Касса", backendKey: "can_view_cashbox" },
   { value: "Отделы", label: "Отделы", backendKey: "can_view_departments" },
@@ -15,7 +15,7 @@ const ALL_ACCESS_TYPES = [
     backendKey: "can_view_department_analytics",
   },
   { value: "Склад", label: "Склад", backendKey: "can_view_products" },
-  { value: "Продажа", label: "Продажа", backendKey: "can_view_products" },
+  { value: "Продажа", label: "Продажа", backendKey: "can_view_sale" },
   {
     value: "Бронирование",
     label: "Бронирование",
@@ -53,7 +53,7 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
 
     const initialAccess = {};
     ALL_ACCESS_TYPES.forEach((accessType) => {
-      initialAccess[accessType.backendKey] = employeeAccesses.includes(
+      initialAccess[accessType.backendKey] = employeeAccesses?.includes(
         accessType.value
       );
     });
@@ -72,7 +72,7 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
       // console.log(accessType, "das");
       // console.log(employeeAccesses.includes(accessType.value));
 
-      newAccessState[accessType.backendKey] = employeeAccesses.includes(
+      newAccessState[accessType.backendKey] = employeeAccesses?.includes(
         accessType.value
       );
     });

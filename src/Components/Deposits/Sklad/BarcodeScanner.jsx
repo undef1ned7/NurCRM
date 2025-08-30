@@ -4,7 +4,7 @@ import useScanDetection from "use-scan-detection";
 import { sendBarCode } from "../../../store/creators/saleThunk";
 // import { sendBarCode } from "../../../store/creators/productCreators";
 
-const BarcodeScanner = ({ id, requestName }) => {
+const BarcodeScanner = ({ id}) => {
   const [barcodeScan, setBarcodeScan] = useState("");
   const dispatch = useDispatch();
   // const id = "some-sale-id";
@@ -19,7 +19,8 @@ const BarcodeScanner = ({ id, requestName }) => {
 
   useEffect(() => {
     if (barcodeScan) {
-      dispatch(requestName({ barcode: barcodeScan, id }));
+      dispatch(sendBarCode({ barcode: barcodeScan, id }));
+      dispatch()
     }
   }, [barcodeScan, dispatch]);
 
