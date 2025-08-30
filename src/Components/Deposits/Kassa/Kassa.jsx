@@ -11,15 +11,76 @@ import {
 import "./Vitrina.scss";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import {
+  createKassa,
+  createProductAsync,
+} from "../../../store/creators/productCreators";
+import { useDispatch } from "react-redux";
+import { useUser } from "../../../store/slices/userSlice";
+
+const CreateModal = ({ onClose }) => {
+  const { 0: state, 1: setState } = useState({
+    name: "",
+  });
+  const dispatch = useDispatch();
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setState((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const onFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await dispatch(createKassa(state)).unwrap();
+      dispatch();
+      onClose();
+    } catch (err) {
+      console.error("Failed to create product:", err);
+      alert(
+        `Ошибка при добавлении товара: ${err.message || JSON.stringify(err)}`
+      );
+    }
+  };
+
+  return (
+    <div className="add-modal">
+      <div className="add-modal__overlay" onClick={onClose} />
+      <div className="add-modal__content">
+        <div className="add-modal__header">
+          <h3>Создние кассы</h3>
+          <X className="add-modal__close-icon" size={20} onClick={onClose} />
+        </div>
+        <form onSubmit={onFormSubmit}>
+          <div className="add-modal__section">
+            <label>Название *</label>
+            <input
+              type="text"
+              name="name"
+              placeholder="Название"
+              className="add-modal__input"
+              value={state.name}
+              onChange={onChange}
+              required
+            />
+          </div>
+          <button className="add-modal__save">Создать</button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const Kassa = () => {
   const [cashboxes, setCashboxes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { company } = useUser();
 
   const [showFilter, setShowFilter] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCashbox, setSelectedCashbox] = useState(null);
   const [editFormData, setEditFormData] = useState({
     // Состояние для данных формы редактирования
@@ -182,6 +243,12 @@ const Kassa = () => {
         </div>
 
         <div className="vitrina__controls">
+          <button
+            className="students__btn students__btn--primary"
+            onClick={() => setShowCreateModal(true)}
+          >
+            Создать кассу
+          </button>
           <div className="vitrina__search-wrapper">
             <Search className="vitrina__search-icon" size={16} />
             <input
@@ -190,12 +257,12 @@ const Kassa = () => {
               placeholder="Поиск"
             />
           </div>
-          <button
+          {/* <button
             className="vitrina__filter-button"
             onClick={() => setShowFilter(true)}
           >
             <SlidersHorizontal size={18} />
-          </button>
+          </button> */}
         </div>
       </div>
       <div className="table-wrapper">
@@ -218,7 +285,11 @@ const Kassa = () => {
                 >
                   <td>{index + 1}</td>
                   <td>
-                    <b>{cashbox.department_name}</b>
+                    <b>
+                      {company?.subscription_plan?.name === "Старт"
+                        ? cashbox.name
+                        : cashbox.department_name}
+                    </b>
                   </td>
                   <td>{cashbox.analytics?.income?.total || 0} с</td>{" "}
                   {/* Используем опциональную цепочку */}
@@ -414,6 +485,9 @@ const Kassa = () => {
             </div>
           </div>
         </div>
+      )}
+      {showCreateModal && (
+        <CreateModal onClose={() => setShowCreateModal(false)} />
       )}
     </div>
   );

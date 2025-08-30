@@ -9,6 +9,7 @@ import {
   getApplicationList,
   submitApplicationAsync,
   updateUserData,
+  updateUserCompanyName,
 } from "../creators/userCreators";
 import { useSelector } from "react-redux";
 import ApplicationList from "../../Components/pages/SubmitApplication/ApplicationList";
@@ -28,6 +29,7 @@ const initialState = {
   submitApplication: null,
   applicationList: [],
   company: null,
+  errorChange: null,
 };
 
 const userSlice = createSlice({
@@ -153,6 +155,24 @@ const userSlice = createSlice({
         // state.applicationList = payload.results;
       })
       .addCase(updateUserData.rejected, (state, { payload }) => {
+        state.loading = false;
+        if (payload) {
+          state.errorChange = payload;
+        } else {
+          state.errorChange = {
+            detail: "Не найдено активной учетной записи с указанными данными",
+          };
+        }
+      })
+      .addCase(updateUserCompanyName.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUserCompanyName.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        // state.applicationList = payload.results;
+      })
+      .addCase(updateUserCompanyName.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
       });

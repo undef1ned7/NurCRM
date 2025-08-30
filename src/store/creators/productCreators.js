@@ -46,6 +46,21 @@ export const createProductAsync = createAsyncThunk(
   }
 );
 
+export const createKassa = createAsyncThunk(
+  "kassa/create",
+  async (data, { rejectWithValue }) => {
+    try {
+      const { data: response } = await api.post(
+        "/construction/cashboxes/",
+        data
+      );
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const updateProductAsync = createAsyncThunk(
   "products/update",
   async ({ productId, updatedData }, { rejectWithValue }) => {

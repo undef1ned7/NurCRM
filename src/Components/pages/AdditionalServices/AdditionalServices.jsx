@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import SocialModal from "./SocialModal";
 import "./AdditionalServices.scss";
 import { FaInstagram, FaTelegram, FaWhatsapp } from "react-icons/fa";
+import { MdDocumentScanner } from "react-icons/md";
 
 const AdditionalServices = () => {
   const [selectedSocial, setSelectedSocial] = useState(null);
@@ -38,6 +39,13 @@ const AdditionalServices = () => {
       id: "instagram",
       name: "Instagram",
       icon: <FaInstagram />,
+      description:
+        "Подключите чаты для удобного общения, быстрых автоматических ответов и полной интеграции с вашей CRM-системой.",
+    },
+    {
+      id: "Documents",
+      name: "Документы",
+      icon: <MdDocumentScanner />,
       description:
         "Подключите чаты для удобного общения, быстрых автоматических ответов и полной интеграции с вашей CRM-системой.",
     },

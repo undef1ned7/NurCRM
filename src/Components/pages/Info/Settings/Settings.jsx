@@ -8,16 +8,25 @@ import Funnels from "../pages/Funnels/Funnels";
 import Company from "../pages/Company/Company";
 import { logoutUser, useUser } from "../../../../store/slices/userSlice";
 import { useDispatch } from "react-redux";
-import { updateUserData } from "../../../../store/creators/userCreators";
+import {
+  updateUserCompanyName,
+  updateUserData,
+} from "../../../../store/creators/userCreators";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
-  const { tariff } = useUser();
+  const { tariff, errorChange: error } = useUser();
   const [activeTab, setActiveTab] = useState("Общие");
   const [formData, setFormData] = useState({
-    companyName: "",
-    currentPassword: "",
-    newPassword: "",
-    repeatPassword: "",
+    // companyName: "",
+    current_password: "",
+    new_password: "",
+    new_password2: "",
+  });
+  console.log(error);
+
+  const [state, setState] = useState({
+    name: "",
   });
   const [showPassword, setShowPassword] = useState({
     current: false,
@@ -40,18 +49,25 @@ const Settings = () => {
       [field]: !prev[field],
     }));
   };
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setState((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await dispatch(updateUserData(formData)).unwrap();
+
+      if (state.name.trim()) {
+        await dispatch(updateUserCompanyName(state)).unwrap();
+      }
+      alert("Ваши данные успешно изменены");
     } catch (err) {
       console.error("Failed to update user data:", err);
-      alert(
-        `Ошибка при обновлении данных пользователя: ${
-          err.message || JSON.stringify(err)
-        }`
-      );
     }
   };
 
@@ -71,6 +87,8 @@ const Settings = () => {
         return <General />;
     }
   };
+
+  const navigate = useNavigate();
 
   return (
     <div className="settings">
@@ -134,12 +152,12 @@ const Settings = () => {
             <div className="settings__input-wrapper">
               <input
                 id="companyName"
-                name="companyName"
+                name="name"
                 type="text"
                 className="settings__input"
                 placeholder="Введите название компании"
-                value={formData.companyName}
-                onChange={handleInputChange}
+                value={state.name}
+                onChange={onChange}
               />
               <div className="settings__input-icon">
                 <svg
@@ -183,17 +201,27 @@ const Settings = () => {
           </h2>
 
           <div className="settings__form-group">
-            <label className="settings__label" htmlFor="currentPassword">
-              Текущий пароль
-            </label>
+            {!formData.current_password.trim() && error?.current_password ? (
+              <label
+                style={{ color: "red" }}
+                className="settings__label"
+                htmlFor="currentPassword"
+              >
+                {error.current_password[0]}
+              </label>
+            ) : (
+              <label className="settings__label" htmlFor="currentPassword">
+                Текущий пароль
+              </label>
+            )}
             <div className="settings__input-wrapper">
               <input
                 id="currentPassword"
-                name="currentPassword"
+                name="current_password"
                 type={showPassword.current ? "text" : "password"}
                 className="settings__input"
                 placeholder="Введите текущий пароль"
-                value={formData.currentPassword}
+                value={formData.current_password}
                 onChange={handleInputChange}
                 autoComplete="current-password"
               />
@@ -268,17 +296,27 @@ const Settings = () => {
           </div>
 
           <div className="settings__form-group">
-            <label className="settings__label" htmlFor="newPassword">
-              Новый пароль
-            </label>
+            {!formData.new_password.trim() && error?.new_password ? (
+              <label
+                style={{ color: "red" }}
+                className="settings__label"
+                htmlFor="currentPassword"
+              >
+                {error.new_password[0]}
+              </label>
+            ) : (
+              <label className="settings__label" htmlFor="currentPassword">
+                Новый пароль
+              </label>
+            )}
             <div className="settings__input-wrapper">
               <input
                 id="newPassword"
-                name="newPassword"
+                name="new_password"
                 type={showPassword.new ? "text" : "password"}
                 className="settings__input"
                 placeholder="Введите новый пароль"
-                value={formData.newPassword}
+                value={formData.new_password}
                 onChange={handleInputChange}
                 autoComplete="new-password"
               />
@@ -354,20 +392,20 @@ const Settings = () => {
               <div className="settings__strength-bar">
                 <div
                   className={`settings__strength-fill ${
-                    formData.newPassword.length > 8
+                    formData.new_password.length > 8
                       ? "strong"
-                      : formData.newPassword.length > 5
+                      : formData.new_password.length > 5
                       ? "medium"
                       : "weak"
                   }`}
                 ></div>
               </div>
               <span className="settings__strength-text">
-                {formData.newPassword.length === 0
+                {formData.new_password.length === 0
                   ? "Введите пароль"
-                  : formData.newPassword.length < 6
+                  : formData.new_password.length < 6
                   ? "Слабый"
-                  : formData.newPassword.length < 9
+                  : formData.new_password.length < 9
                   ? "Средний"
                   : "Сильный"}
               </span>
@@ -375,23 +413,33 @@ const Settings = () => {
           </div>
 
           <div className="settings__form-group">
-            <label className="settings__label" htmlFor="repeatPassword">
-              Повторите новый пароль
-            </label>
+            {!formData.new_password2.trim() && error?.new_password2 ? (
+              <label
+                style={{ color: "red" }}
+                className="settings__label"
+                htmlFor="currentPassword"
+              >
+                {error.new_password2[0]}
+              </label>
+            ) : (
+              <label className="settings__label" htmlFor="currentPassword">
+                Повторите новый пароль
+              </label>
+            )}
             <div className="settings__input-wrapper">
               <input
                 id="repeatPassword"
-                name="repeatPassword"
+                name="new_password2"
                 type={showPassword.repeat ? "text" : "password"}
                 className={`settings__input ${
-                  formData.newPassword &&
-                  formData.repeatPassword &&
-                  formData.newPassword !== formData.repeatPassword
+                  formData.new_password &&
+                  formData.new_password2 &&
+                  formData.new_password !== formData.new_password2
                     ? "error"
                     : ""
                 }`}
                 placeholder="Повторите новый пароль"
-                value={formData.repeatPassword}
+                value={formData.new_password2}
                 onChange={handleInputChange}
                 autoComplete="new-password"
               />
@@ -463,9 +511,9 @@ const Settings = () => {
                 )}
               </button>
             </div>
-            {formData.newPassword &&
-              formData.repeatPassword &&
-              formData.newPassword !== formData.repeatPassword && (
+            {formData.new_password &&
+              formData.new_password2 &&
+              formData.new_password !== formData.new_password2 && (
                 <p className="settings__error-text">Пароли не совпадают</p>
               )}
           </div>
@@ -507,7 +555,10 @@ const Settings = () => {
         <button
           className="settings__logout"
           type="button"
-          onClick={() => dispatch(logoutUser())}
+          onClick={() => {
+            dispatch(logoutUser());
+            navigate("/");
+          }}
         >
           <svg
             width="16"

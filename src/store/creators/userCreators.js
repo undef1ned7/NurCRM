@@ -126,7 +126,22 @@ export const updateUserData = createAsyncThunk(
   "user/updateUserData",
   async (userData, { rejectWithValue }) => {
     try {
-      const { data } = await api.patch(`/users/profile/`, userData);
+      const { data } = await api.patch(
+        `/users/settings/change-password/`,
+        userData
+      );
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const updateUserCompanyName = createAsyncThunk(
+  "user/updateCompanyName",
+  async (userData, { rejectWithValue }) => {
+    try {
+      const { data } = await api.patch(`/users/settings/company/`, userData);
       return data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);

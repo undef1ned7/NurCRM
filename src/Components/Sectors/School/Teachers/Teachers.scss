@@ -1,6 +1,216 @@
-/* src/components/Education/Teachers.module.scss */
+// /* src/components/Education/Teachers.module.scss */
 
-/* Montserrat */
+// /* Montserrat */
+// @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap");
+
+// :root {
+//   --primary: #f7d74f;
+//   --primary-dark: #d4b800;
+//   --text: #0f172a;
+//   --muted: #6b7280;
+//   --border: #e5e7eb;
+//   --surface: #ffffff;
+//   --radius: 12px;
+//   --shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+// }
+
+// .teachers {
+//   font-family: "Montserrat", sans-serif;
+//   background: var(--surface);
+//   border-radius: var(--radius);
+//   padding: 24px;
+//   box-shadow: var(--shadow);
+//   display: flex;
+//   flex-direction: column;
+//   gap: 20px;
+// }
+
+// /* Header */
+// .teachers__header {
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: flex-end;
+//   flex-wrap: wrap;
+//   gap: 12px;
+// }
+// .teachers__title {    font-family: 'Montserrat'; font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
+// .teachers__subtitle { font-size: 13px; color: var(--muted); }
+
+// /* Toolbar: search grows, button sticks right */
+// .teachers__actions {
+//   display: flex;
+//   align-items: center;
+//   gap: 10px;
+//   flex: 1 1 360px;
+//   min-width: 280px;
+// }
+
+// .teachers__search {
+//   position: relative;
+//   flex: 1 1 420px;
+//   max-width: 520px;
+// }
+// .teachers__search-input {
+//   width: 100%;
+//   padding: 10px 12px 10px 32px;
+//   border-radius: 10px;
+//   border: 1px solid var(--border);
+//   font-size: 14px;
+// }
+// .teachers__search-input:focus { outline: none; border-color: var(--primary); }
+// .teachers__search-icon {
+//   position: absolute;
+//   left: 10px; top: 50%;
+//   transform: translateY(-50%);
+//   font-size: 14px; color: var(--muted);
+//   pointer-events: none;
+// }
+
+// /* Buttons */
+// .teachers__btn {
+//   display: inline-flex;
+//   align-items: center;
+//   gap: 6px;
+//   padding: 10px 14px;
+//   border-radius: 10px;
+//   font-size: 14px;
+//   font-weight: 600;
+//   cursor: pointer;
+//   transition: transform .12s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+//   border: 1px solid transparent;
+//   user-select: none;
+//   flex-shrink: 0;
+// }
+// .teachers__btn:hover { filter: brightness(0.98); }
+// .teachers__btn:active { transform: translateY(1px); }
+// .teachers__btn:disabled { opacity: .6; cursor: not-allowed; }
+
+// .teachers__btn--primary { background: var(--primary); color: #111; }
+// .teachers__btn--primary:hover { background: var(--primary-dark); }
+
+// .teachers__btn--secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+// .teachers__btn--secondary:hover { background: #f9fafb; }
+
+// .teachers__btn--danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
+// .teachers__btn--danger:hover { background: rgba(239, 68, 68, 0.06); }
+
+// /* Alerts */
+// .teachers__alert {
+//   padding: 10px 12px;
+//   border-radius: 10px;
+//   font-size: 14px;
+//   background: rgba(231, 76, 60, 0.12);
+//   color: #e74c3c;
+//   border: 1px solid rgba(231, 76, 60, 0.35);
+// }
+
+// /* List & Card */
+// .teachers__list { display: grid; gap: 10px; }
+
+// .teachers__card {
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: stretch;
+//   padding: 14px;
+//   border: 1px solid var(--border);
+//   border-radius: var(--radius);
+//   background: #fafafa;
+//   transition: background 0.2s, border-color .2s ease;
+// }
+// .teachers__card:hover { background: #f1f5f9; }
+
+// .teachers__card-left { display: flex; gap: 12px; align-items: flex-start; }
+
+// .teachers__avatar {
+//   min-width: 40px; height: 40px; border-radius: 50%;
+//   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+//   color: #fff; font-weight: 700; font-size: 14px;
+//   display: grid; place-items: center; box-shadow: var(--shadow);
+// }
+
+// .teachers__name { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
+// .teachers__meta { display: flex; gap: 8px; flex-wrap: wrap; }
+// .teachers__meta span { font-size: 13px; color: var(--muted); }
+
+// /* Modal */
+// .teachers__modal-overlay {
+//   position: fixed; inset: 0;
+//   background: rgba(0, 0, 0, 0.5);
+//   display: flex; align-items: center; justify-content: center;
+//   z-index: 50;
+// }
+// .teachers__modal {
+//   background: var(--surface);
+//   border-radius: var(--radius);
+//   padding: 20px;
+//   width: 100%;
+//   max-width: 640px;
+//   animation: teachers-fade .18s ease;
+//   box-shadow: var(--shadow);
+// }
+// @keyframes teachers-fade { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+// .teachers__modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+// .teachers__modal-title { font-size: 18px; font-weight: 700; margin: 0; }
+
+// .teachers__icon-btn {
+//   background: none; border: none; cursor: pointer;
+//   font-size: 18px; color: var(--muted); padding: 6px; border-radius: 8px;
+// }
+// .teachers__icon-btn:hover { color: var(--text); background: #f3f4f6; }
+
+// /* Form */
+// .teachers__form { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+// .teachers__form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+// .teachers__field { display: flex; flex-direction: column; gap: 6px; }
+// .teachers__field--full { grid-column: 1 / -1; }
+
+// .teachers__label { font-size: 14px; font-weight: 600; color: var(--muted); }
+// .teachers__req { color: red; }
+
+// .teachers__input, .teachers__textarea {
+//   padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;
+//   font-family: inherit;
+// }
+// .teachers__input:focus, .teachers__textarea:focus { outline: none; border-color: var(--primary); }
+// .teachers__input::placeholder, .teachers__textarea::placeholder { color: var(--muted); opacity: .8; }
+// .teachers__textarea { min-height: 100px; resize: vertical; }
+
+// /* Form actions */
+// .teachers__form-actions {
+//   display: flex;
+//   align-items: center;
+//   gap: 10px;
+//   justify-content: flex-end;
+// }
+// .teachers__actions-spacer { flex: 1 1 auto; }
+// .teachers__actions-right { display: flex; gap: 10px; }
+
+// /* Responsive */
+// @media (max-width: 720px) {
+//   .teachers__actions {
+//     flex-direction: column;
+//     align-items: stretch;
+//   }
+//   .teachers__search { max-width: none; width: 100%; }
+//   .teachers__search-input { width: 100%; }
+
+//   .teachers__form-grid { grid-template-columns: 1fr; }
+//   .teachers__modal { width: 96vw; }
+
+//   .teachers__form-actions { flex-wrap: wrap; }
+//   .teachers__actions-right { width: 100%; }
+//   .teachers__actions-right > .teachers__btn { justify-content: center; width: 100%; }
+// }
+
+
+
+
+
+/* src/components/Education/Teachers.scss */
+/* Добавлен ТОЛЬКО скролл у списка и модалки + тонкие полосы прокрутки.
+   Остальные стили сохранены. */
+
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap");
 
 :root {
@@ -23,6 +233,10 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+
+  /* важно для внутренних скроллов */
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Header */
@@ -33,10 +247,10 @@
   flex-wrap: wrap;
   gap: 12px;
 }
-.teachers__title {    font-family: 'Montserrat'; font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
+.teachers__title { font-family: 'Montserrat'; font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
 .teachers__subtitle { font-size: 13px; color: var(--muted); }
 
-/* Toolbar: search grows, button sticks right */
+/* Toolbar */
 .teachers__actions {
   display: flex;
   align-items: center;
@@ -44,7 +258,6 @@
   flex: 1 1 360px;
   min-width: 280px;
 }
-
 .teachers__search {
   position: relative;
   flex: 1 1 420px;
@@ -84,13 +297,10 @@
 .teachers__btn:hover { filter: brightness(0.98); }
 .teachers__btn:active { transform: translateY(1px); }
 .teachers__btn:disabled { opacity: .6; cursor: not-allowed; }
-
 .teachers__btn--primary { background: var(--primary); color: #111; }
 .teachers__btn--primary:hover { background: var(--primary-dark); }
-
 .teachers__btn--secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
 .teachers__btn--secondary:hover { background: #f9fafb; }
-
 .teachers__btn--danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
 .teachers__btn--danger:hover { background: rgba(239, 68, 68, 0.06); }
 
@@ -104,9 +314,22 @@
   border: 1px solid rgba(231, 76, 60, 0.35);
 }
 
-/* List & Card */
-.teachers__list { display: grid; gap: 10px; }
+/* === СКРОЛЛ У СПИСКА === */
+.teachers__list {
+  display: grid;
+  gap: 10px;
 
+  /* делаем внутренний скролл */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+
+  /* ограничитель по высоте (подстрой при необходимости) */
+  max-height: calc(100vh - 260px);
+  padding-right: 2px;
+}
+
+/* Card */
 .teachers__card {
   display: flex;
   justify-content: space-between;
@@ -118,16 +341,13 @@
   transition: background 0.2s, border-color .2s ease;
 }
 .teachers__card:hover { background: #f1f5f9; }
-
 .teachers__card-left { display: flex; gap: 12px; align-items: flex-start; }
-
 .teachers__avatar {
   min-width: 40px; height: 40px; border-radius: 50%;
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #fff; font-weight: 700; font-size: 14px;
   display: grid; place-items: center; box-shadow: var(--shadow);
 }
-
 .teachers__name { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
 .teachers__meta { display: flex; gap: 8px; flex-wrap: wrap; }
 .teachers__meta span { font-size: 13px; color: var(--muted); }
@@ -138,6 +358,9 @@
   background: rgba(0, 0, 0, 0.5);
   display: flex; align-items: center; justify-content: center;
   z-index: 50;
+
+  /* если форма длинная — пусть страница может прокручиваться */
+  overflow: auto;
 }
 .teachers__modal {
   background: var(--surface);
@@ -147,12 +370,15 @@
   max-width: 640px;
   animation: teachers-fade .18s ease;
   box-shadow: var(--shadow);
+
+  /* СКРОЛЛ ВНУТРИ МОДАЛКИ */
+  max-height: 90vh;
+  overflow: auto;
 }
 @keyframes teachers-fade { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
 .teachers__modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .teachers__modal-title { font-size: 18px; font-weight: 700; margin: 0; }
-
 .teachers__icon-btn {
   background: none; border: none; cursor: pointer;
   font-size: 18px; color: var(--muted); padding: 6px; border-radius: 8px;
@@ -164,10 +390,8 @@
 .teachers__form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .teachers__field { display: flex; flex-direction: column; gap: 6px; }
 .teachers__field--full { grid-column: 1 / -1; }
-
 .teachers__label { font-size: 14px; font-weight: 600; color: var(--muted); }
 .teachers__req { color: red; }
-
 .teachers__input, .teachers__textarea {
   padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;
   font-family: inherit;
@@ -186,12 +410,25 @@
 .teachers__actions-spacer { flex: 1 1 auto; }
 .teachers__actions-right { display: flex; gap: 10px; }
 
+/* Узкие полосы прокрутки (опционально) */
+.teachers__list,
+.teachers__modal {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,.25) transparent;
+}
+.teachers__list::-webkit-scrollbar,
+.teachers__modal::-webkit-scrollbar { width: 8px; height: 8px; }
+.teachers__list::-webkit-scrollbar-thumb,
+.teachers__modal::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,.25);
+  border-radius: 8px;
+}
+.teachers__list::-webkit-scrollbar-thumb:hover,
+.teachers__modal::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.35); }
+
 /* Responsive */
 @media (max-width: 720px) {
-  .teachers__actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  .teachers__actions { flex-direction: column; align-items: stretch; }
   .teachers__search { max-width: none; width: 100%; }
   .teachers__search-input { width: 100%; }
 

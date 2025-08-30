@@ -9,6 +9,7 @@ import {
   createBrandAsync,
   createCategoryAsync,
   sendBarCode,
+  createKassa,
 } from "../creators/productCreators";
 import { useSelector } from "react-redux";
 
@@ -178,6 +179,17 @@ const productSlice = createSlice({
       .addCase(deleteProductAsync.rejected, (state, action) => {
         state.deleting = false;
         state.deleteError = action.payload;
+      })
+      .addCase(createKassa.pending, (state) => {
+        state.loading = true;
+        // state.deleteError = null;
+      })
+      .addCase(createKassa.fulfilled, (state, action) => {
+        state.loading = false;
+      })
+      .addCase(createKassa.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
       });
   },
 });
