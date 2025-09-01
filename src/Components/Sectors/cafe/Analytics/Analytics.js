@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./Analytics.scss";
-import api from "../../Api/Api";
+import api from "../../../../api";
 
 /**
  * Источники:

@@ -1,8 +1,13 @@
 // src/components/Clients/Clients.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import s from "./Clients.module.scss";
-import api from "../../Api/Api";
-import { getAll, createClient, updateClient, removeClient } from "./clientStore";
+import "./Clients.scss";
+import api from "../../../../api";
+import {
+  getAll,
+  createClient,
+  updateClient,
+  removeClient,
+} from "./clientStore";
 
 /* ===== helpers ===== */
 const fmtMoney = (v) => (Number(v) || 0).toLocaleString() + " с";
@@ -110,9 +115,15 @@ export default function Clients() {
       const beds = bedsRes.map(normalizeBed);
 
       // локальные карты для расчётов
-      const hotelsMapLocal = Object.fromEntries(hotels.map((h) => [String(h.id), h]));
-      const roomsMapLocal = Object.fromEntries(rooms.map((r) => [String(r.id), r]));
-      const bedsMapLocal = Object.fromEntries(beds.map((b) => [String(b.id), b]));
+      const hotelsMapLocal = Object.fromEntries(
+        hotels.map((h) => [String(h.id), h])
+      );
+      const roomsMapLocal = Object.fromEntries(
+        rooms.map((r) => [String(r.id), r])
+      );
+      const bedsMapLocal = Object.fromEntries(
+        beds.map((b) => [String(b.id), b])
+      );
 
       setHotelsMap(hotelsMapLocal);
       setRoomsMap(roomsMapLocal);
@@ -132,7 +143,9 @@ export default function Clients() {
 
       // упорядочим внутри клиента по start_time DESC
       for (const [, arr] of byClient) {
-        arr.sort((a, b) => (b.start_time || "").localeCompare(a.start_time || ""));
+        arr.sort((a, b) =>
+          (b.start_time || "").localeCompare(a.start_time || "")
+        );
       }
 
       // примешиваем брони к клиентам
@@ -190,15 +203,21 @@ export default function Clients() {
 
     let res = !sterm
       ? rows
-      : rows.filter((r) => `${r.full_name} ${r.phone}`.toLowerCase().includes(sterm));
+      : rows.filter((r) =>
+          `${r.full_name} ${r.phone}`.toLowerCase().includes(sterm)
+        );
 
     if (objType !== "all") {
-      res = res.filter((r) => (r.bookings || []).some((b) => b.obj_type === objType));
+      res = res.filter((r) =>
+        (r.bookings || []).some((b) => b.obj_type === objType)
+      );
     }
     if (objType !== "all" && objId) {
       const idStr = String(objId);
       res = res.filter((r) =>
-        (r.bookings || []).some((b) => b.obj_type === objType && String(b.obj_id) === idStr)
+        (r.bookings || []).some(
+          (b) => b.obj_type === objType && String(b.obj_id) === idStr
+        )
       );
     }
 
@@ -241,26 +260,28 @@ export default function Clients() {
 
   /* ===== Render ===== */
   return (
-    <section className={s.clients}>
-      <header className={s.clients__header}>
+    <section className="clients">
+      <header className="clients__header">
         <div>
-          <h2 className={s.clients__title}>Клиенты</h2>
-          <p className={s.clients__subtitle}>Список гостей, поиск, фильтр по объектам</p>
+          <h2 className="clients__title">Клиенты</h2>
+          <p className="clients__subtitle">
+            Список гостей, поиск, фильтр по объектам
+          </p>
         </div>
-        <div className={s.clients__actions}>
-          <div className={s.clients__search}>
-            <span className={s.clients__searchIcon}>🔎</span>
+        <div className="clients__actions">
+          <div className="clients__search">
+            <span className="clients__searchIcon">🔎</span>
             <input
-              className={s.clients__searchInput}
+              className="clients__searchInput"
               placeholder="Поиск по имени и телефону…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
 
-          <div className={s.clients__filterRow}>
+          <div className="clients__filterRow">
             <select
-              className={s.clients__input}
+              className="clients__input"
               value={objType}
               onChange={(e) => {
                 setObjType(e.target.value);
@@ -276,7 +297,7 @@ export default function Clients() {
 
             {objType !== "all" && (
               <select
-                className={s.clients__input}
+                className="clients__input"
                 value={objId}
                 onChange={(e) => setObjId(e.target.value)}
                 title="Конкретный объект"
@@ -297,7 +318,7 @@ export default function Clients() {
           </div>
 
           <button
-            className={`${s.clients__btn} ${s["clients__btn--primary"]}`}
+            className="clients__btn clients__btn--primary"
             onClick={onCreate}
           >
             + Клиент
@@ -305,10 +326,10 @@ export default function Clients() {
         </div>
       </header>
 
-      {err && <div className={s.clients__error}>{err}</div>}
+      {err && <div className="clients__error">{err}</div>}
 
-      <div className={s.clients__tableWrap}>
-        <table className={s.clients__table}>
+      <div className="clients__tableWrap">
+        <table className="clients__table">
           <thead>
             <tr>
               <th>Имя</th>
@@ -322,7 +343,7 @@ export default function Clients() {
           <tbody>
             {loading ? (
               <tr>
-                <td className={s.clients__empty} colSpan={6}>
+                <td className="clients__empty" colSpan={6}>
                   Загрузка…
                 </td>
               </tr>
@@ -336,17 +357,25 @@ export default function Clients() {
                   <td>{c.bookings?.length ?? 0}</td>
                   <td>{lastObjectLabel(c)}</td>
                   <td>
-                    {c.updated_at ? new Date(c.updated_at).toLocaleString() : "—"}
+                    {c.updated_at
+                      ? new Date(c.updated_at).toLocaleString()
+                      : "—"}
                   </td>
-                  <td className={s.clients__rowActions}>
-                    <button className={s.clients__btn} onClick={() => onOpenCard(c.id)}>
+                  <td className="clients__rowActions">
+                    <button
+                      className="clients__btn"
+                      onClick={() => onOpenCard(c.id)}
+                    >
                       Открыть
                     </button>
-                    <button className={s.clients__btn} onClick={() => onEdit(c.id)}>
+                    <button
+                      className="clients__btn"
+                      onClick={() => onEdit(c.id)}
+                    >
                       Изм.
                     </button>
                     <button
-                      className={`${s.clients__btn} ${s["clients__btn--secondary"]}`}
+                      className="clients__btn clients__btn--secondary"
                       onClick={() => onDelete(c.id)}
                     >
                       Удалить
@@ -356,7 +385,7 @@ export default function Clients() {
               ))
             ) : (
               <tr>
-                <td className={s.clients__empty} colSpan={6}>
+                <td className="clients__empty" colSpan={6}>
                   Ничего не найдено
                 </td>
               </tr>
@@ -402,7 +431,10 @@ function ClientForm({ id, onClose, afterSave, rows }) {
     // простая проверка уникальности телефона по уже загруженному списку
     const normalizedPhone = phoneNorm(phone);
     const others = (rows || []).filter((c) => !editing || c.id !== id);
-    if (normalizedPhone && others.some((c) => phoneNorm(c.phone) === normalizedPhone)) {
+    if (
+      normalizedPhone &&
+      others.some((c) => phoneNorm(c.phone) === normalizedPhone)
+    ) {
       setErr("Такой телефон уже есть");
       return;
     }
@@ -430,45 +462,53 @@ function ClientForm({ id, onClose, afterSave, rows }) {
   };
 
   return (
-    <div className={s.clients__modalOverlay} onClick={onClose}>
-      <div className={s.clients__modal} onClick={(e) => e.stopPropagation()}>
-        <div className={s.clients__modalHeader}>
-          <div className={s.clients__modalTitle}>
+    <div className="clients__modalOverlay" onClick={onClose}>
+      <div className="clients__modal" onClick={(e) => e.stopPropagation()}>
+        <div className="clients__modalHeader">
+          <div className="clients__modalTitle">
             {editing ? "Редактировать клиента" : "Новый клиент"}
           </div>
-          <button className={s.clients__iconBtn} onClick={onClose} aria-label="Закрыть">
+          <button
+            className="clients__iconBtn"
+            onClick={onClose}
+            aria-label="Закрыть"
+          >
             ×
           </button>
         </div>
 
-        {err && <div className={s.clients__error} style={{ marginTop: 8 }}>{err}</div>}
+        {err && (
+          <div className="clients__error" style={{ marginTop: 8 }}>
+            {err}
+          </div>
+        )}
 
-        <form className={s.clients__form} onSubmit={submit}>
-          <div className={s.clients__formGrid}>
-            <div className={s.clients__field}>
-              <label className={s.clients__label}>Имя *</label>
+        <form className="clients__form" onSubmit={submit}>
+          <div className="clients__formGrid">
+            <div className="clients__field">
+              <label className="clients__label">Имя *</label>
               <input
-                className={s.clients__input}
+                className="clients__input"
                 value={full_name}
                 onChange={(e) => setFullName(e.target.value)}
                 required
               />
             </div>
 
-            <div className={s.clients__field}>
-              <label className={s.clients__label}>Телефон</label>
+            <div className="clients__field">
+              <label className="clients__label">Телефон</label>
               <input
-                className={s.clients__input}
+                className="clients__input"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+996700000000"
               />
             </div>
 
-            <div className={s.clients__field} style={{ gridColumn: "1/-1" }}>
-              <label className={s.clients__label}>Заметки</label>
+            <div className="clients__field" style={{ gridColumn: "1/-1" }}>
+              <label className="clients__label">Заметки</label>
               <textarea
-                className={s.clients__input}
+                className="clients__input"
                 rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -476,10 +516,10 @@ function ClientForm({ id, onClose, afterSave, rows }) {
             </div>
           </div>
 
-          <div className={s.clients__formActions}>
+          <div className="clients__formActions">
             <button
               type="button"
-              className={s.clients__btn}
+              className="clients__btn"
               onClick={onClose}
               disabled={saving}
             >
@@ -487,7 +527,7 @@ function ClientForm({ id, onClose, afterSave, rows }) {
             </button>
             <button
               type="submit"
-              className={`${s.clients__btn} ${s["clients__btn--primary"]}`}
+              className="clients__btn clients__btn--primary"
               disabled={saving}
             >
               {saving ? "Сохранение…" : "Сохранить"}
@@ -506,38 +546,48 @@ function ClientCard({ id, onClose, rows }) {
   if (!client) return null;
 
   return (
-    <div className={s.clients__modalOverlay} onClick={onClose}>
-      <div className={s.clients__modalWide} onClick={(e) => e.stopPropagation()}>
-        <div className={s.clients__modalHeader}>
-          <div className={s.clients__modalTitle}>Клиент — {client.full_name}</div>
-          <button className={s.clients__iconBtn} onClick={onClose} aria-label="Закрыть">
+    <div className="clients__modalOverlay" onClick={onClose}>
+      <div className="clients__modalWide" onClick={(e) => e.stopPropagation()}>
+        <div className="clients__modalHeader">
+          <div className="clients__modalTitle">Клиент — {client.full_name}</div>
+          <button
+            className="clients__iconBtn"
+            onClick={onClose}
+            aria-label="Закрыть"
+          >
             ×
           </button>
         </div>
 
-        <div className={s.clients__cardHeader}>
-          <div className={s.clients__profile}>
+        <div className="clients__cardHeader">
+          <div className="clients__profile">
             <div>
               <strong>Телефон:</strong> {client.phone || "—"}
             </div>
           </div>
-          <div className={s.clients__stats}>
-            <div className={s.clients__statBox}>
-              <div className={s.clients__statVal}>{client.bookings?.length || 0}</div>
-              <div className={s.clients__statLabel}>Брони</div>
+          <div className="clients__stats">
+            <div className="clients__statBox">
+              <div className="clients__statVal">
+                {client.bookings?.length || 0}
+              </div>
+              <div className="clients__statLabel">Брони</div>
             </div>
           </div>
         </div>
 
-        <div className={s.clients__tabs}>
+        <div className="clients__tabs">
           <button
-            className={`${s.clients__tab} ${tab === "profile" ? s.clients__tabActive : ""}`}
+            className={`clients__tab ${
+              tab === "profile" ? "clients__tabActive" : ""
+            }`}
             onClick={() => setTab("profile")}
           >
             Профиль
           </button>
           <button
-            className={`${s.clients__tab} ${tab === "bookings" ? s.clients__tabActive : ""}`}
+            className={`clients__tab ${
+              tab === "bookings" ? "clients__tabActive" : ""
+            }`}
             onClick={() => setTab("bookings")}
           >
             Брони
@@ -545,21 +595,27 @@ function ClientCard({ id, onClose, rows }) {
         </div>
 
         {tab === "profile" && (
-          <div className={s.clients__profileBody}>
-            <div className={s.clients__notes}>
+          <div className="clients__profileBody">
+            <div className="clients__notes">
               <strong>Заметки:</strong>
-              <div className={s.clients__noteArea}>{client.notes || "—"}</div>
+              <div className="clients__noteArea">{client.notes || "—"}</div>
             </div>
-            <div className={s.clients__muted}>
-              Создан: {client.created_at ? new Date(client.created_at).toLocaleString() : "—"} •
-              Обновлён: {client.updated_at ? new Date(client.updated_at).toLocaleString() : "—"}
+            <div className="clients__muted">
+              Создан:{" "}
+              {client.created_at
+                ? new Date(client.created_at).toLocaleString()
+                : "—"}{" "}
+              • Обновлён:{" "}
+              {client.updated_at
+                ? new Date(client.updated_at).toLocaleString()
+                : "—"}
             </div>
           </div>
         )}
 
         {tab === "bookings" && (
-          <div className={s.clients__tableWrap}>
-            <table className={s.clients__table}>
+          <div className="clients__tableWrap">
+            <table className="clients__table">
               <thead>
                 <tr>
                   <th>Статус</th>
@@ -580,7 +636,9 @@ function ClientCard({ id, onClose, rows }) {
                           : b.obj_type === "room"
                           ? `Зал: ${b.obj_name || b.obj_id}`
                           : b.obj_type === "bed"
-                          ? `Койко-место: ${b.obj_name || b.obj_id}${b.qty ? ` × ${b.qty}` : ""}`
+                          ? `Койко-место: ${b.obj_name || b.obj_id}${
+                              b.qty ? ` × ${b.qty}` : ""
+                            }`
                           : "—"}
                       </td>
                       <td>{b.from}</td>
@@ -590,7 +648,7 @@ function ClientCard({ id, onClose, rows }) {
                   ))
                 ) : (
                   <tr>
-                    <td className={s.clients__empty} colSpan={5}>
+                    <td className="clients__empty" colSpan={5}>
                       Нет броней
                     </td>
                   </tr>
@@ -600,8 +658,8 @@ function ClientCard({ id, onClose, rows }) {
           </div>
         )}
 
-        <div className={s.clients__modalFooter}>
-          <button className={s.clients__btn} onClick={onClose}>
+        <div className="clients__modalFooter">
+          <button className="clients__btn" onClick={onClose}>
             Закрыть
           </button>
         </div>
