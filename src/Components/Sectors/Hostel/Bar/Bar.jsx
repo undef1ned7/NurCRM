@@ -73,7 +73,7 @@ function genBarcode() {
 /* =========================
  * component
  * ========================= */
-function HostelBar() {
+function Bar() {
   // ===== контекст приложения (склад/каталоги)
   const ctx = useOutletContext() || {};
   const {
@@ -317,6 +317,7 @@ function HostelBar() {
       <section className="bar__panel">
         <div className="bar__panelHead">
           <div className="bar__panelTitle">Текущая корзина</div>
+          {/* строка с ID/«• Позиции: 0» удалена */}
         </div>
 
         {loadingSale ? (
@@ -569,15 +570,8 @@ function SellModal({
     setCode("");
   }
 
-  const lan = localStorage.getItem("i18nextLng") || "ru";
-  const languageFunc = () => {
-    if (lan === "ru") return "app-ru";
-    if (lan === "ky") return "app-ky";
-    if (lan === "en") return "app-en";
-  };
-
   return createPortal(
-    <div className={`bar__modalOverlay ${languageFunc()}`} onClick={onClose}>
+    <div className="bar__modalOverlay" onClick={onClose}>
       <div
         className="bar__modal"
         onClick={(e) => e.stopPropagation()}
@@ -752,4 +746,4 @@ function SellModal({
   );
 }
 
-export default HostelBar;
+export default Bar;

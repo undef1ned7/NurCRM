@@ -1,16 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./Analytics.scss";
-import api from "../../../../api";
+import api from "../../Api/Api";
 
 /**
  * Источники:
  *  - GET /cafe/staff/
- *  - GET /cafe/payroll-payouts/?month=YYYY-MM (с пагинацией)
- * Плюс оффлайн-выплаты из localStorage (fallback).
- * Требования:
- *  - если сотрудник удалён — его выплаты не показываем;
- *  - если у официанта несколько выплат за месяц — в списке показываем ОДНУ строку, где
- *    Заказы/Выручка/Зарплата = сумма, paid_at = самое позднее.
+ *  - GET /cafe/payroll-payouts/?month=YYYY-MM (с пагинацией; выгружаем все нужные месяцы)
+ * + оффлайн-выплаты из localStorage (fallback).
+ * Фильтрация по датам делается по полю paid_at (включительно).
  */
 
 // ===== оффлайн-хранилище выплат (как в Payroll.jsx)
@@ -46,8 +43,46 @@ const fmtMoney = (n) =>
     maximumFractionDigits: 2,
   }).format(toNum(n));
 
-export default function CafeAnalytics() {
+// ===== helpers по датам
+const ymFromDate = (dateStr) => {
+  if (!dateStr) return null;
+  const [y, m] = dateStr.split("-");
+  if (!y || !m) return null;
+  return `${y}-${m}`;
+};
+const addMonths = (y, m, delta) => {
+  const d = new Date(y, m - 1 + delta, 1);
+  const yy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${yy}-${mm}`;
+};
+const monthsBetween = (fromDateStr, toDateStr) => {
+  const f = new Date(fromDateStr);
+  const t = new Date(toDateStr);
+  if (Number.isNaN(f) || Number.isNaN(t)) return [];
+  const y1 = f.getFullYear();
+  const m1 = f.getMonth() + 1;
+  const y2 = t.getFullYear();
+  const m2 = t.getMonth() + 1;
+  const total = (y2 - y1) * 12 + (m2 - m1);
+  const out = [];
+  for (let i = 0; i <= total; i++) out.push(addMonths(y1, m1, i));
+  return out;
+};
+const inDateRange = (iso, fromStr, toStr) => {
+  if (!fromStr && !toStr) return true;
+  if (!iso) return false;
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return false;
+  const from = fromStr ? new Date(`${fromStr}T00:00:00`).getTime() : -Infinity;
+  const to = toStr ? new Date(`${toStr}T23:59:59.999`).getTime() : +Infinity;
+  return ts >= from && ts <= to;
+};
+
+export default function Analytics() {
   const [month, setMonth] = useState(nowMonth);
+  const [dateFrom, setDateFrom] = useState(""); // YYYY-MM-DD
+  const [dateTo, setDateTo] = useState(""); // YYYY-MM-DD
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -60,7 +95,7 @@ export default function CafeAnalytics() {
     return m;
   }, [staff]);
 
-  const load = async (ym = month) => {
+  const load = async (ym = month, df = dateFrom, dt = dateTo) => {
     setLoading(true);
     try {
       // 1) staff
@@ -69,22 +104,33 @@ export default function CafeAnalytics() {
       setStaff(staffAll);
       const staffIdSet = new Set(staffAll.map((x) => x.id));
 
-      // 2) выплаты (сервер)
-      let server = [];
-      let url = "/cafe/payroll-payouts/";
-      if (ym) url += `?month=${encodeURIComponent(ym)}`;
-      while (url) {
-        const r = await api.get(url);
-        const data = r?.data || {};
-        const chunk = data.results || data || [];
-        server = server.concat(Array.isArray(chunk) ? chunk : []);
-        url = data.next || null;
+      // 2) какие месяцы вытягивать с сервера
+      let monthsToFetch = [];
+      if (df || dt) {
+        const from = df || dt;
+        const to = dt || df;
+        monthsToFetch = monthsBetween(from, to);
+      } else {
+        monthsToFetch = [ym];
       }
 
-      // 3) выплаты (локальные оффлайн)
-      const local = readLocalPayouts().filter((p) => !ym || p.month === ym);
+      // 3) выплаты (сервер) — по всем нужным месяцам
+      let server = [];
+      for (const m of monthsToFetch) {
+        let url = `/cafe/payroll-payouts/?month=${encodeURIComponent(m)}`;
+        while (url) {
+          const r = await api.get(url);
+          const data = r?.data || {};
+          const chunk = data.results || data || [];
+          server = server.concat(Array.isArray(chunk) ? chunk : []);
+          url = data.next || null;
+        }
+      }
 
-      // 4) merge + дедуп (на уровне отдельных записей)
+      // 4) выплаты (локальные оффлайн) — можно не фильтровать по месяцам, потом отрежем по датам
+      const local = readLocalPayouts();
+
+      // 5) merge + дедуп (на уровне отдельных записей)
       const seen = new Set();
       const keyOf = (p) =>
         `${p.staff}|${p.month}|${p.orders_count}|${p.sales}|${p.salary}|${
@@ -97,12 +143,18 @@ export default function CafeAnalytics() {
         return true;
       });
 
-      // 5) ФИЛЬТР: показываем только те выплаты, у кого staff существует сейчас
+      // 6) ФИЛЬТР: только существующие сотрудники
       const knownOnly = merged.filter((p) => staffIdSet.has(p.staff));
 
-      // 6) АГРЕГАЦИЯ: (staff, month) → суммируем поля и берём позднейший paid_at
+      // 7) ФИЛЬТР ПО ДАТАМ paid_at (если заданы)
+      const byDate =
+        df || dt
+          ? knownOnly.filter((r) => inDateRange(r.paid_at, df, dt))
+          : knownOnly;
+
+      // 8) АГРЕГАЦИЯ: (staff, month) → суммируем поля и берём позднейший paid_at
       const groups = new Map();
-      for (const r of knownOnly) {
+      for (const r of byDate) {
         const k = `${r.staff}|${r.month || ""}`;
         const g = groups.get(k) || {
           id: `grp-${k}`,
@@ -128,17 +180,21 @@ export default function CafeAnalytics() {
       setRowsAgg(aggregated);
     } catch (e) {
       console.error(e);
-      // сервер упал — пробуем отдать только локальные (и тоже агрегировать)
+      // fallback: только локальные выплаты
       try {
         const staffRes = await api.get("/cafe/staff/");
         const staffAll = listFrom(staffRes) || [];
         setStaff(staffAll);
         const staffIdSet = new Set(staffAll.map((x) => x.id));
 
-        const local = readLocalPayouts().filter((p) => !ym || p.month === ym);
+        const local = readLocalPayouts().filter((r) => staffIdSet.has(r.staff));
+        const byDate =
+          dateFrom || dateTo
+            ? local.filter((r) => inDateRange(r.paid_at, dateFrom, dateTo))
+            : local;
+
         const groups = new Map();
-        for (const r of local) {
-          if (!staffIdSet.has(r.staff)) continue;
+        for (const r of byDate) {
           const k = `${r.staff}|${r.month || ""}`;
           const g = groups.get(k) || {
             id: `grp-${k}`,
@@ -167,9 +223,11 @@ export default function CafeAnalytics() {
     }
   };
 
+  // авто-перезагрузка при смене месяца/дат
   useEffect(() => {
-    load(month); /* eslint-disable-next-line */
-  }, [month]);
+    load(month, dateFrom, dateTo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [month, dateFrom, dateTo]);
 
   // поиск по имени/роли на АГРЕГИРОВАННЫХ строках
   const rowsFiltered = useMemo(() => {
@@ -212,6 +270,7 @@ export default function CafeAnalytics() {
         </div>
 
         <div className="analytics__actions">
+          {/* Месяц (быстрый фильтр/навигация) */}
           <input
             type="month"
             className="analytics__select"
@@ -219,6 +278,24 @@ export default function CafeAnalytics() {
             onChange={(e) => setMonth(e.target.value)}
             title="Фильтр по месяцу"
           />
+
+          {/* Дата от / до (для фильтрации по дню или диапазону) */}
+          <input
+            type="date"
+            className="analytics__select"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            title="Дата от"
+          />
+          <input
+            type="date"
+            className="analytics__select"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            title="Дата до"
+          />
+
+          {/* Поиск */}
           <input
             className="analytics__select"
             placeholder="Поиск: сотрудник или роль…"
@@ -226,9 +303,10 @@ export default function CafeAnalytics() {
             onChange={(e) => setQuery(e.target.value)}
             title="Поиск"
           />
+
           <button
             className="analytics__btn analytics__btn--secondary"
-            onClick={() => load(month)}
+            onClick={() => load(month, dateFrom, dateTo)}
             disabled={loading}
           >
             Обновить
