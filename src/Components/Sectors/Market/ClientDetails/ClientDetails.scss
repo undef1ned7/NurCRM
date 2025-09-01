@@ -305,7 +305,7 @@
 
 .deal-item {
   display: grid;
-  grid-template-columns: 1.6fr 0.8fr 0.8fr 1fr;
+  grid-template-columns: 1.6fr 0.8fr 0.8fr 1fr 1fr;
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid var(--border);
@@ -323,6 +323,16 @@
     outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
+}
+
+.debt__input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  color: var(--text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .deal-name {

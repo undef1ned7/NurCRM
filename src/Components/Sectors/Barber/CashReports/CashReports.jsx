@@ -1,31 +1,73 @@
+
+
 // src/components/CashReports/CashReports.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../api";
 import "./CashReports.scss";
 import { FaFileCsv } from "react-icons/fa";
 
-/* ===== Утилиты ===== */
+/* ===== utils ===== */
 const pad = (n) => String(n).padStart(2, "0");
 const toISODate = (d) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const dateISO = (iso) => (iso ? toISODate(new Date(iso)) : "");
-const formatMoney = (n) =>
+
+const fmtMoney = (n) =>
   new Intl.NumberFormat("ru-RU", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(Number(n) || 0);
 
 const clientName = (c) =>
-  c?.client_name || c?.full_name || c?.fullName || c?.name || "";
-const masterName = (m) =>
-  m?.barber_name || m?.full_name || m?.fullName || m?.name || "";
-const serviceName = (s) => s?.service_name || s?.name || "";
+  c?.client_name || c?.full_name || c?.fullName || c?.name || c?.email || "—";
 
-/* ===== Компонент ===== */
+const employeeFIO = (e) =>
+  [e?.last_name, e?.first_name].filter(Boolean).join(" ").trim() ||
+  e?.email ||
+  "—";
+
+const serviceName = (s) => s?.service_name || s?.name || "—";
+
+/* Надёжная сумма: сперва поля записи, затем прайс из услуги */
+const pickAmount = (appt, serviceObj) => {
+  const cand =
+    appt?.total_amount ??
+    appt?.total ??
+    appt?.price ??
+    appt?.service_price ??
+    serviceObj?.price ??
+    0;
+  const n = Number(cand);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/* Забираем все страницы пагинированного эндпоинта */
+const fetchAll = async (url) => {
+  const acc = [];
+  let next = url;
+  // допускаем относительные и абсолютные next
+  while (next) {
+    const { data } = await api.get(next);
+    const chunk = data?.results ?? data ?? [];
+    acc.push(...chunk);
+    next = data?.next || null;
+  }
+  return acc;
+};
+
+/* статусы для фильтра */
+const STATUS_LABELS = {
+  booked: "Забронировано",
+  confirmed: "Подтверждено",
+  completed: "Завершено",
+  canceled: "Отменено",
+  no_show: "Не пришёл",
+};
+
 const CashReports = () => {
   const [appointments, setAppointments] = useState([]);
   const [clients, setClients] = useState([]);
-  const [barbers, setBarbers] = useState([]);
+  const [employees, setEmployees] = useState([]); // вместо barbers
   const [services, setServices] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -33,29 +75,29 @@ const CashReports = () => {
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [serviceId, setServiceId] = useState("");
-  const [masterId, setMasterId] = useState("");
+  const [serviceId, setServiceId] = useState(""); // строки
+  const [masterId, setMasterId] = useState(""); // строки
+  const [status, setStatus] = useState("completed"); // новый фильтр
 
-  /* ===== Загрузка данных (через общий api) ===== */
+  /* загрузка данных */
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
         setError("");
 
-        const [aRes, cRes, bRes, sRes] = await Promise.all([
-          api.get("/barbershop/appointments/"),
-          api.get("/barbershop/clients/"),
-          api.get("/barbershop/barbers/"),
-          api.get("/barbershop/services/"),
+        const [a, c, e, s] = await Promise.all([
+          fetchAll("/barbershop/appointments/"),
+          fetchAll("/barbershop/clients/"),
+          fetchAll("/users/employees/"), // ВАЖНО: берём мастеров из сотрудников
+          fetchAll("/barbershop/services/"),
         ]);
 
-        setAppointments(aRes.data?.results || []);
-        setClients(cRes.data?.results || []);
-        setBarbers(bRes.data?.results || []);
-        setServices(sRes.data?.results || []);
+        setAppointments(a);
+        setClients(c);
+        setEmployees(e);
+        setServices(s);
 
-        // Дефолтный период: текущий месяц
         const now = new Date();
         const start = new Date(now.getFullYear(), now.getMonth(), 1);
         const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -63,7 +105,8 @@ const CashReports = () => {
         setDateTo(toISODate(end));
       } catch (e) {
         setError(
-          e?.response?.data?.detail || "Не удалось загрузить данные кассы"
+          e?.response?.data?.detail ||
+            "Не удалось загрузить данные кассы (записи/клиенты/сотрудники/услуги)"
         );
       } finally {
         setLoading(false);
@@ -71,43 +114,60 @@ const CashReports = () => {
     })();
   }, []);
 
-  /* ===== Быстрые карты по id ===== */
+  /* карты по id (ключи-строки) */
+  const clientMap = useMemo(() => {
+    const m = new Map();
+    clients.forEach((c) => m.set(String(c.id), c));
+    return m;
+  }, [clients]);
+
+  const employeeMap = useMemo(() => {
+    const m = new Map();
+    employees.forEach((u) => m.set(String(u.id), u));
+    return m;
+  }, [employees]);
+
   const serviceMap = useMemo(() => {
     const m = new Map();
-    services.forEach((s) => m.set(s.id, s));
+    services.forEach((s) => m.set(String(s.id), s));
     return m;
   }, [services]);
 
-  /* ===== Транзакции (только завершенные) ===== */
-  const transactions = useMemo(() => {
-    return (appointments || [])
-      .filter((a) => a.status === "completed")
-      .map((a) => {
-        const srv = serviceMap.get(a.service);
-        const amount = Number(srv?.price ?? 0);
-        return {
-          id: a.id,
-          date: dateISO(a.start_at),
-          serviceId: a.service,
-          masterId: a.barber,
-          clientId: a.client,
-          amount,
-        };
-      });
+  /* транзакции (по статусу фильтр переносим ниже) */
+  const rows = useMemo(() => {
+    return (appointments || []).map((a) => {
+      const sid = String(a?.service ?? "");
+      const mid = String(a?.barber ?? ""); // в API поле называется barber — теперь это id сотрудника
+      const cid = String(a?.client ?? "");
+      const srv = serviceMap.get(sid);
+      const amount = pickAmount(a, srv);
+      const date = dateISO(a?.start_at || a?.end_at);
+      return {
+        id: a?.id ?? `${sid}-${mid}-${cid}-${a?.start_at || ""}`,
+        date,
+        serviceId: sid,
+        masterId: mid,
+        clientId: cid,
+        amount,
+        status: a?.status || "",
+      };
+    });
   }, [appointments, serviceMap]);
 
-  /* ===== Фильтрация ===== */
+  /* фильтры */
   const filtered = useMemo(() => {
-    return transactions.filter((t) => {
+    return rows.filter((t) => {
+      // статус
+      const byStatus = status ? t.status === status : true;
       const inFrom = !dateFrom || t.date >= dateFrom;
       const inTo = !dateTo || t.date <= dateTo;
       const byService = !serviceId || t.serviceId === serviceId;
       const byMaster = !masterId || t.masterId === masterId;
-      return inFrom && inTo && byService && byMaster;
+      return byStatus && inFrom && inTo && byService && byMaster;
     });
-  }, [transactions, dateFrom, dateTo, serviceId, masterId]);
+  }, [rows, dateFrom, dateTo, serviceId, masterId, status]);
 
-  /* ===== Метрики ===== */
+  /* метрики */
   const total = useMemo(
     () => filtered.reduce((sum, t) => sum + (Number(t.amount) || 0), 0),
     [filtered]
@@ -119,42 +179,52 @@ const CashReports = () => {
   );
   const avg = count ? Math.round(total / count) : 0;
 
-  /* ===== Группировки ===== */
+  /* группировки */
   const groupSum = (items, keyFn) =>
     items.reduce((acc, item) => {
-      const k = keyFn(item);
+      const k = keyFn(item) || "—";
       acc[k] = (acc[k] || 0) + (Number(item.amount) || 0);
       return acc;
     }, {});
 
-  const byDate = useMemo(() => groupSum(filtered, (t) => t.date), [filtered]);
+  const byDate = useMemo(() => {
+    const g = groupSum(filtered, (t) => t.date);
+    return Object.fromEntries(
+      Object.entries(g).sort(([d1], [d2]) => (d1 > d2 ? 1 : d1 < d2 ? -1 : 0))
+    );
+  }, [filtered]);
 
-  const byService = useMemo(
-    () =>
-      groupSum(filtered, (t) =>
-        serviceName(services.find((s) => s.id === t.serviceId))
-      ),
-    [filtered, services]
-  );
+  const byService = useMemo(() => {
+    const g = groupSum(filtered, (t) => serviceName(serviceMap.get(t.serviceId)));
+    return Object.fromEntries(Object.entries(g).sort(([, a], [, b]) => b - a));
+  }, [filtered, serviceMap]);
 
-  const byMaster = useMemo(
-    () =>
-      groupSum(filtered, (t) =>
-        masterName(barbers.find((m) => m.id === t.masterId))
-      ),
-    [filtered, barbers]
-  );
+  const byMaster = useMemo(() => {
+    const g = groupSum(filtered, (t) => employeeFIO(employeeMap.get(t.masterId)));
+    return Object.fromEntries(Object.entries(g).sort(([, a], [, b]) => b - a));
+  }, [filtered, employeeMap]);
 
-  /* ===== Экспорт в CSV ===== */
+  /* список мастеров для селекта — удобно показывать только тех, кто встречается в записях */
+  const masterOptions = useMemo(() => {
+    const idsInData = new Set(rows.map((r) => r.masterId).filter(Boolean));
+    const list = employees.filter((u) => idsInData.has(String(u.id)));
+    if (list.length === 0) return employees; // если нет данных — показать всех
+    return list;
+  }, [employees, rows]);
+
+  /* экспорт csv */
   const exportCSV = () => {
-    const head = ["Клиент", "Мастер", "Услуга"];
-    const rows = filtered.map((t) => [
-      clientName(clients.find((c) => c.id === t.clientId)),
-      masterName(barbers.find((m) => m.id === t.masterId)),
-      serviceName(services.find((s) => s.id === t.serviceId)),
+    const head = ["Дата", "Клиент", "Мастер", "Услуга", "Сумма", "Статус"];
+    const dataRows = filtered.map((t) => [
+      t.date,
+      clientName(clientMap.get(t.clientId)),
+      employeeFIO(employeeMap.get(t.masterId)),
+      serviceName(serviceMap.get(t.serviceId)),
+      String(t.amount ?? 0),
+      STATUS_LABELS[t.status] || t.status || "",
     ]);
 
-    const csv = [head, ...rows]
+    const csv = [head, ...dataRows]
       .map((r) =>
         r
           .map((cell) => {
@@ -165,9 +235,7 @@ const CashReports = () => {
       )
       .join("\n");
 
-    const blob = new Blob(["\uFEFF" + csv], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -176,7 +244,7 @@ const CashReports = () => {
     URL.revokeObjectURL(url);
   };
 
-  /* ===== Пресеты ===== */
+  /* пресеты дат */
   const setPreset = (preset) => {
     const now = new Date();
     if (preset === "today") {
@@ -184,7 +252,7 @@ const CashReports = () => {
       setDateFrom(d);
       setDateTo(d);
     } else if (preset === "week") {
-      const day = now.getDay() || 7; // 1..7
+      const day = now.getDay() || 7;
       const monday = new Date(now);
       monday.setDate(now.getDate() - (day - 1));
       const sunday = new Date(monday);
@@ -200,11 +268,11 @@ const CashReports = () => {
   };
 
   return (
-    <div className="cashReports services">
-      <div className="header">
-        <h2 className="title">Касса</h2>
+    <div className="cash">
+      <div className="cash__header">
+        <h2 className="cash__title">Касса</h2>
         <button
-          className="btn btnPrimary"
+          className="cash__btn cash__btn--primary"
           onClick={exportCSV}
           disabled={loading || filtered.length === 0}
           title="Экспортировать CSV"
@@ -213,128 +281,157 @@ const CashReports = () => {
         </button>
       </div>
 
-      <div className="filters">
-        <div className="filterRow">
-          <div className="field">
-            <label className="label">Дата от</label>
+      <div className="cash__filters">
+        <div className="cash__filter-row">
+          <div className="cash__field">
+            <label className="cash__label">Дата от</label>
             <input
               type="date"
-              className="input"
+              className="cash__input"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </div>
 
-          <div className="field">
-            <label className="label">Дата до</label>
+          <div className="cash__field">
+            <label className="cash__label">Дата до</label>
             <input
               type="date"
-              className="input"
+              className="cash__input"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
             />
           </div>
 
-          <div className="field">
-            <label className="label">Услуга</label>
+          <div className="cash__field">
+            <label className="cash__label">Услуга</label>
             <select
-              className="input"
+              className="cash__input"
               value={serviceId}
               onChange={(e) => setServiceId(e.target.value)}
             >
               <option value="">Все</option>
               {services.map((s) => (
-                <option key={s.id} value={s.id}>
+                <option key={s.id} value={String(s.id)}>
                   {serviceName(s)}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="field">
-            <label className="label">Мастер</label>
+          <div className="cash__field">
+            <label className="cash__label">Мастер</label>
             <select
-              className="input"
+              className="cash__input"
               value={masterId}
               onChange={(e) => setMasterId(e.target.value)}
             >
               <option value="">Все</option>
-              {barbers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {masterName(m)}
+              {masterOptions.map((u) => (
+                <option key={u.id} value={String(u.id)}>
+                  {employeeFIO(u)}
                 </option>
               ))}
             </select>
           </div>
+
+          <div className="cash__field">
+            <label className="cash__label">Статус</label>
+            <select
+              className="cash__input"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              title="Фильтр по статусу записи"
+            >
+              <option value="">Все</option>
+              <option value="booked">{STATUS_LABELS.booked}</option>
+              <option value="confirmed">{STATUS_LABELS.confirmed}</option>
+              <option value="completed">{STATUS_LABELS.completed}</option>
+              <option value="canceled">{STATUS_LABELS.canceled}</option>
+              <option value="no_show">{STATUS_LABELS.no_show}</option>
+            </select>
+          </div>
         </div>
 
-        <div className="presets">
-          <button className="chip" onClick={() => setPreset("today")}>
+        <div className="cash__presets">
+          <button className="cash__chip" onClick={() => setPreset("today")}>
             Сегодня
           </button>
-          <button className="chip" onClick={() => setPreset("week")}>
+          <button className="cash__chip" onClick={() => setPreset("week")}>
             Неделя
           </button>
-          <button className="chip" onClick={() => setPreset("month")}>
+          <button className="cash__chip" onClick={() => setPreset("month")}>
             Месяц
+          </button>
+          <button
+            className="cash__chip"
+            onClick={() => {
+              setServiceId("");
+              setMasterId("");
+              setStatus("completed");
+            }}
+            title="Сбросить фильтры (услуга/мастер/статус)"
+          >
+            Сброс фильтров
           </button>
         </div>
       </div>
 
-      {error && <div className="alert">{error}</div>}
+      {error && <div className="cash__alert">{error}</div>}
 
-      <div className="summary">
-        <div className="card">
-          <span className="cardLabel">Выручка</span>
-          <span className="cardValue">{formatMoney(total)} сом</span>
+      <div className="cash__summary">
+        <div className="cash__card">
+          <span className="cash__card-label">Выручка</span>
+          <span className="cash__card-value">{fmtMoney(total)} сом</span>
         </div>
-        <div className="card">
-          <span className="cardLabel">Транзакций</span>
-          <span className="cardValue">{count}</span>
+        <div className="cash__card">
+          <span className="cash__card-label">Транзакций</span>
+          <span className="cash__card-value">{count}</span>
         </div>
-        <div className="card">
-          <span className="cardLabel">Средний чек</span>
-          <span className="cardValue">{formatMoney(avg)} сом</span>
+        <div className="cash__card">
+          <span className="cash__card-label">Средний чек</span>
+          <span className="cash__card-value">{fmtMoney(avg)} сом</span>
         </div>
-        <div className="card">
-          <span className="cardLabel">Уникальных клиентов</span>
-          <span className="cardValue">{uniqueClients}</span>
+        <div className="cash__card">
+          <span className="cash__card-label">Уникальных клиентов</span>
+          <span className="cash__card-value">{uniqueClients}</span>
         </div>
       </div>
 
-      <div className="tableWrapper">
-        <table className="table">
+      {/* ВНУТРЕННИЙ ВЕРТИКАЛЬНЫЙ СКРОЛЛ ТАБЛИЦЫ */}
+      <div className="cash__table-wrap">
+        <table className="cash__table">
           <thead>
             <tr>
+              <th>Дата</th>
               <th>Клиент</th>
               <th>Мастер</th>
               <th>Услуга</th>
+              <th className="cash__table-amount">Сумма</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td className="loading" colSpan="3">
+                <td className="cash__loading" colSpan="5">
                   Загрузка...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td className="loading" colSpan="3">
+                <td className="cash__loading" colSpan="5">
                   Нет данных
                 </td>
               </tr>
             ) : (
               filtered.map((t) => (
                 <tr key={t.id}>
-                  <td>
-                    {clientName(clients.find((c) => c.id === t.clientId))}
-                  </td>
-                  <td>
-                    {masterName(barbers.find((m) => m.id === t.masterId))}
-                  </td>
-                  <td>
-                    {serviceName(services.find((s) => s.id === t.serviceId))}
+                  <td>{t.date || "—"}</td>
+                  <td>{clientName(clientMap.get(t.clientId))}</td>
+                  <td>{employeeFIO(employeeMap.get(t.masterId))}</td>
+                  <td>{serviceName(serviceMap.get(t.serviceId))}</td>
+                  <td className="cash__table-amount">
+                    {fmtMoney(t.amount)} сом
                   </td>
                 </tr>
               ))
@@ -343,38 +440,45 @@ const CashReports = () => {
         </table>
       </div>
 
-      <div className="reports">
-        <div className="report">
-          <h3 className="h3">По дням</h3>
-          <ul className="ul">
+      <div className="cash__reports">
+        <div className="cash__report">
+          <h3 className="cash__h3">По дням</h3>
+          {/* ВНУТРЕННИЙ СКРОЛЛ СПИСКА */}
+          <ul className="cash__list">
             {Object.entries(byDate).map(([date, amount]) => (
-              <li key={date} className="li">
-                <span>{date}</span>
-                <span className="liAmount">{formatMoney(amount)} сом</span>
+              <li key={date || "none"} className="cash__list-item">
+                <span>{date || "—"}</span>
+                <span className="cash__list-amount">
+                  {fmtMoney(amount)} сом
+                </span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="report">
-          <h3 className="h3">По услугам</h3>
-          <ul className="ul">
+        <div className="cash__report">
+          <h3 className="cash__h3">По услугам</h3>
+          <ul className="cash__list">
             {Object.entries(byService).map(([service, amount]) => (
-              <li key={service || "none"} className="li">
+              <li key={service || "none"} className="cash__list-item">
                 <span>{service || "—"}</span>
-                <span className="liAmount">{formatMoney(amount)} сом</span>
+                <span className="cash__list-amount">
+                  {fmtMoney(amount)} сом
+                </span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="report">
-          <h3 className="h3">По мастерам</h3>
-          <ul className="ul">
+        <div className="cash__report">
+          <h3 className="cash__h3">По мастерам</h3>
+          <ul className="cash__list">
             {Object.entries(byMaster).map(([master, amount]) => (
-              <li key={master || "none"} className="li">
+              <li key={master || "none"} className="cash__list-item">
                 <span>{master || "—"}</span>
-                <span className="liAmount">{formatMoney(amount)} сом</span>
+                <span className="cash__list-amount">
+                  {fmtMoney(amount)} сом
+                </span>
               </li>
             ))}
           </ul>

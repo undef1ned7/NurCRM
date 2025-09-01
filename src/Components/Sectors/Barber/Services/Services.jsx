@@ -1,11 +1,10 @@
 // src/components/Services/Services.jsx
 import React, { useEffect, useMemo, useState } from "react";
-
 import "./Services.scss";
 import { FaPlus, FaEdit, FaTimes, FaSearch, FaTrash } from "react-icons/fa";
 import api from "../../../../api";
 
-const BarberServices = () => {
+const Services = () => {
   const [services, setServices] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -15,7 +14,6 @@ const BarberServices = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [currentService, setCurrentService] = useState(null);
 
-  /** ===== Загрузка списка услуг ===== */
   const fetchServices = async () => {
     setLoading(true);
     setError("");
@@ -39,25 +37,20 @@ const BarberServices = () => {
     fetchServices();
   }, []);
 
-  /** ===== Поиск ===== */
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return services;
     return services.filter(
       (s) =>
         (s.name || "").toLowerCase().includes(q) ||
-        String(s.price ?? "")
-          .toLowerCase()
-          .includes(q)
+        String(s.price ?? "").toLowerCase().includes(q)
     );
   }, [services, search]);
 
-  /** ===== Модалка ===== */
   const openModal = (service = null) => {
     setCurrentService(service);
     setModalOpen(true);
   };
-
   const closeModal = () => {
     if (!saving && !deleting) {
       setModalOpen(false);
@@ -65,7 +58,6 @@ const BarberServices = () => {
     }
   };
 
-  /** ===== Сохранение ===== */
   const saveService = async (form) => {
     setSaving(true);
     setError("");
@@ -76,13 +68,11 @@ const BarberServices = () => {
         is_active: !!form.active,
         company: localStorage.getItem("company"),
       };
-
       if (currentService?.id) {
         await api.patch(`/barbershop/services/${currentService.id}/`, payload);
       } else {
         await api.post("/barbershop/services/", payload);
       }
-
       await fetchServices();
       closeModal();
     } catch (e) {
@@ -100,7 +90,6 @@ const BarberServices = () => {
       price: fd.get("price")?.toString().trim() || "",
       active: fd.get("active") === "on",
     };
-
     if (
       !form.name ||
       form.price === "" ||
@@ -112,18 +101,14 @@ const BarberServices = () => {
       );
       return;
     }
-
     saveService(form);
   };
 
-  /** ===== Удаление ===== */
   const handleDelete = async () => {
     if (!currentService?.id) return;
     if (
       !window.confirm(
-        `Удалить услугу «${
-          currentService.name || "без названия"
-        }»? Действие необратимо.`
+        `Удалить услугу «${currentService.name || "без названия"}»? Действие необратимо.`
       )
     )
       return;
@@ -135,7 +120,6 @@ const BarberServices = () => {
       await fetchServices();
       closeModal();
     } catch (e) {
-      // Возможные причины: 403 (нет прав), 404 (не найдена), 405 (метод не разрешён), 409/400 (есть зависимости)
       setError(e.response?.data?.detail || "Не удалось удалить услугу");
     } finally {
       setDeleting(false);
@@ -143,22 +127,20 @@ const BarberServices = () => {
   };
 
   return (
-    <div className="services">
-      {/* Заголовок */}
-      <div className="header">
-        <div className="titleGroup">
-          <h2 className="title">Услуги</h2>
-          <span className="subtitle">
+    <div className="svc">
+      <div className="svc__header">
+        <div className="svc__title-group">
+          <h2 className="svc__title">Услуги</h2>
+          <span className="svc__subtitle">
             {loading ? "Загрузка…" : `${services.length} позиций`}
           </span>
         </div>
 
-        <div className="actions">
-          {/* Поиск */}
-          <div className="search">
-            <FaSearch className="searchIcon" />
+        <div className="svc__actions">
+          <div className="svc__search">
+            <FaSearch className="svc__search-icon" />
             <input
-              className="searchInput"
+              className="svc__search-input"
               type="text"
               placeholder="Поиск по названию или цене"
               value={search}
@@ -166,34 +148,31 @@ const BarberServices = () => {
             />
           </div>
 
-          {/* Кнопка добавления */}
-          <button className="btn btnPrimary" onClick={() => openModal()}>
+          <button className="svc__btn svc__btn--primary" onClick={() => openModal()}>
             <FaPlus /> <span>Добавить</span>
           </button>
         </div>
       </div>
 
-      {/* Ошибка */}
-      {error && <div className="error">{error}</div>}
+      {error && <div className="svc__alert">{error}</div>}
 
-      {/* Список */}
       {loading ? (
-        <div className="skeletonList">
+        <div className="svc__skeleton-list">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="skeletonCard" />
+            <div key={i} className="svc__skeleton-card" />
           ))}
         </div>
       ) : (
-        <div className="list">
+        <div className="svc__list">
           {filtered.map((s) => (
-            <article key={s.id} className="card">
-              <div className="info">
-                <h4 className="name">{s.name}</h4>
-                <div className="meta">
-                  <span className="price">{s.price}</span>
+            <article key={s.id} className="svc__card">
+              <div className="svc__info">
+                <h4 className="svc__name">{s.name}</h4>
+                <div className="svc__meta">
+                  <span className="svc__price">{s.price}</span>
                   <span
-                    className={`badge ${
-                      s.active ? "badgeActive" : "badgeInactive"
+                    className={`svc__badge ${
+                      s.active ? "svc__badge--active" : "svc__badge--inactive"
                     }`}
                   >
                     {s.active ? "Активна" : "Неактивна"}
@@ -201,9 +180,9 @@ const BarberServices = () => {
                 </div>
               </div>
 
-              <div className="cardActions">
+              <div className="svc__card-actions">
                 <button
-                  className="btn btnSecondary"
+                  className="svc__btn svc__btn--secondary"
                   onClick={() => openModal(s)}
                 >
                   <FaEdit /> <span>Редактировать</span>
@@ -214,45 +193,42 @@ const BarberServices = () => {
         </div>
       )}
 
-      {/* Модалка */}
       {modalOpen && (
-        <div className="modalOverlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modalHeader">
-              <h3 className="modalTitle">
+        <div className="svc__modal-overlay" onClick={closeModal}>
+          <div className="svc__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="svc__modal-header">
+              <h3 className="svc__modal-title">
                 {currentService ? "Редактировать услугу" : "Новая услуга"}
               </h3>
-              <button className="iconBtn" onClick={closeModal}>
+              <button className="svc__icon-btn" onClick={closeModal} aria-label="Закрыть">
                 <FaTimes />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="form">
-              <div className="formGrid">
-                {/* Название */}
-                <div className="field">
-                  <label htmlFor="name" className="label">
-                    Название <span className="req">*</span>
+            <form onSubmit={handleSubmit} className="svc__form">
+              <div className="svc__form-grid">
+                <div className="svc__field">
+                  <label htmlFor="name" className="svc__label">
+                    Название <span className="svc__req">*</span>
                   </label>
                   <input
                     id="name"
                     name="name"
-                    className="input"
+                    className="svc__input"
                     defaultValue={currentService?.name || ""}
                     placeholder="Например: Стрижка"
                     required
                   />
                 </div>
 
-                {/* Цена */}
-                <div className="field">
-                  <label htmlFor="price" className="label">
-                    Цена <span className="req">*</span>
+                <div className="svc__field">
+                  <label htmlFor="price" className="svc__label">
+                    Цена <span className="svc__req">*</span>
                   </label>
                   <input
                     id="price"
                     name="price"
-                    className="input"
+                    className="svc__input"
                     defaultValue={currentService?.price ?? ""}
                     placeholder="0"
                     type="number"
@@ -262,26 +238,24 @@ const BarberServices = () => {
                   />
                 </div>
 
-                {/* Активность */}
-                <div className="field fieldSwitch">
-                  <label className="label">Активна</label>
-                  <label className="switch">
+                <div className="svc__field svc__field--switch">
+                  <label className="svc__label">Активна</label>
+                  <label className="svc__switch">
                     <input
                       type="checkbox"
                       name="active"
                       defaultChecked={currentService?.active ?? true}
                     />
-                    <span className="slider" />
+                    <span className="svc__slider" />
                   </label>
                 </div>
               </div>
 
-              {/* Кнопки */}
-              <div className="formActions">
+              <div className="svc__form-actions">
                 {currentService?.id ? (
                   <button
                     type="button"
-                    className="btn btnDanger"
+                    className="svc__btn svc__btn--danger"
                     onClick={handleDelete}
                     disabled={deleting || saving}
                     title="Удалить услугу"
@@ -289,13 +263,13 @@ const BarberServices = () => {
                     <FaTrash /> {deleting ? "Удаление…" : "Удалить"}
                   </button>
                 ) : (
-                  <span className="actionsSpacer" />
+                  <span className="svc__form-actions-spacer" />
                 )}
 
-                <div className="actionsRight">
+                <div className="svc__form-actions-right">
                   <button
                     type="button"
-                    className="btn btnSecondary"
+                    className="svc__btn svc__btn--secondary"
                     onClick={closeModal}
                     disabled={saving || deleting}
                   >
@@ -304,7 +278,7 @@ const BarberServices = () => {
                   <button
                     type="submit"
                     disabled={saving || deleting}
-                    className="btn btnPrimary"
+                    className="svc__btn svc__btn--primary"
                   >
                     {saving ? "Сохранение…" : "Сохранить"}
                   </button>
@@ -318,4 +292,4 @@ const BarberServices = () => {
   );
 };
 
-export default BarberServices;
+export default Services;

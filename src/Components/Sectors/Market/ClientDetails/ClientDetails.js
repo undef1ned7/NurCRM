@@ -7,6 +7,12 @@ import {
 } from "react-router-dom";
 import api from "../../../../api";
 import "./ClientDetails.scss";
+import { useDispatch } from "react-redux";
+import { useClient } from "../../../../store/slices/ClientSlice";
+import {
+  getClientDealDetail,
+  updateDealDetail,
+} from "../../../../store/creators/clientCreators";
 
 /* ===== helpers ===== */
 const listFrom = (res) => res?.data?.results || res?.data || [];
@@ -88,6 +94,174 @@ const toIsoDate10 = (v) => {
   return `${y}-${m2}-${day}`;
 };
 
+const DebtModal = ({ id, onClose }) => {
+  const dispatch = useDispatch();
+  const { dealDetail } = useClient();
+
+  const [state, setState] = useState({ amount: "", count_debt: "" });
+  const [isEditing, setIsEditing] = useState(false);
+
+  // грузим детали сделки
+  useEffect(() => {
+    dispatch(getClientDealDetail(id));
+  }, [id, dispatch]);
+
+  // когда детали приехали — заполняем форму
+  useEffect(() => {
+    if (dealDetail) {
+      setState({
+        amount: dealDetail.amount != null ? String(dealDetail.amount) : "",
+        count_debt:
+          dealDetail.count_debt != null ? String(dealDetail.count_debt) : "",
+      });
+    }
+  }, [dealDetail]);
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setState((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const onSubmit = async () => {
+    try {
+      const amount = Number(state.amount);
+      const count = Number(state.count_debt);
+
+      await dispatch(
+        updateDealDetail({
+          id,
+          data: {
+            amount: Number.isFinite(amount) ? amount : 0,
+            count_debt: Number.isFinite(count) ? count : 0,
+          },
+        })
+      ).unwrap();
+
+      setIsEditing(false);
+    } catch (e) {
+      console.error(e);
+      // можно показать тост/ошибку пользователю
+    }
+  };
+
+  // рассчитываем ежемесячный платёж из текущего источника (форма или сервер)
+  const amountNum = Number(isEditing ? state.amount : dealDetail?.amount);
+  const monthsNum = Number(
+    isEditing ? state.count_debt : dealDetail?.count_debt
+  );
+
+  const monthly =
+    Number.isFinite(amountNum) && Number.isFinite(monthsNum) && monthsNum > 0
+      ? (amountNum / monthsNum).toFixed(2)
+      : "—";
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <h3>Долг клиента</h3>
+
+        <div className="row">
+          <div className="label">ФИО</div>
+          <div className="value">{dealDetail?.client_full_name ?? "—"}</div>
+        </div>
+
+        <div className="row">
+          <div className="label">Название сделки</div>
+          <div className="value">{dealDetail?.title ?? "—"}</div>
+        </div>
+
+        <div className="row">
+          <label className="label" htmlFor="amount">
+            Размер долга
+          </label>
+          {isEditing ? (
+            <input
+              id="amount"
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              name="amount"
+              className="debt__input"
+              value={state.amount}
+              onChange={onChange}
+            />
+          ) : (
+            <div className="value">{dealDetail?.amount ?? "—"}</div>
+          )}
+        </div>
+
+        <div className="row">
+          <label className="label" htmlFor="count_debt">
+            Срок продления (мес.)
+          </label>
+          {isEditing ? (
+            <input
+              id="count_debt"
+              type="number"
+              inputMode="numeric"
+              className="debt__input"
+              step="1"
+              min="1"
+              name="count_debt"
+              value={state.count_debt}
+              onChange={onChange}
+            />
+          ) : (
+            <div className="value">{dealDetail?.count_debt ?? "—"}</div>
+          )}
+        </div>
+
+        <div className="row">
+          <div className="label">Ежемесячный платёж</div>
+          <div className="value">{monthly}</div>
+        </div>
+
+        {dealDetail?.note && (
+          <div className="row">
+            <div className="label">Заметки</div>
+            <div className="value">{dealDetail.note}</div>
+          </div>
+        )}
+
+        {!isEditing ? (
+          <button className="btn edit-btn" onClick={() => setIsEditing(true)}>
+            Редактировать
+          </button>
+        ) : (
+          <div className="actions">
+            <button className="btn edit-btn" onClick={onSubmit}>
+              Сохранить
+            </button>
+            <button
+              className="btn edit-btn"
+              onClick={() => {
+                // откатить поля к данным из сделки
+                setState({
+                  amount:
+                    dealDetail?.amount != null ? String(dealDetail.amount) : "",
+                  count_debt:
+                    dealDetail?.count_debt != null
+                      ? String(dealDetail.count_debt)
+                      : "",
+                });
+                setIsEditing(false);
+              }}
+            >
+              Отмена
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function MarketClientDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -107,6 +281,7 @@ export default function MarketClientDetails() {
   const [isDealFormOpen, setIsDealFormOpen] = useState(false);
   const [isClientFormOpen, setIsClientFormOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState(null);
+  const [showDebtModal, setShowDebtModal] = useState(false);
 
   // quick add deal fields
   const [dealName, setDealName] = useState("");
@@ -126,6 +301,7 @@ export default function MarketClientDetails() {
   const [dealsLoading, setDealsLoading] = useState(false);
   const [dealsErr, setDealsErr] = useState("");
   const [clientErr, setClientErr] = useState("");
+  const [selectedRowId, setSelectedRowId] = useState(null);
 
   useEffect(() => {
     setClient(initialClient);
@@ -382,6 +558,11 @@ export default function MarketClientDetails() {
     return agg;
   }, [deals]);
 
+  const dataTransmission = (id) => {
+    setSelectedRowId(id);
+    setShowDebtModal(true);
+  };
+
   const clientName = client?.fio || client?.full_name || "—";
 
   return (
@@ -478,18 +659,32 @@ export default function MarketClientDetails() {
         {deals.map((deal) => (
           <div
             key={deal.id}
+            onClick={() => {
+              deal.kind === "debt" && dataTransmission(deal.id);
+            }}
             className="deal-item"
-            onClick={() => openDealForm(deal)}
           >
             <span className="deal-name">{deal.title}</span>
             <span className="deal-budget">
-              {Number(deal.amount || 0).toFixed(2)}с
+              {Number(deal.amount || 0).toFixed(2)}
             </span>
             <span className="deal-status">{kindLabel(deal.kind)}</span>
             <span className="deal-tasks">Нет задач</span>
+            <div onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => openDealForm(deal)}
+                className="btn edit-btn"
+              >
+                Редактировать
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {showDebtModal && (
+        <DebtModal id={selectedRowId} onClose={() => setShowDebtModal(false)} />
+      )}
 
       {/* ===== Modal: Редактировать клиента ===== */}
       {isClientFormOpen && (

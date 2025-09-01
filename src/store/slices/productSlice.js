@@ -10,6 +10,7 @@ import {
   createCategoryAsync,
   sendBarCode,
   createKassa,
+  createProductWithBarcode,
 } from "../creators/productCreators";
 import { useSelector } from "react-redux";
 
@@ -39,6 +40,7 @@ const initialState = {
   updateError: null,
   deleting: false,
   deleteError: null,
+  barcodeError: null,
 };
 
 const productSlice = createSlice({
@@ -190,6 +192,22 @@ const productSlice = createSlice({
       .addCase(createKassa.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
+      })
+      .addCase(createProductWithBarcode.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(createProductWithBarcode.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(createProductWithBarcode.rejected, (state, { payload }) => {
+        state.loading = false;
+        if (payload) {
+          state.barcodeError = payload;
+        } else {
+          state.barcodeError = {
+            detail: "Что-то пошло не так. Попробуйте снова.",
+          };
+        }
       });
   },
 });

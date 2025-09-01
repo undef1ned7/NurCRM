@@ -61,6 +61,21 @@ export const createKassa = createAsyncThunk(
   }
 );
 
+export const createProductWithBarcode = createAsyncThunk(
+  "create/by-barcode",
+  async (barcode, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post(
+        "/main/products/create-by-barcode/",
+        barcode
+      );
+      return data;
+    } catch (e) {
+      return rejectWithValue(e);
+    }
+  }
+);
+
 export const updateProductAsync = createAsyncThunk(
   "products/update",
   async ({ productId, updatedData }, { rejectWithValue }) => {

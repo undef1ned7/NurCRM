@@ -86,6 +86,10 @@ const HIDE_RULES = [
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/zakaz"] } },
   { when: { sector: "Кафе" }, show: { toIncludes: ["/crm/cafe/stock"] } },
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/employ"] } },
+  { when: { sector: "Гостиница" }, hide: { toIncludes: ["crm/analytics"] } },
+  { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/clients"] } },
+  { when: { sector: "Барбершоп" }, hide: { toIncludes: ["crm/employ"] } },
+  { when: { sector: "Магазин" }, hide: { toIncludes: ["/crm/analytics"] } },
 ];
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -190,17 +194,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const sectorRemovals = {
     Барбершоп: [
       "Заказы",
-      "Продажа",
       "Бронирование",
-      "Отделы",
-      "Касса",
-      "Сотрудники",
+      // "Отделы",
+      // "Касса",
+      // "Сотрудники",
     ],
     Школа: ["Бронирование", "Сотрудники", "Отделы", "Клиенты"],
-    Гостиница: ["Аналитика", "Заказы", "Бронирование"],
-    Магазин: ["Бар", "История", "Заказы", "Аналитика", "Бронирование"],
+    Гостиница: ["Заказы", "Бронирование"],
+    Магазин: ["Бар", "История", "Заказы", "Бронирование"],
     Кафе: [
-      "Продажа",
       "Аналитика", // заменяется на "Аналитика выплат"
       "Клиенты",
       "Бронирование", // базовое расписание, а не "Бронь"
@@ -458,6 +460,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           icon: <FaRegCalendarAlt className="sidebar__menu-icon" />,
           implemented: true,
         },
+        // {
+        //   label: "Склад",
+        //   to: "/crm/barber/warehouse",
+        //   icon: <Warehouse className="sidebar__menu-icon" />,
+        //   implemented: true,
+        // },
         {
           label: "Кассовые отчёты",
           to: "/crm/barber/cash-reports",
@@ -486,6 +494,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           label: "Бар",
           to: "/crm/hostel/bar",
           icon: <FaRegClipboard className="sidebar__menu-icon" />,
+          implemented: true,
+        },
+        {
+          label: "Клиенты",
+          to: "/crm/hostel/clients",
+          icon: <BsFileEarmarkPerson className="sidebar__menu-icon" />,
           implemented: true,
         },
         {

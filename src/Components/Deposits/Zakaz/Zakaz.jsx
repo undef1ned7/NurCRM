@@ -456,6 +456,7 @@ const AddModal = ({ onClose }) => {
     items: [],
   });
 
+  // Локальные поля выбора товара и количества
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
   const [itemAddError, setItemAddError] = useState(null);
@@ -480,54 +481,26 @@ const AddModal = ({ onClose }) => {
     });
   };
 
-  // выбор продукта сразу добавляет его в items
+  // ❗ Исправлено: выбор товара ТОЛЬКО устанавливает selectedProductId, не добавляя auto-товар
   const handleProductSelectChange = (e) => {
     const selectedValue = e.target.value;
-    if (!selectedValue) return;
-
-    setNewOrderData((prevData) => {
-      // проверяем, есть ли уже такой товар
-      const existingItemIndex = prevData.items.findIndex(
-        (item) => item.product === selectedValue
-      );
-
-      let updatedItems;
-      if (existingItemIndex > -1) {
-        // если уже есть — просто увеличиваем на 1
-        updatedItems = prevData.items.map((item, index) =>
-          index === existingItemIndex
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        // если нет — добавляем новый с количеством 1
-        updatedItems = [
-          ...prevData.items,
-          { product: selectedValue, quantity: 1 },
-        ];
-      }
-
-      return { ...prevData, items: updatedItems };
-    });
-
-    // сбрасываем селект
-    setSelectedProductId("");
+    setSelectedProductId(selectedValue);
+    setItemAddError(null);
   };
 
-  // изменение количества в input
+  // Контроль за количеством (только целые >= 1)
   const handleQuantityChange = (e) => {
-    let value = e.target.value;
-
-    if (value === "") {
+    const raw = e.target.value;
+    if (raw === "") {
       setSelectedProductQuantity("");
       return;
     }
-
-    value = Math.max(1, parseInt(value, 10) || 1);
-    console.log("Установлено количество:", value);
-    setSelectedProductQuantity(value);
+    const v = Math.max(1, parseInt(raw, 10) || 1);
+    console.log("Установлено количество:", v);
+    setSelectedProductQuantity(v);
   };
 
+  // Добавление позиции в заказ
   const handleAddItem = () => {
     console.log("Попытка добавить товар:");
     console.log("selectedProductId:", selectedProductId);
@@ -538,7 +511,9 @@ const AddModal = ({ onClose }) => {
       setItemAddError("Пожалуйста, выберите продукт.");
       return;
     }
-    if (selectedProductQuantity < 1) {
+
+    const qty = Number(selectedProductQuantity);
+    if (!qty || qty < 1) {
       setItemAddError("Количество должно быть не менее 1.");
       return;
     }
@@ -548,25 +523,25 @@ const AddModal = ({ onClose }) => {
     );
 
     if (existingItemIndex > -1) {
-      // Если товар уже в списке, обновляем его количество
+      // Если товар уже есть — увеличиваем количество
       setNewOrderData((prevData) => ({
         ...prevData,
         items: prevData.items.map((item, index) =>
           index === existingItemIndex
-            ? { ...item, quantity: item.quantity + selectedProductQuantity }
+            ? { ...item, quantity: item.quantity + qty }
             : item
         ),
       }));
     } else {
-      // Если товара нет в списке, добавляем его
+      // Если товара нет — добавляем
       setNewOrderData((prevData) => {
         const newItems = [
           ...prevData.items,
-          { product: selectedProductId, quantity: selectedProductQuantity },
+          { product: selectedProductId, quantity: qty },
         ];
         console.log("Добавлен новый товар:", {
           product: selectedProductId,
-          quantity: selectedProductQuantity,
+          quantity: qty,
         });
         console.log("Обновленный список товаров:", newItems);
         return {
@@ -615,15 +590,15 @@ const AddModal = ({ onClose }) => {
       return;
     }
 
-    // --- Изменения начинаются здесь ---
+    // Преобразуем items к ожидаемой схеме API
     const itemsToSend = newOrderData.items.map((item) => ({
-      product: item.product, // Используем правильное поле product
+      product: item.product,
       quantity: item.quantity,
     }));
 
     const payload = {
       ...newOrderData,
-      items: itemsToSend, // Используем преобразованный массив items
+      items: itemsToSend,
     };
 
     console.log("Payload для отправки:", payload);
@@ -770,7 +745,8 @@ const AddModal = ({ onClose }) => {
 
             <input
               type="number"
-              // min="1"
+              min="1"
+              step="1"
               value={selectedProductQuantity}
               onChange={handleQuantityChange}
               placeholder="Кол-во"
@@ -780,7 +756,9 @@ const AddModal = ({ onClose }) => {
               type="button"
               onClick={handleAddItem}
               className="add-modal__add-item-btn"
-              disabled={!selectedProductId || selectedProductQuantity < 1}
+              disabled={
+                !selectedProductId || Number(selectedProductQuantity) < 1
+              }
             >
               <PlusCircle size={20} /> Добавить
             </button>
@@ -795,7 +773,8 @@ const AddModal = ({ onClose }) => {
               <ul>
                 {newOrderData.items.map((item) => (
                   <li key={item.product}>
-                    {getProductNameById(item.product)} - **{item.quantity} шт.**
+                    {getProductNameById(item.product)} -{" "}
+                    <strong>{item.quantity} шт.</strong>
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item.product)}

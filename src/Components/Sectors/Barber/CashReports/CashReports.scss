@@ -1,3 +1,4 @@
+/* src/components/CashReports/CashReports.scss */
 :root {
   --primary: #f7d74f;
   --primary-dark: #d4b800;
@@ -5,151 +6,143 @@
   --muted: #6b7280;
   --border: #e5e7eb;
   --surface: #ffffff;
-  --radius: 12px;
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   --success: #10b981;
-
-  --tap: 44px; /* мин. кликабельная высота */
 }
 
-* {
-  box-sizing: border-box;
-}
+/* SCSS variables (локальные) */
+$radius: 12px;
+$shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+$tap: 44px;
 
-.services {
+/* ВАЖНО: без глобала. Скоупим внутри .cash */
+.cash,
+.cash * { box-sizing: border-box; }
+
+.cash {
   background: var(--surface);
-  border-radius: var(--radius);
+  border-radius: $radius;
   padding: 24px;
-  box-shadow: var(--shadow);
+  box-shadow: $shadow;
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
 
-/* Header */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 
-.title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0;
-}
+  &__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
 
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s;
-  border: 1px solid transparent;
-  min-height: var(--tap);
-  line-height: 1;
-}
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    border: 1px solid transparent;
+    min-height: $tap;
+    line-height: 1;
 
-.btn:active {
-  transform: translateY(1px);
-}
+    &:active { transform: translateY(1px); }
 
-.btnPrimary {
-  background: var(--primary);
-  color: #111;
-}
+    &--primary {
+      background: var(--primary);
+      color: #111;
 
-.btnPrimary:hover {
-  background: var(--primary-dark);
-}
-.btnPrimary:disabled {
-  opacity: 0.6;
-  cursor: default;
-  transform: none;
-}
+      &:hover { background: var(--primary-dark); }
+      &:disabled { opacity: .6; cursor: default; transform: none; }
+    }
 
-/* Filters */
-.filters {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+    &--secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
 
-.filterRow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr));
-  gap: 10px;
-}
+      &:hover { background: #f9fafb; }
+    }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+    &--danger {
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #ef4444;
 
-.label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-}
+      &:hover { background: rgba(239, 68, 68, 0.06); }
+    }
+  }
 
-.input {
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-  min-height: 40px;
-}
+  /* Filters */
+  &__filters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-.input:focus {
-  outline: none;
-  border-color: var(--primary);
-}
+  &__filter-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    gap: 10px;
+  }
 
-.input::placeholder {
-  color: var(--muted);
-  opacity: 0.8;
-}
+  &__field { display: flex; flex-direction: column; gap: 6px; }
 
-.presets {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+  &__label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+  }
 
-.chip {
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  background: #f9fafb;
-  border: 1px solid var(--border);
-  color: var(--text);
-  transition: 0.2s;
-  min-height: 34px;
-}
+  &__input {
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    min-height: 40px;
 
-.chip:hover {
-  background: #e5e7eb;
-  border-color: var(--primary);
-}
+    &:focus { outline: none; border-color: var(--primary); }
+    &::placeholder { color: var(--muted); opacity: .8; }
+  }
 
-/* Summary */
-.summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr));
-  gap: 12px;
-}
-.cashReports {
-  .card {
+  &__presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__chip {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #f9fafb;
+    border: 1px solid var(--border);
+    color: var(--text);
+    transition: 0.2s;
+    min-height: 34px;
+
+    &:hover { background: #e5e7eb; border-color: var(--primary); }
+  }
+
+  /* Summary */
+  &__summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  &__card {
     background: #fafafa;
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -159,310 +152,241 @@
     gap: 4px;
     min-height: 72px;
   }
+
+  &__card-label { font-size: 12px; color: var(--muted); }
+  &__card-value { font-size: 18px; font-weight: 700; color: var(--text); }
+
+  /* Table (внутренний скролл по вертикали + горизонтали) */
+  &__table-wrap {
+    overflow: auto;                /* и X, и Y */
+    max-height: clamp(320px, 60vh, 720px);  /* <= ключевой фикс, чтоб вниз не уходило */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+
+    &::-webkit-scrollbar { width: 8px; height: 8px; }
+    &::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 8px; }
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 560px; /* 5 колонок */
+
+    thead th {
+      text-align: left;
+      padding: 12px;
+      background: var(--primary);
+      color: #111;
+      font-size: 14px;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody td {
+      padding: 12px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tbody tr:hover td { background: #f1f5f9; }
+  }
+
+  &__table-amount {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 700;
+    color: var(--success);
+  }
+
+  &__loading {
+    text-align: center;
+    color: var(--muted);
+    padding: 18px 0;
+  }
+
+  /* Reports */
+  &__reports {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    gap: 20px;
+  }
+
+  &__report {
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 160px;
+  }
+
+  &__h3 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+
+  /* ВНУТРЕННИЙ СКРОЛЛ СПИСКОВ ОТЧЁТОВ */
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    overflow: auto;
+    max-height: 360px; /* ограничиваем рост блока отчёта */
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar { width: 8px; }
+    &::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 8px; }
+  }
+
+  &__list-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+
+    &:last-child { border-bottom: none; }
+  }
+
+  &__list-amount { font-weight: 700; }
+
+  /* Alert */
+  &__alert {
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    background: rgba(231, 76, 60, 0.12);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.35);
+  }
 }
 
-.cardLabel {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.cardValue {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-/* Table */
-.tableWrapper {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-}
-
-.tableWrapper::-webkit-scrollbar {
-  height: 8px;
-}
-.tableWrapper::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 8px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  /* Чтобы на узких экранах не ломало таблицу: */
-  min-width: 520px; /* безопасная ширина для 3 колонок */
-}
-
-.table thead th {
-  text-align: left;
-  padding: 12px;
-  background: var(--primary);
-  color: #111;
-  font-size: 14px;
-  font-weight: 600;
-  position: sticky; /* липкая шапка в пределах .tableWrapper */
-  top: 0;
-  z-index: 1;
-}
-
-.table tbody td {
-  padding: 12px;
-  font-size: 14px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-
-.table tbody tr:hover td {
-  background: #f1f5f9;
-}
-
-.amount {
-  font-weight: 700;
-  color: var(--success);
-}
-
-.loading {
-  text-align: center;
-  color: var(--muted);
-  padding: 18px 0;
-}
-
-/* Reports */
-.reports {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap: 20px;
-}
-
-.report {
-  background: #fafafa;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.h3 {
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0 0 8px;
-}
-
-.ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.li:last-child {
-  border-bottom: none;
-}
-.liAmount {
-  font-weight: 700;
-}
-
-/* Alert */
-.alert {
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 14px;
-  background: rgba(231, 76, 60, 0.12);
-  color: #e74c3c;
-  border: 1px solid rgba(231, 76, 60, 0.35);
-}
-
-/* ================== RESPONSIVE ================== */
+/* ================== Responsive ================== */
 @media (max-width: 1280px) {
-  .filterRow {
-    grid-template-columns: repeat(3, minmax(160px, 1fr));
-  }
-  .summary {
-    grid-template-columns: repeat(3, minmax(160px, 1fr));
+  .cash {
+    &__filter-row { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
+    &__summary { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
   }
 }
 
-/* ≤ 1024px */
 @media (max-width: 1024px) {
-  .filterRow {
-    grid-template-columns: repeat(2, minmax(160px, 1fr));
-  }
-  .summary {
-    grid-template-columns: repeat(2, minmax(160px, 1fr));
-  }
-  .reports {
-    grid-template-columns: 1fr;
+  .cash {
+    &__filter-row { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+    &__summary { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+    &__reports { grid-template-columns: 1fr; }
+    &__list { max-height: 300px; }
   }
 }
 
 /* ≤ 560px — мобильная компоновка */
 @media (max-width: 560px) {
-  .services {
+  .cash {
     padding: 16px;
     border-radius: 10px;
     gap: 16px;
-  }
 
-  .header {
-    gap: 8px;
-  }
-  .title {
-    font-size: 18px;
-  }
+    &__title { font-size: 18px; }
 
-  .btn {
-    width: 100%;
-    justify-content: center;
-    font-size: 13.5px;
-    padding: 10px 12px;
-  }
+    &__btn {
+      width: 100%;
+      justify-content: center;
+      font-size: 13.5px;
+      padding: 10px 12px;
+    }
 
-  .filterRow {
-    grid-template-columns: 1fr;
-  }
-  .input {
-    font-size: 13.5px;
-    padding: 9px 10px;
-    min-height: 40px;
-  }
+    &__filter-row { grid-template-columns: 1fr; }
 
-  .presets {
-    gap: 6px;
-  }
-  .chip {
-    padding: 6px 10px;
-    font-size: 13px;
-  }
+    &__input {
+      font-size: 13.5px;
+      padding: 9px 10px;
+      min-height: 40px;
+    }
 
-  .summary {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  .card {
-    padding: 10px;
-    min-height: 64px;
-  }
-  .cardValue {
-    font-size: 17px;
-  }
+    &__presets { gap: 6px; }
 
-  .table {
-    min-width: 480px;
-  }
-  .table thead th {
-    padding: 10px;
-    font-size: 13.5px;
-  }
-  .table tbody td {
-    padding: 10px;
-    font-size: 13.5px;
-  }
+    &__chip { padding: 6px 10px; font-size: 13px; }
 
-  .h3 {
-    font-size: 15.5px;
-  }
-  .li {
-    padding: 8px 0;
-    gap: 10px;
+    &__summary { grid-template-columns: 1fr; gap: 10px; }
+
+    &__card { padding: 10px; min-height: 64px; }
+    &__card-value { font-size: 17px; }
+
+    &__table { min-width: 520px; }
+
+    &__h3 { font-size: 15.5px; }
+    &__list-item { padding: 8px 0; gap: 10px; }
   }
 }
 
-/* ≤ 380px — плотная мобильная */
+/* ≤ 380px */
 @media (max-width: 380px) {
-  .services {
+  .cash {
     padding: 14px;
-  }
-  .title {
-    font-size: 17px;
-  }
 
-  .btn {
-    font-size: 13px;
-    min-height: 40px;
-  }
+    &__title { font-size: 17px; }
 
-  .chip {
-    font-size: 12.8px;
-    padding: 6px 10px;
-  }
+    &__btn { font-size: 13px; min-height: 40px; }
 
-  .table {
-    min-width: 440px;
-  }
-  .table thead th,
-  .table tbody td {
-    padding: 9px;
-    font-size: 13px;
+    &__chip { font-size: 12.8px; padding: 6px 10px; }
+
+    &__table { min-width: 480px; }
+
+    &__table thead th,
+    &__table tbody td {
+      padding: 9px;
+      font-size: 13px;
+    }
   }
 }
 
-/* ≤ 320px — «жёсткое» сжатие без ломаний */
+/* ≤ 320px */
 @media (max-width: 320px) {
-  .services {
+  .cash {
     padding: 12px;
     border-radius: 10px;
     gap: 14px;
-  }
 
-  .title {
-    font-size: 16px;
-  }
-  .btn {
-    font-size: 12.8px;
-    padding: 9px 10px;
-    min-height: 40px;
-  }
+    &__title { font-size: 16px; }
 
-  .label {
-    font-size: 13px;
-  }
-  .input {
-    font-size: 13px;
-    padding: 8px 9px;
-    min-height: 38px;
-  }
+    &__btn {
+      font-size: 12.8px;
+      padding: 9px 10px;
+      min-height: 40px;
+    }
 
-  .chip {
-    font-size: 12.5px;
-    padding: 5px 10px;
-  }
+    &__label { font-size: 13px; }
 
-  .card {
-    padding: 9px;
-    min-height: 60px;
-  }
-  .cardValue {
-    font-size: 16.5px;
-  }
+    &__input {
+      font-size: 13px;
+      padding: 8px 9px;
+      min-height: 38px;
+    }
 
-  .table {
-    min-width: 420px;
-  }
-  .table thead th,
-  .table tbody td {
-    padding: 8px;
-    font-size: 12.8px;
+    &__chip { font-size: 12.5px; padding: 5px 10px; }
+
+    &__card { padding: 9px; min-height: 60px; }
+    &__card-value { font-size: 16.5px; }
+
+    &__table { min-width: 460px; }
+
+    &__table thead th,
+    &__table tbody td {
+      padding: 8px;
+      font-size: 12.8px;
+    }
+
+    &__list { max-height: 240px; }
   }
 }
 
-/* SAFE-AREA для устройств с вырезами/жестами */
+/* safe-area / reduce motion */
 @supports (padding: max(0px)) {
-  .services {
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-  }
+  .cash { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 }
-
-/* Уважение системного уменьшения анимаций */
 @media (prefers-reduced-motion: reduce) {
-  .btn,
-  .chip {
-    transition: none !important;
+  .cash {
+    &__btn, &__chip { transition: none !important; }
   }
 }

@@ -1,3 +1,5 @@
+
+
 // // src/components/Education/LessonsRooms.jsx
 // import React, { useEffect, useMemo, useState, useCallback } from "react";
 // import {
@@ -34,6 +36,7 @@
 //     bE = bS + bD;
 //   return aS < bE && bS < aE;
 // };
+// const isTimeStr = (s) => /^\d{2}:\d{2}$/.test(String(s || ""));
 
 // /* normalize inbound data to UI shape */
 // const normalizeLesson = (l = {}) => ({
@@ -56,7 +59,6 @@
 // });
 // const normalizeTeacher = (t = {}) => ({ id: t.id, name: t.name ?? "" });
 
-// /* ===== component ===== */
 // function SchoolLessonsRooms() {
 //   /* server data */
 //   const [lessons, setLessons] = useState([]);
@@ -112,9 +114,7 @@
 //     if (!t) return lessons;
 //     return lessons.filter((r) =>
 //       [r.date, r.time, r.room, r.teacher, r.groupName].some((v) =>
-//         String(v || "")
-//           .toLowerCase()
-//           .includes(t)
+//         String(v || "").toLowerCase().includes(t)
 //       )
 //     );
 //   }, [lessons, query]);
@@ -199,6 +199,28 @@
 //     return list;
 //   };
 
+//   /* === duplicate/validation helpers (добавлено) === */
+//   const hasExactDuplicate = (candidate, excludeId = null) =>
+//     lessons.some(
+//       (x) =>
+//         (!excludeId || String(x.id) !== String(excludeId)) &&
+//         String(x.groupId) === String(candidate.groupId) &&
+//         x.date === candidate.date &&
+//         x.time === candidate.time
+//     );
+
+//   const hasGroupOverlap = (candidate, excludeId = null) => {
+//     const cS = toMin(candidate.time);
+//     const cD = Number(candidate.duration || 0);
+//     return lessons.some(
+//       (x) =>
+//         (!excludeId || String(x.id) !== String(excludeId)) &&
+//         x.date === candidate.date &&
+//         String(x.groupId) === String(candidate.groupId) &&
+//         overlap(toMin(x.time), Number(x.duration || 0), cS, cD)
+//     );
+//   };
+
 //   /* create/update */
 //   const submitLesson = async (e) => {
 //     e.preventDefault();
@@ -218,6 +240,32 @@
 //         teachers.find((t) => String(t.id) === String(form.teacherId))?.name ||
 //         "",
 //     };
+
+//     /* === VALIDATION (добавлено) === */
+//     // корректный формат времени
+//     if (!isTimeStr(form.time)) {
+//       setError("Некорректное время. Укажите в формате ЧЧ:ММ.");
+//       return;
+//     }
+//     // диапазон длительности
+//     const dur = Number(form.duration || 0);
+//     if (!Number.isFinite(dur) || dur < 10 || dur > 600) {
+//       setError("Длительность должна быть от 10 до 600 минут.");
+//       return;
+//     }
+//     // точный дубликат (та же группа, дата и время)
+//     if (hasExactDuplicate(candidate, mode === "edit" ? editingId : null)) {
+//       setError("Дубликат: у этой группы уже есть урок на эту дату и время.");
+//       return;
+//     }
+//     // перекрытие по времени для той же группы
+//     if (hasGroupOverlap(candidate, mode === "edit" ? editingId : null)) {
+//       setError(
+//         "Конфликт: у этой группы уже есть занятие, перекрывающееся по времени."
+//       );
+//       return;
+//     }
+
 //     const conf = conflicts(candidate, mode === "edit" ? editingId : null);
 
 //     const payload = {
@@ -586,6 +634,7 @@
 // export default SchoolLessonsRooms;
 
 
+
 // src/components/Education/LessonsRooms.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
@@ -606,20 +655,21 @@ const LS = { ATT: "attendance" };
 const LESSONS_EP = "/education/lessons/";
 const GROUPS_EP = "/education/groups/";
 const STUDENTS_EP = "/education/students/";
-const TEACHERS_EP = "/education/teachers/";
+const EMPLOYEES_EP = "/users/employees/"; // ⬅️ используем сотрудников вместо /education/teachers/
 
 /* ===== helpers ===== */
 const asArray = (data) =>
   Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 
+/* time helpers */
 const toMin = (t) => {
   if (!t) return 0;
-  const [h, m] = t.split(":").map((n) => parseInt(n || "0", 10));
-  return h * 60 + m;
+  const [h, m] = String(t).split(":").map((n) => parseInt(n || "0", 10));
+  return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
 };
 const overlap = (aS, aD, bS, bD) => {
-  const aE = aS + aD,
-    bE = bS + bD;
+  const aE = aS + aD;
+  const bE = bS + bD;
   return aS < bE && bS < aE;
 };
 const isTimeStr = (s) => /^\d{2}:\d{2}$/.test(String(s || ""));
@@ -633,8 +683,8 @@ const normalizeLesson = (l = {}) => ({
   time: l.time ?? "",
   duration: Number(l.duration ?? 0),
   room: l.classroom ?? "",
-  teacherId: l.teacher ?? "",
-  teacher: l.teacher_name ?? "",
+  teacherId: l.teacher ?? "",      // id сотрудника
+  teacher: l.teacher_name ?? "",   // строка от бэка
 });
 const normalizeGroup = (g = {}) => ({ id: g.id, name: g.name ?? "" });
 const normalizeStudent = (s = {}) => ({
@@ -643,14 +693,24 @@ const normalizeStudent = (s = {}) => ({
   status: s.status ?? "active",
   groupId: s.group ?? "",
 });
-const normalizeTeacher = (t = {}) => ({ id: t.id, name: t.name ?? "" });
+
+/* сотрудники как «учителя» */
+const normalizeEmployee = (e = {}) => {
+  const first = String(e.first_name || "").trim();
+  const last = String(e.last_name || "").trim();
+  const full = `${first} ${last}`.trim();
+  return {
+    id: e.id,
+    name: full || e.email || "—",
+  };
+};
 
 function SchoolLessonsRooms() {
   /* server data */
   const [lessons, setLessons] = useState([]);
   const [groups, setGroups] = useState([]);
   const [students, setStudents] = useState([]);
-  const [teachers, setTeachers] = useState([]);
+  const [employees, setEmployees] = useState([]); // ⬅️ вместо teachers
 
   /* ui state */
   const [error, setError] = useState("");
@@ -674,15 +734,15 @@ function SchoolLessonsRooms() {
   const fetchAll = useCallback(async () => {
     setError("");
     try {
-      const [gr, st, th, ls] = await Promise.all([
+      const [gr, st, em, ls] = await Promise.all([
         api.get(GROUPS_EP),
         api.get(STUDENTS_EP),
-        api.get(TEACHERS_EP),
+        api.get(EMPLOYEES_EP), // ⬅️ сотрудники
         api.get(LESSONS_EP),
       ]);
       setGroups(asArray(gr.data).map(normalizeGroup));
       setStudents(asArray(st.data).map(normalizeStudent));
-      setTeachers(asArray(th.data).map(normalizeTeacher));
+      setEmployees(asArray(em.data).map(normalizeEmployee)); // ⬅️
       setLessons(asArray(ls.data).map(normalizeLesson));
     } catch (e) {
       console.error("init lessons error:", e);
@@ -716,7 +776,7 @@ function SchoolLessonsRooms() {
     time: "",
     duration: 90,
     room: "Онлайн",
-    teacherId: "",
+    teacherId: "", // ⬅️ id сотрудника
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -747,7 +807,7 @@ function SchoolLessonsRooms() {
     setMode("create");
   };
 
-  /* conflicts (room/teacher) */
+  /* conflict helpers (room/teacher) */
   const conflicts = (candidate, excludeId = null) => {
     const cDate = candidate.date;
     const cRoom = (candidate.room || "").trim();
@@ -785,7 +845,7 @@ function SchoolLessonsRooms() {
     return list;
   };
 
-  /* === duplicate/validation helpers (добавлено) === */
+  /* duplicates/validation */
   const hasExactDuplicate = (candidate, excludeId = null) =>
     lessons.some(
       (x) =>
@@ -812,6 +872,10 @@ function SchoolLessonsRooms() {
     e.preventDefault();
     if (!form.groupId || !form.date || !form.time) return;
 
+    const teacherNameFromPick =
+      employees.find((t) => String(t.id) === String(form.teacherId))?.name ||
+      "";
+
     const candidate = {
       id: editingId || "tmp",
       groupId: form.groupId,
@@ -822,29 +886,26 @@ function SchoolLessonsRooms() {
       duration: Number(form.duration || 0),
       room: (form.room || "").trim(),
       teacherId: form.teacherId || "",
-      teacher:
-        teachers.find((t) => String(t.id) === String(form.teacherId))?.name ||
-        "",
+      teacher: teacherNameFromPick,
     };
 
-    /* === VALIDATION (добавлено) === */
-    // корректный формат времени
+    // time format
     if (!isTimeStr(form.time)) {
       setError("Некорректное время. Укажите в формате ЧЧ:ММ.");
       return;
     }
-    // диапазон длительности
-    const dur = Number(form.duration || 0);
-    if (!Number.isFinite(dur) || dur < 10 || dur > 600) {
-      setError("Длительность должна быть от 10 до 600 минут.");
+    // duration range (swagger: 0..2147483647)
+    const dur = Number(form.duration ?? 0);
+    if (!Number.isFinite(dur) || dur < 0 || dur > 2147483647) {
+      setError("Длительность должна быть числом от 0 до 2147483647 минут.");
       return;
     }
-    // точный дубликат (та же группа, дата и время)
+    // exact duplicate
     if (hasExactDuplicate(candidate, mode === "edit" ? editingId : null)) {
       setError("Дубликат: у этой группы уже есть урок на эту дату и время.");
       return;
     }
-    // перекрытие по времени для той же группы
+    // overlap within same group
     if (hasGroupOverlap(candidate, mode === "edit" ? editingId : null)) {
       setError(
         "Конфликт: у этой группы уже есть занятие, перекрывающееся по времени."
@@ -854,13 +915,15 @@ function SchoolLessonsRooms() {
 
     const conf = conflicts(candidate, mode === "edit" ? editingId : null);
 
+    // payload по swagger
     const payload = {
       group: form.groupId,
-      teacher: form.teacherId || null,
+      teacher: form.teacherId || null, // сотрудник как «teacher»
       date: form.date,
       time: form.time,
-      duration: Number(form.duration || 0),
-      classroom: (form.room || "").trim(),
+      duration: dur,
+      // classroom: не отправляем, если пусто (minLength:1 на сервере)
+      ...(String(form.room || "").trim() ? { classroom: String(form.room).trim() } : {}),
     };
 
     setSaving(true);
@@ -869,8 +932,9 @@ function SchoolLessonsRooms() {
       if (mode === "create") {
         const { data } = await api.post(LESSONS_EP, payload);
         const created = normalizeLesson(data || {});
-        if (created.id) setLessons((prev) => [created, ...prev]);
-        else {
+        if (created.id) {
+          setLessons((prev) => [created, ...prev]);
+        } else {
           const res = await api.get(LESSONS_EP);
           setLessons(asArray(res.data).map(normalizeLesson));
         }
@@ -929,7 +993,7 @@ function SchoolLessonsRooms() {
     }
   };
 
-  /* attendance ops */
+  /* attendance ops (локально) */
   const studentsOfGroup = (groupId) =>
     students.filter(
       (s) => String(s.groupId) === String(groupId) && s.status === "active"
@@ -956,7 +1020,7 @@ function SchoolLessonsRooms() {
       (a) => a.lessonId === lessonId && a.studentId === studentId
     );
     return !!rec?.present;
-  };
+    };
 
   return (
     <div className="lr">
@@ -1140,11 +1204,14 @@ function SchoolLessonsRooms() {
                   <input
                     className="lr__input"
                     type="number"
-                    min="10"
+                    min="0"
                     step="5"
                     value={form.duration}
                     onChange={(e) =>
-                      setForm({ ...form, duration: e.target.value })
+                      setForm({
+                        ...form,
+                        duration: Number(e.target.value || 0),
+                      })
                     }
                   />
                 </div>
@@ -1169,7 +1236,7 @@ function SchoolLessonsRooms() {
                     }
                   >
                     <option value="">— не указан —</option>
-                    {teachers.map((t) => (
+                    {employees.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
                       </option>

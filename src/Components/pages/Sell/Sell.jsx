@@ -15,6 +15,7 @@ import {
   deleteProductInCart,
   doSearch,
   getProductCheckout,
+  getProductInvoice,
   historySellProduct,
   manualFilling,
   productCheckout,
@@ -23,15 +24,37 @@ import {
 } from "../../../store/creators/saleThunk";
 import { clearProducts, useProducts } from "../../../store/slices/productSlice";
 import { useSale } from "../../../store/slices/saleSlice";
-import BarcodeScanner from "../../Deposits/Sklad/BarcodeScanner";
+import BarcodeScanner from "./BarcodeScanner";
+import { useClient } from "../../../store/slices/ClientSlice";
+import {
+  createClientAsync,
+  fetchClientsAsync,
+} from "../../../store/creators/clientCreators";
+import { useUser } from "../../../store/slices/userSlice";
 
 const SellModal = ({ onClose, id }) => {
+  const { list } = useClient();
+  const [clientId, setClientId] = useState("");
   const dispatch = useDispatch();
   const { creating, createError, brands, categories, barcodeError } =
     useProducts();
+  const { 0: state, 1: setState } = useState({
+    full_name: "",
+    phone: "",
+    email: "",
+    date: new Date().toISOString().split("T")[0],
+    type: "client",
+  });
+  const [showInputs, setShowInputs] = useState(false);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setState((prev) => ({ ...prev, [name]: value }));
+  };
+
   const { cart, loading, barcode, error, start, foundProduct } = useSale();
   const [activeTab, setActiveTab] = useState(0);
   const [isTabSelected, setIsTabSelected] = useState(true);
+  const { company } = useUser();
   // const [state, setState] = useState({ barcode: "" });
   const debouncedSearch = useDebounce((value) => {
     dispatch(doSearch({ search: value }));
@@ -40,11 +63,21 @@ const SellModal = ({ onClose, id }) => {
   const onChange = (e) => {
     debouncedSearch(e.target.value);
   };
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await dispatch(createClientAsync(state)).unwrap();
+      dispatch(fetchClientsAsync());
+      setShowInputs(false);
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   const tabs = [
     {
       label: "Сканировать",
-      content: <BarcodeScanner requestName={sendBarCode} id={id} />,
+      content: <BarcodeScanner id={id} />,
       option: "scan",
     },
     {
@@ -66,10 +99,14 @@ const SellModal = ({ onClose, id }) => {
                   {product.name}{" "}
                   <button
                     onClick={async () => {
-                      await dispatch(
-                        manualFilling({ id, productId: product.id })
-                      );
-                      await dispatch(startSale());
+                      try {
+                        await dispatch(
+                          manualFilling({ id, productId: product.id })
+                        ).unwrap();
+                        await dispatch(startSale()).unwrap();
+                      } catch (err) {
+                        console.error("manualFilling/startSale error:", err);
+                      }
                     }}
                   >
                     <Plus size={16} />
@@ -94,20 +131,30 @@ const SellModal = ({ onClose, id }) => {
     setActiveTab(index);
     setIsTabSelected(true); // включаем отображение контента
   };
+  const filterClient = list.filter((item) => item.type === "client");
 
   useEffect(() => {
     dispatch(doSearch({ search: "" }));
   }, [activeTab, dispatch]);
 
+  useEffect(() => {
+    dispatch(fetchClientsAsync());
+  }, []);
+
+  // console.log(clientId);
+
   const handlePrintReceipt = async () => {
     try {
       const result = await dispatch(
-        productCheckout({ id: start?.id, bool: true })
+        productCheckout({ id: start?.id, bool: true, clientId: clientId })
       ).unwrap();
 
       if (result?.sale_id) {
         const pdfBlob = await dispatch(
           getProductCheckout(result.sale_id)
+        ).unwrap();
+        const pdfInvoiceBlob = await dispatch(
+          getProductInvoice(result.sale_id)
         ).unwrap();
 
         // Создаём ссылку и скачиваем файл
@@ -115,6 +162,41 @@ const SellModal = ({ onClose, id }) => {
         const link = document.createElement("a");
         link.href = url;
         link.download = "receipt.pdf";
+        link.click();
+        const url1 = window.URL.createObjectURL(pdfInvoiceBlob);
+        const link1 = document.createElement("a");
+        link1.href = url1;
+        link1.download = "invoice.pdf";
+        link1.click();
+
+        window.URL.revokeObjectURL(url);
+        window.URL.revokeObjectURL(url1);
+      } else {
+        console.error("Не удалось получить sale_id", result);
+      }
+
+      onClose();
+    } catch (err) {
+      alert(err.detail);
+    }
+  };
+
+  const handlePrintInvoice = async () => {
+    try {
+      const result = await dispatch(
+        productCheckout({ id: start?.id, bool: false, clientId: clientId })
+      ).unwrap();
+
+      if (result?.sale_id) {
+        const pdfInvoiceBlob = await dispatch(
+          getProductInvoice(result.sale_id)
+        ).unwrap();
+
+        // Создаём ссылку и скачиваем файл
+        const url = window.URL.createObjectURL(pdfInvoiceBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "invoice.pdf";
         link.click();
 
         window.URL.revokeObjectURL(url);
@@ -137,44 +219,120 @@ const SellModal = ({ onClose, id }) => {
           <X className="add-modal__close-icon" size={20} onClick={onClose} />
         </div>
 
-        {tabs.map((tab, index) => {
-          return (
-            <button
-              className={`add-modal__button  ${
-                activeTab === index && isTabSelected
-                  ? "add-modal__button-active"
-                  : ""
-              }`}
-              key={index}
-              onClick={() => handleTabClick(index)}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-        {isTabSelected && activeTab !== null && (
-          <div className="add-modal__container">{tabs[activeTab].content}</div>
+        {company?.sector?.name !== "Магазин" ? (
+          <>{tabs[1].content}</>
+        ) : (
+          <>
+            {tabs.map((tab, index) => {
+              return (
+                <button
+                  className={`add-modal__button  ${
+                    activeTab === index && isTabSelected
+                      ? "add-modal__button-active"
+                      : ""
+                  }`}
+                  key={index}
+                  onClick={() => handleTabClick(index)}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+            {isTabSelected && activeTab !== null && (
+              <div className="add-modal__container">
+                {tabs[activeTab].content}
+              </div>
+            )}
+          </>
         )}
 
         {start?.items.length !== 0 && (
           <div className="receipt">
             <h2 className="receipt__title">Приход</h2>
+
+            <div className="add-modal__section">
+              <label>Клиенты *</label>
+              <select
+                name="clientId"
+                className="add-modal__input"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                required
+              >
+                <option>-- Выберите клиента --</option>
+                {filterClient.map((client, idx) => (
+                  <option key={idx} value={String(client.id)}>
+                    {client.full_name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="create-client"
+                onClick={() => setShowInputs(!showInputs)}
+              >
+                {showInputs ? "Отменить" : "Создать клиента"}
+              </button>
+              {showInputs && (
+                <form
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    rowGap: "10px",
+                  }}
+                  onSubmit={onSubmit}
+                >
+                  <input
+                    className="add-modal__input"
+                    onChange={handleChange}
+                    type="text"
+                    placeholder="ФИО"
+                    name="full_name"
+                  />
+                  <input
+                    className="add-modal__input"
+                    onChange={handleChange}
+                    type="text"
+                    name="phone"
+                    placeholder="Телефон"
+                  />
+                  <input
+                    className="add-modal__input"
+                    onChange={handleChange}
+                    type="email"
+                    name="email"
+                    placeholder="Почта"
+                  />
+                  <button className="create-client">Создать</button>
+                </form>
+              )}
+            </div>
             {start?.items.map((product, idx) => (
-              <div className="receipt__item">
+              <div className="receipt__item" key={idx}>
                 <p className="receipt__item-name">
                   {idx + 1}. {product.product_name}
                 </p>
                 <div>
+                  <p>{product.tax_total}</p>
                   <p className="receipt__item-price">
                     {product.quantity} x {product.unit_price} ≡{" "}
                     {product.quantity * product.unit_price}
                   </p>
                   <button
                     onClick={async () => {
-                      await dispatch(
-                        deleteProductInCart({ id, productId: product.id })
-                      );
-                      await dispatch(startSale());
+                      try {
+                        await dispatch(
+                          deleteProductInCart({
+                            id,
+                            productId: product.id,
+                          })
+                        ).unwrap();
+                        await dispatch(startSale()).unwrap();
+                      } catch (err) {
+                        console.error(
+                          "deleteProductInCart/startSale error:",
+                          err
+                        );
+                      }
                     }}
                   >
                     <Minus size={16} />
@@ -184,21 +342,20 @@ const SellModal = ({ onClose, id }) => {
             ))}
             <div className="receipt__total">
               <b>ИТОГО</b>
-              <b>≡ {start?.total}</b>
+              <div
+                style={{ gap: "10px", display: "flex", alignItems: "center" }}
+              >
+                <p>Общая скидка {start?.discount_total} </p>
+                <p>Налог {start?.tax_total}</p>
+                <b>≡ {start?.total}</b>
+              </div>
             </div>
             <div className="receipt__row">
               <button className="receipt__row-btn" onClick={handlePrintReceipt}>
                 Печать чека
               </button>
 
-              <button
-                className="receipt__row-btn"
-                onClick={() => {
-                  dispatch(productCheckout({ id: start?.id, bool: false }));
-
-                  onClose();
-                }}
-              >
+              <button className="receipt__row-btn" onClick={handlePrintInvoice}>
                 Без чека
               </button>
             </div>
@@ -440,9 +597,7 @@ const Sell = () => {
                     />
                   </td>
                   <td>{index + 1}</td>
-                  <td>
-                    <strong>{item.user_display}</strong>
-                  </td>
+                  <td>{item.user_display}</td>
                   <td>{item.total}</td>
                   <td>{item.status}</td>
                   <td>{new Date(item.created_at).toLocaleString()}</td>

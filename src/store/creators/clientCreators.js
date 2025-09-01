@@ -91,3 +91,30 @@ export const getClientDeals = createAsyncThunk(
     }
   }
 );
+
+export const getClientDealDetail = createAsyncThunk(
+  "client/dealDetail",
+  async (clientId, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/main/client-deals/${clientId}/`);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const updateDealDetail = createAsyncThunk(
+  "client/updateDeal",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const { data: response } = await api.patch(
+        `/main/client-deals/${id}/`,
+        data
+      );
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);

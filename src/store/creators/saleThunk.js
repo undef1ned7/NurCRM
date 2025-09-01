@@ -107,10 +107,11 @@ export const historySellProductDetail = createAsyncThunk(
 
 export const productCheckout = createAsyncThunk(
   "products/productCheckout",
-  async ({ id, bool }, { rejectWithValue }) => {
+  async ({ id, bool, clientId }, { rejectWithValue }) => {
     try {
       const { data } = await api.post(`main/pos/sales/${id}/checkout/`, {
         print_receipt: bool,
+        client_id: clientId,
       });
       return data;
     } catch (error) {
@@ -127,6 +128,20 @@ export const getProductCheckout = createAsyncThunk(
         `/main/api/main/pos/sales/${id}/receipt/`,
         { responseType: "blob" }
       );
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const getProductInvoice = createAsyncThunk(
+  "products/getProductInvoice",
+  async (id, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/main/sales/${id}/invoice/`, {
+        responseType: "blob",
+      });
       return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

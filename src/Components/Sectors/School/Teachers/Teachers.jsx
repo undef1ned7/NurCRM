@@ -1,619 +1,583 @@
-// // src/components/Education/Teachers.jsx
-// import React, { useEffect, useMemo, useState, useCallback } from "react";
-// import { FaPlus, FaSearch, FaTimes, FaTrash, FaEdit } from "react-icons/fa";
-// import "./Teachers.scss";
-// import api from "../../../../api";
-
-// const ENDPOINT = "/education/teachers/";
-
-// const asArray = (data) =>
-//   Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
-
-// const normalize = (t = {}) => ({
-//   id: t.id,
-//   name: t.name ?? "",
-//   phone: t.phone ?? "",
-//   subject: t.subject ?? "",
-// });
-
-// function SchoolTeachers() {
-//   /* data */
-//   const [items, setItems] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [saving, setSaving] = useState(false);
-//   const [error, setError] = useState("");
-
-//   /* ui */
-//   const [query, setQuery] = useState("");
-//   const [isModalOpen, setModalOpen] = useState(false);
-//   const [mode, setMode] = useState("create"); // 'create' | 'edit'
-//   const [deletingIds, setDeletingIds] = useState(new Set());
-
-//   /* form */
-//   const emptyForm = { id: null, name: "", phone: "", subject: "" };
-//   const [form, setForm] = useState(emptyForm);
-
-//   /* load */
-//   const fetchTeachers = useCallback(async () => {
-//     setLoading(true);
-//     setError("");
-//     try {
-//       const res = await api.get(ENDPOINT);
-//       setItems(asArray(res.data).map(normalize));
-//     } catch (e) {
-//       console.error(e);
-//       setError("Не удалось загрузить список преподавателей.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   }, []);
-
-//   useEffect(() => {
-//     fetchTeachers();
-//   }, [fetchTeachers]);
-
-//   /* create/update */
-//   const submitTeacher = async (e) => {
-//     e.preventDefault();
-//     const name = form.name.trim();
-//     if (!name) return;
-
-//     setSaving(true);
-//     setError("");
-
-//     const payload = {
-//       name,
-//       phone: form.phone.trim() || null,
-//       subject: form.subject.trim() || null,
-//     };
-
-//     try {
-//       if (mode === "create") {
-//         const res = await api.post(ENDPOINT, payload);
-//         const created = normalize(res.data || payload);
-//         if (created.id) setItems((prev) => [created, ...prev]);
-//         else await fetchTeachers();
-//       } else {
-//         const id = form.id;
-//         const res = await api.put(`${ENDPOINT}${id}/`, payload);
-//         const updated = normalize(res.data || { id, ...payload });
-//         setItems((prev) =>
-//           prev.map((it) => (it.id === updated.id ? updated : it))
-//         );
-//       }
-//       setForm(emptyForm);
-//       setModalOpen(false);
-//     } catch (e) {
-//       console.error(e);
-//       setError(
-//         mode === "create"
-//           ? "Не удалось сохранить преподавателя."
-//           : "Не удалось обновить преподавателя."
-//       );
-//     } finally {
-//       setSaving(false);
-//     }
-//   };
-
-//   /* delete */
-//   const removeTeacher = async (id) => {
-//     setDeletingIds((prev) => new Set(prev).add(id));
-//     setError("");
-//     try {
-//       await api.delete(`${ENDPOINT}${id}/`);
-//       setItems((prev) => prev.filter((t) => t.id !== id));
-//     } catch (e) {
-//       console.error(e);
-//       setError("Не удалось удалить преподавателя.");
-//     } finally {
-//       setDeletingIds((prev) => {
-//         const next = new Set(prev);
-//         next.delete(id);
-//         return next;
-//       });
-//     }
-//   };
-
-//   /* modal control */
-//   const openCreate = () => {
-//     setMode("create");
-//     setForm(emptyForm);
-//     setModalOpen(true);
-//   };
-
-//   const openEdit = (t) => {
-//     setMode("edit");
-//     setForm({
-//       id: t.id,
-//       name: t.name || "",
-//       phone: t.phone || "",
-//       subject: t.subject || "",
-//     });
-//     setModalOpen(true);
-//   };
-
-//   const closeModal = () => {
-//     setModalOpen(false);
-//     setForm(emptyForm);
-//   };
-
-//   /* search */
-//   const filtered = useMemo(() => {
-//     const t = query.trim().toLowerCase();
-//     if (!t) return items;
-//     return items.filter((r) =>
-//       [r.name, r.phone, r.subject]
-//         .filter(Boolean)
-//         .some((v) => String(v).toLowerCase().includes(t))
-//     );
-//   }, [items, query]);
-
-//   return (
-//     <div className="teachers">
-//       {/* Header */}
-//       <div className="teachers__header">
-//         <div>
-//           <h2 className="teachers__title">Преподаватели</h2>
-//           <p className="teachers__subtitle">
-//             Справочник преподавателей (серверные CRUD)
-//           </p>
-//         </div>
-
-//         {/* toolbar */}
-//         <div className="teachers__actions">
-//           <div className="teachers__search">
-//             <FaSearch className="teachers__search-icon" aria-hidden />
-//             <input
-//               className="teachers__search-input"
-//               placeholder="Поиск по имени / телефону / направлению…"
-//               value={query}
-//               onChange={(e) => setQuery(e.target.value)}
-//               aria-label="Поле поиска"
-//             />
-//           </div>
-
-//           <button
-//             type="button"
-//             className="teachers__btn teachers__btn--primary"
-//             onClick={openCreate}
-//           >
-//             <FaPlus /> Добавить
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* States */}
-//       {loading && <div className="teachers__alert">Загрузка…</div>}
-//       {!!error && <div className="teachers__alert">{error}</div>}
-
-//       {/* List */}
-//       {!loading && !error && (
-//         <div className="teachers__list">
-//           {filtered.map((t) => {
-//             const initial = (t.name || "•").trim().charAt(0).toUpperCase();
-//             const deleting = deletingIds.has(t.id);
-//             return (
-//               <div key={t.id} className="teachers__card">
-//                 <div className="teachers__card-left">
-//                   <div className="teachers__avatar" aria-hidden>
-//                     {initial}
-//                   </div>
-//                   <div>
-//                     <p className="teachers__name">{t.name || "Без имени"}</p>
-//                     <div className="teachers__meta">
-//                       <span>{t.phone || "—"}</span>
-//                       <span>{t.subject || "направление не указано"}</span>
-//                     </div>
-//                   </div>
-//                 </div>
-
-//                 <div className="teachers__card-actions">
-//                   <button
-//                     type="button"
-//                     className="teachers__btn teachers__btn--secondary"
-//                     onClick={() => openEdit(t)}
-//                     title="Редактировать"
-//                   >
-//                     <FaEdit /> Изменить
-//                   </button>
-
-//                   <button
-//                     type="button"
-//                     className="teachers__btn teachers__btn--danger"
-//                     onClick={() => removeTeacher(t.id)}
-//                     disabled={deleting}
-//                     title="Удалить"
-//                   >
-//                     <FaTrash /> {deleting ? "Удаление…" : "Удалить"}
-//                   </button>
-//                 </div>
-//               </div>
-//             );
-//           })}
-
-//           {filtered.length === 0 && (
-//             <div className="teachers__alert">Ничего не найдено.</div>
-//           )}
-//         </div>
-//       )}
-
-//       {/* Modal */}
-//       {isModalOpen && (
-//         <div
-//           className="teachers__modal-overlay"
-//           role="dialog"
-//           aria-modal="true"
-//         >
-//           <div className="teachers__modal">
-//             <div className="teachers__modal-header">
-//               <h3 className="teachers__modal-title">
-//                 {mode === "create"
-//                   ? "Новый преподаватель"
-//                   : "Изменить преподавателя"}
-//               </h3>
-//               <button
-//                 type="button"
-//                 className="teachers__icon-btn"
-//                 onClick={closeModal}
-//                 title="Закрыть"
-//                 aria-label="Закрыть"
-//               >
-//                 <FaTimes />
-//               </button>
-//             </div>
-
-//             <form className="teachers__form" onSubmit={submitTeacher}>
-//               <div className="teachers__form-grid">
-//                 <div className="teachers__field">
-//                   <label className="teachers__label">
-//                     Имя <span className="teachers__req">*</span>
-//                   </label>
-//                   <input
-//                     className="teachers__input"
-//                     placeholder="Например, Алия"
-//                     value={form.name}
-//                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-//                     required
-//                   />
-//                 </div>
-
-//                 <div className="teachers__field">
-//                   <label className="teachers__label">Телефон</label>
-//                   <input
-//                     className="teachers__input"
-//                     placeholder="+996 …"
-//                     value={form.phone}
-//                     onChange={(e) =>
-//                       setForm({ ...form, phone: e.target.value })
-//                     }
-//                   />
-//                 </div>
-
-//                 <div className="teachers__field teachers__field--full">
-//                   <label className="teachers__label">
-//                     Направление / предмет
-//                   </label>
-//                   <input
-//                     className="teachers__input"
-//                     placeholder="Например, Английский / Frontend"
-//                     value={form.subject}
-//                     onChange={(e) =>
-//                       setForm({ ...form, subject: e.target.value })
-//                     }
-//                   />
-//                 </div>
-//               </div>
-
-//               <div className="teachers__form-actions">
-//                 <span className="teachers__actions-spacer" />
-//                 <div className="teachers__actions-right">
-//                   <button
-//                     type="button"
-//                     className="teachers__btn teachers__btn--secondary"
-//                     onClick={closeModal}
-//                     disabled={saving}
-//                   >
-//                     Отмена
-//                   </button>
-//                   <button
-//                     type="submit"
-//                     className="teachers__btn teachers__btn--primary"
-//                     disabled={saving}
-//                   >
-//                     {saving
-//                       ? mode === "create"
-//                         ? "Сохранение…"
-//                         : "Обновление…"
-//                       : mode === "create"
-//                       ? "Сохранить"
-//                       : "Сохранить изменения"}
-//                   </button>
-//                 </div>
-//               </div>
-//             </form>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-// export default SchoolTeachers;
-
-
-
 // src/components/Education/Teachers.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { FaPlus, FaSearch, FaTimes, FaTrash, FaEdit } from "react-icons/fa";
+import { FaPlus, FaSearch, FaTimes, FaEdit, FaTrash } from "react-icons/fa";
 import "./Teachers.scss";
 import api from "../../../../api";
 
-const ENDPOINT = "/education/teachers/";
+/* ===== API ===== */
+const EMPLOYEES_LIST_URL = "/users/employees/"; // GET
+const EMPLOYEES_CREATE_URL = "/users/employees/create/"; // POST
+const EMPLOYEE_ITEM_URL = (id) => `/users/employees/${id}/`; // PUT / DELETE
+const ROLES_LIST_URL = "/users/roles/"; // GET (кастомные роли)
+const ROLE_CREATE_URL = "/users/roles/custom/"; // POST
+const ROLE_ITEM_URL = (id) => `/users/roles/custom/${id}/`; // PUT / DELETE
 
+/* ===== Системные роли из swagger enum ===== */
+const SYSTEM_ROLES = ["owner", "admin"];
+
+/* ===== utils ===== */
 const asArray = (data) =>
   Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 
-const normalize = (t = {}) => ({
-  id: t.id,
-  name: t.name ?? "",
-  phone: t.phone ?? "",
-  subject: t.subject ?? "",
+const normalizeEmployee = (e = {}) => ({
+  id: e.id,
+  email: e.email ?? "",
+  first_name: e.first_name ?? "",
+  last_name: e.last_name ?? "",
+  role: e.role ?? null, // 'admin' | 'owner' | null
+  custom_role: e.custom_role ?? null, // uuid | null
+  role_display: e.role_display ?? "",
 });
 
-/* helpers for validation */
-const lc = (s) => String(s || "").trim().toLowerCase();
-const digits = (s) => String(s || "").replace(/\D/g, "");
-const isPhoneLike = (s) => {
-  const d = digits(s);
-  // допустим 9–15 цифр (например, 0XXXXXXXX, 996XXXXXXXXX, и т.п.)
-  return d.length === 0 || (d.length >= 9 && d.length <= 15);
+const fullName = (e) =>
+  [e?.last_name || "", e?.first_name || ""].filter(Boolean).join(" ").trim();
+
+const ruLabelSys = (code) => {
+  const c = String(code || "").toLowerCase();
+  if (c === "owner") return "Владелец";
+  if (c === "admin") return "Администратор";
+  return code || "";
+};
+
+/* распознаём попытки назвать кастомную роль как системную */
+const sysCodeFromName = (name) => {
+  const l = String(name || "").trim().toLowerCase();
+  if (["admin", "administrator", "админ", "администратор"].includes(l)) return "admin";
+  if (["owner", "владелец"].includes(l)) return "owner";
+  return null;
+};
+
+const pickApiError = (e, fallback) => {
+  const data = e?.response?.data;
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (typeof data === "object") {
+    try {
+      const k = Object.keys(data)[0];
+      const v = Array.isArray(data[k]) ? data[k][0] : data[k];
+      return String(v || fallback);
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
 };
 
 function SchoolTeachers() {
-  /* data */
-  const [items, setItems] = useState([]);
+  /* ===== tabs ===== */
+  const [tab, setTab] = useState("employees"); // 'employees' | 'roles'
+
+  /* ===== data ===== */
+  const [employees, setEmployees] = useState([]);
+  const [roles, setRoles] = useState([]); // кастомные роли [{id,name}]
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  /* ui */
-  const [query, setQuery] = useState("");
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [mode, setMode] = useState("create"); // 'create' | 'edit'
-  const [deletingIds, setDeletingIds] = useState(new Set());
+  /* ===== search ===== */
+  const [q, setQ] = useState("");
 
-  /* form */
-  const emptyForm = { id: null, name: "", phone: "", subject: "" };
-  const [form, setForm] = useState(emptyForm);
+  /* ===== role: create/edit/delete ===== */
+  const [roleCreateOpen, setRoleCreateOpen] = useState(false);
+  const [roleCreateName, setRoleCreateName] = useState("");
+  const [roleCreateSaving, setRoleCreateSaving] = useState(false);
+  const [roleCreateErr, setRoleCreateErr] = useState("");
 
-  /* load */
-  const fetchTeachers = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await api.get(ENDPOINT);
-      setItems(asArray(res.data).map(normalize));
-    } catch (e) {
-      console.error(e);
-      setError("Не удалось загрузить список преподавателей.");
-    } finally {
-      setLoading(false);
-    }
+  const [roleEditOpen, setRoleEditOpen] = useState(false);
+  const [roleEditId, setRoleEditId] = useState(null);
+  const [roleEditName, setRoleEditName] = useState("");
+  const [roleEditSaving, setRoleEditSaving] = useState(false);
+
+  const [roleDeletingIds, setRoleDeletingIds] = useState(new Set());
+
+  /* ===== employee: create ===== */
+  const [empCreateOpen, setEmpCreateOpen] = useState(false);
+  const [empSaving, setEmpSaving] = useState(false);
+  const [empErr, setEmpErr] = useState("");
+  const emptyEmp = { email: "", first_name: "", last_name: "", roleChoice: "" };
+  // roleChoice = "sys:admin" | "sys:owner" | "cus:<uuid>"
+  const [empForm, setEmpForm] = useState(emptyEmp);
+
+  /* ===== employee: edit/delete ===== */
+  const [empEditOpen, setEmpEditOpen] = useState(false);
+  const [empEditSaving, setEmpEditSaving] = useState(false);
+  const [empEditErr, setEmpEditErr] = useState("");
+  const emptyEmpEdit = { id: null, email: "", first_name: "", last_name: "", roleChoice: "" };
+  const [empEditForm, setEmpEditForm] = useState(emptyEmpEdit);
+  const [empDeletingIds, setEmpDeletingIds] = useState(new Set());
+
+  /* ===== fetch ===== */
+  const fetchEmployees = useCallback(async () => {
+    const res = await api.get(EMPLOYEES_LIST_URL);
+    setEmployees(asArray(res.data).map(normalizeEmployee));
+  }, []);
+
+  const fetchRoles = useCallback(async () => {
+    const res = await api.get(ROLES_LIST_URL);
+    setRoles(asArray(res.data).map((r) => ({ id: r.id, name: r.name || "" })));
   }, []);
 
   useEffect(() => {
-    fetchTeachers();
-  }, [fetchTeachers]);
+    (async () => {
+      try {
+        setLoading(true);
+        setError("");
+        await Promise.all([fetchEmployees(), fetchRoles()]);
+      } catch (e) {
+        console.error(e);
+        setError("Не удалось загрузить данные.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [fetchEmployees, fetchRoles]);
 
-  /* create/update */
-  const submitTeacher = async (e) => {
+  /* map для быстрого доступа */
+  const roleById = useMemo(() => {
+    const m = new Map();
+    roles.forEach((r) => m.set(r.id, r));
+    return m;
+  }, [roles]);
+
+  /* ===== Роли для селекта сотрудника (без дублей admin/owner) ===== */
+  const roleOptions = useMemo(() => {
+    const sys = SYSTEM_ROLES.map((code) => ({
+      key: `sys:${code}`,
+      label: ruLabelSys(code),
+    }));
+
+    // кастомные, исключая те, что по имени совпадают с системными
+    const cus = roles
+      .filter((r) => !sysCodeFromName(r.name))
+      .map((r) => ({ key: `cus:${r.id}`, label: String(r.name || "").trim() }));
+
+    // финальное устранение дублей по видимому названию
+    const seen = new Set();
+    const out = [];
+    for (const o of [...sys, ...cus]) {
+      const k = o.label.trim().toLowerCase();
+      if (!seen.has(k)) {
+        seen.add(k);
+        out.push(o);
+      }
+    }
+    return out.sort((a, b) => a.label.localeCompare(b.label, "ru"));
+  }, [roles]);
+
+  /* ===== Фильтрация сотрудников ===== */
+  const filteredEmployees = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return employees;
+    return employees.filter((e) =>
+      [fullName(e), e.email, e.role_display, ruLabelSys(e.role)]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(t))
+    );
+  }, [employees, q]);
+
+  /* ===== Список ролей для вкладки "Роли" (без дублей admin/owner среди кастомных) ===== */
+  const filteredRoles = useMemo(() => {
+    // 1) берём только кастомные, исключая названия системных
+    const base = roles.filter((r) => !sysCodeFromName(r.name));
+
+    // 2) устраняем повторы по названию (на всякий случай)
+    const seen = new Set();
+    const dedup = [];
+    for (const r of base) {
+      const key = String(r.name || "").trim().toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        dedup.push(r);
+      }
+    }
+
+    // 3) поиск
+    const t = q.trim().toLowerCase();
+    if (!t) return dedup;
+    return dedup.filter((r) => String(r.name || "").toLowerCase().includes(t));
+  }, [roles, q]);
+
+  /* ===== ROLE: create ===== */
+  const submitRoleCreate = async (e) => {
     e.preventDefault();
-    const name = form.name.trim();
-    const phone = form.phone.trim();
-    const subject = form.subject.trim();
-
-    // === ВАЛИДАЦИЯ ===
-    if (!name) return; // required в инпуте уже стоит
-    if (!isPhoneLike(phone)) {
-      setError("Телефон указан некорректно. Оставьте пустым или введите 9–15 цифр.");
+    const name = roleCreateName.trim();
+    if (!name) return setRoleCreateErr("Укажите название роли");
+    if (sysCodeFromName(name)) {
+      setRoleCreateErr("Такое имя зарезервировано для системной роли.");
       return;
     }
 
-    const nameLc = lc(name);
-    const phoneD = digits(phone);
-
-    // Проверка дубликатов: имя (без регистра/пробелов) ИЛИ телефон (цифры), если он указан
-    if (mode === "create") {
-      const dupByName = items.some((t) => lc(t.name) === nameLc);
-      const dupByPhone = phoneD && items.some((t) => digits(t.phone) === phoneD);
-      if (dupByName) {
-        setError("Дубликат: преподаватель с таким именем уже существует.");
-        return;
-      }
-      if (dupByPhone) {
-        setError("Дубликат: преподаватель с таким телефоном уже существует.");
-        return;
-      }
-    } else {
-      const id = form.id;
-      const dupByName = items.some((t) => t.id !== id && lc(t.name) === nameLc);
-      const dupByPhone =
-        phoneD && items.some((t) => t.id !== id && digits(t.phone) === phoneD);
-      if (dupByName) {
-        setError("Дубликат: другой преподаватель уже имеет такое имя.");
-        return;
-      }
-      if (dupByPhone) {
-        setError("Дубликат: другой преподаватель уже имеет этот телефон.");
-        return;
-      }
-    }
-
-    setSaving(true);
-    setError("");
-
-    const payload = {
-      name,
-      phone: phone || null,
-      subject: subject || null,
-    };
-
+    setRoleCreateSaving(true);
+    setRoleCreateErr("");
     try {
-      if (mode === "create") {
-        const res = await api.post(ENDPOINT, payload);
-        const created = normalize(res.data || payload);
-        if (created.id) setItems((prev) => [created, ...prev]);
-        else await fetchTeachers();
-      } else {
-        const id = form.id;
-        const res = await api.put(`${ENDPOINT}${id}/`, payload);
-        const updated = normalize(res.data || { id, ...payload });
-        setItems((prev) =>
-          prev.map((it) => (it.id === updated.id ? updated : it))
-        );
-      }
-      setForm(emptyForm);
-      setModalOpen(false);
-    } catch (e) {
-      console.error(e);
-      setError(
-        mode === "create"
-          ? "Не удалось сохранить преподавателя."
-          : "Не удалось обновить преподавателя."
-      );
+      await api.post(ROLE_CREATE_URL, { name });
+      await fetchRoles();
+      setRoleCreateOpen(false);
+      setRoleCreateName("");
+    } catch (err) {
+      console.error(err);
+      setRoleCreateErr(pickApiError(err, "Не удалось создать роль"));
     } finally {
-      setSaving(false);
+      setRoleCreateSaving(false);
     }
   };
 
-  /* delete */
-  const removeTeacher = async (id) => {
-    setDeletingIds((prev) => new Set(prev).add(id));
-    setError("");
+  /* ===== ROLE: edit ===== */
+  const openRoleEdit = (r) => {
+    setRoleEditId(r.id);
+    setRoleEditName(r.name || "");
+    setRoleEditOpen(true);
+  };
+  const submitRoleEdit = async (e) => {
+    e.preventDefault();
+    if (!roleEditId) return;
+    const name = roleEditName.trim();
+    if (!name) return;
+    if (sysCodeFromName(name)) {
+      alert("Такое имя зарезервировано для системной роли.");
+      return;
+    }
+
+    setRoleEditSaving(true);
     try {
-      await api.delete(`${ENDPOINT}${id}/`);
-      setItems((prev) => prev.filter((t) => t.id !== id));
-    } catch (e) {
-      console.error(e);
-      setError("Не удалось удалить преподавателя.");
+      await api.put(ROLE_ITEM_URL(roleEditId), { name });
+      await fetchRoles();
+      setRoleEditOpen(false);
+      setRoleEditId(null);
+      setRoleEditName("");
+    } catch (err) {
+      console.error(err);
+      alert(pickApiError(err, "Не удалось обновить роль"));
     } finally {
-      setDeletingIds((prev) => {
+      setRoleEditSaving(false);
+    }
+  };
+
+  /* ===== ROLE: delete ===== */
+  const removeRole = async (r) => {
+    if (!r?.id) return;
+    if (!window.confirm(`Удалить роль «${r.name || "—"}»? Действие необратимо.`)) return;
+    setRoleDeletingIds((prev) => new Set(prev).add(r.id));
+    try {
+      await api.delete(ROLE_ITEM_URL(r.id));
+      await fetchRoles();
+    } catch (err) {
+      console.error(err);
+      alert(pickApiError(err, "Не удалось удалить роль"));
+    } finally {
+      setRoleDeletingIds((prev) => {
         const next = new Set(prev);
-        next.delete(id);
+        next.delete(r.id);
         return next;
       });
     }
   };
 
-  /* modal control */
-  const openCreate = () => {
-    setMode("create");
-    setForm(emptyForm);
-    setModalOpen(true);
+  /* ===== EMPLOYEE: create ===== */
+  const submitEmployeeCreate = async (e) => {
+    e.preventDefault();
+    const email = empForm.email.trim();
+    const first_name = empForm.first_name.trim();
+    const last_name = empForm.last_name.trim();
+    const roleChoice = empForm.roleChoice;
+
+    if (!email || !first_name || !last_name || !roleChoice) {
+      setEmpErr("Заполните Email, Имя, Фамилию и выберите роль.");
+      return;
+    }
+
+    const payload = { email, first_name, last_name };
+    if (roleChoice.startsWith("sys:")) {
+      payload.role = roleChoice.slice(4); // 'admin' | 'owner'
+      payload.custom_role = null;
+    } else if (roleChoice.startsWith("cus:")) {
+      payload.custom_role = roleChoice.slice(4); // uuid
+      payload.role = null;
+    }
+
+    setEmpSaving(true);
+    setEmpErr("");
+    try {
+      await api.post(EMPLOYEES_CREATE_URL, payload);
+      await fetchEmployees();
+      setEmpCreateOpen(false);
+      setEmpForm(emptyEmp);
+    } catch (err) {
+      console.error(err);
+      setEmpErr(pickApiError(err, "Не удалось создать сотрудника"));
+    } finally {
+      setEmpSaving(false);
+    }
   };
 
-  const openEdit = (t) => {
-    setMode("edit");
-    setForm({
-      id: t.id,
-      name: t.name || "",
-      phone: t.phone || "",
-      subject: t.subject || "",
+  /* ===== EMPLOYEE: edit/delete ===== */
+  const toRoleChoice = (emp) => {
+    if (emp?.role) return `sys:${emp.role}`;
+    if (emp?.custom_role) return `cus:${emp.custom_role}`;
+    return "";
+    // если у сотрудника нет роли — оставим пустым (заставим выбрать)
+  };
+
+  const openEmpEdit = (u) => {
+    setEmpEditErr("");
+    setEmpEditForm({
+      id: u.id,
+      email: u.email || "",
+      first_name: u.first_name || "",
+      last_name: u.last_name || "",
+      roleChoice: toRoleChoice(u),
     });
-    setModalOpen(true);
+    setEmpEditOpen(true);
   };
 
-  const closeModal = () => {
-    setModalOpen(false);
-    setForm(emptyForm);
+  const submitEmployeeEdit = async (e) => {
+    e.preventDefault();
+    if (!empEditForm.id) return;
+
+    const email = empEditForm.email.trim();
+    const first_name = empEditForm.first_name.trim();
+    const last_name = empEditForm.last_name.trim();
+    const roleChoice = empEditForm.roleChoice;
+
+    if (!email || !first_name || !last_name || !roleChoice) {
+      setEmpEditErr("Заполните Email, Имя, Фамилию и выберите роль.");
+      return;
+    }
+
+    const payload = { email, first_name, last_name };
+    if (roleChoice.startsWith("sys:")) {
+      payload.role = roleChoice.slice(4);
+      payload.custom_role = null;
+    } else if (roleChoice.startsWith("cus:")) {
+      payload.custom_role = roleChoice.slice(4);
+      payload.role = null;
+    }
+
+    setEmpEditSaving(true);
+    setEmpEditErr("");
+    try {
+      await api.put(EMPLOYEE_ITEM_URL(empEditForm.id), payload);
+      await fetchEmployees();
+      setEmpEditOpen(false);
+      setEmpEditForm(emptyEmpEdit);
+    } catch (err) {
+      console.error(err);
+      setEmpEditErr(pickApiError(err, "Не удалось обновить сотрудника"));
+    } finally {
+      setEmpEditSaving(false);
+    }
   };
 
-  /* search */
-  const filtered = useMemo(() => {
-    const t = query.trim().toLowerCase();
-    if (!t) return items;
-    return items.filter((r) =>
-      [r.name, r.phone, r.subject]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(t))
-    );
-  }, [items, query]);
+  const removeEmployee = async (u) => {
+    if (!u?.id) return;
+    if (!window.confirm(`Удалить сотрудника «${fullName(u) || u.email || "—"}»? Действие необратимо.`))
+      return;
 
+    setEmpDeletingIds((prev) => new Set(prev).add(u.id));
+    try {
+      await api.delete(EMPLOYEE_ITEM_URL(u.id));
+      await fetchEmployees();
+    } catch (err) {
+      console.error(err);
+      alert(pickApiError(err, "Не удалось удалить сотрудника"));
+    } finally {
+      setEmpDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(u.id);
+        return next;
+      });
+    }
+  };
+
+  /* ===== RENDER ===== */
   return (
     <div className="teachers">
-      {/* Header */}
       <div className="teachers__header">
         <div>
           <h2 className="teachers__title">Преподаватели</h2>
-          <p className="teachers__subtitle">
-            Справочник преподавателей (серверные CRUD)
-          </p>
+          <p className="teachers__subtitle">Роли и сотрудники</p>
         </div>
 
-        {/* toolbar */}
         <div className="teachers__actions">
+          <button
+            type="button"
+            className="teachers__btn teachers__btn--secondary"
+            onClick={() => setTab("roles")}
+            style={{ opacity: tab === "roles" ? 1 : 0.85 }}
+          >
+            Роли
+          </button>
+          <button
+            type="button"
+            className="teachers__btn teachers__btn--secondary"
+            onClick={() => setTab("employees")}
+            style={{ opacity: tab === "employees" ? 1 : 0.85 }}
+          >
+            Сотрудники
+          </button>
+
           <div className="teachers__search">
             <FaSearch className="teachers__search-icon" aria-hidden />
             <input
               className="teachers__search-input"
-              placeholder="Поиск по имени / телефону / направлению…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              aria-label="Поле поиска"
+              placeholder={tab === "roles" ? "Поиск ролей…" : "Поиск по сотрудникам…"}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              aria-label="Поиск"
             />
           </div>
 
-          <button
-            type="button"
-            className="teachers__btn teachers__btn--primary"
-            onClick={openCreate}
-          >
-            <FaPlus /> Добавить
-          </button>
+          {tab === "roles" ? (
+            <button
+              type="button"
+              className="teachers__btn teachers__btn--primary"
+              onClick={() => setRoleCreateOpen(true)}
+            >
+              <FaPlus /> Создать роль
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="teachers__btn teachers__btn--primary"
+              onClick={() => setEmpCreateOpen(true)}
+            >
+              <FaPlus /> Создать сотрудника
+            </button>
+          )}
         </div>
       </div>
 
-      {/* States */}
       {loading && <div className="teachers__alert">Загрузка…</div>}
       {!!error && <div className="teachers__alert">{error}</div>}
 
-      {/* List */}
-      {!loading && !error && (
+      {/* ===== ROLES TAB ===== */}
+      {!loading && tab === "roles" && (
         <div className="teachers__list">
-          {filtered.map((t) => {
-            const initial = (t.name || "•").trim().charAt(0).toUpperCase();
-            const deleting = deletingIds.has(t.id);
+          {/* системные роли (read-only) */}
+          {SYSTEM_ROLES.map((code) => (
+            <div className="teachers__card" key={`sys:${code}`}>
+              <div className="teachers__card-left">
+                <div className="teachers__avatar" aria-hidden>
+                  {ruLabelSys(code).charAt(0)}
+                </div>
+                <div>
+                  <p className="teachers__name">{ruLabelSys(code)}</p>
+                  <div className="teachers__meta">
+                    <span>Системная роль</span>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  className="teachers__btn teachers__btn--secondary"
+                  disabled
+                  title="Системные роли нельзя изменять"
+                >
+                  <FaEdit /> Изменить
+                </button>
+                <button
+                  type="button"
+                  className="teachers__btn teachers__btn--danger"
+                  disabled
+                  title="Системные роли нельзя удалять"
+                >
+                  <FaTrash /> Удалить
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {/* кастомные роли — без дублей admin/owner */}
+          {filteredRoles.map((r) => (
+            <div className="teachers__card" key={r.id}>
+              <div className="teachers__card-left">
+                <div className="teachers__avatar" aria-hidden>
+                  {(r.name || "•").trim().charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="teachers__name">{r.name || "Без названия"}</p>
+                  <div className="teachers__meta">
+                    <span>Пользовательская роль</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  className="teachers__btn teachers__btn--secondary"
+                  onClick={() => openRoleEdit(r)}
+                  title="Изменить"
+                >
+                  <FaEdit /> Изменить
+                </button>
+                <button
+                  type="button"
+                  className="teachers__btn teachers__btn--danger"
+                  onClick={() => removeRole(r)}
+                  disabled={roleDeletingIds.has(r.id)}
+                  title="Удалить"
+                >
+                  <FaTrash /> {roleDeletingIds.has(r.id) ? "Удаление…" : "Удалить"}
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {filteredRoles.length === 0 && roles.length > 0 && (
+            <div className="teachers__alert">Роли по запросу не найдены.</div>
+          )}
+          {!loading && roles.length === 0 && (
+            <div className="teachers__alert">Пока нет пользовательских ролей.</div>
+          )}
+        </div>
+      )}
+
+      {/* ===== EMPLOYEES TAB ===== */}
+      {!loading && tab === "employees" && (
+        <div className="teachers__list">
+          {filteredEmployees.map((u) => {
+            const initial =
+              (fullName(u) || u.email || "•").trim().charAt(0).toUpperCase() || "•";
+            const roleLabel = u.role
+              ? ruLabelSys(u.role) // системная
+              : roles.length
+              ? roleById.get(u.custom_role)?.name || u.role_display || "—"
+              : u.role_display || "—";
+
+            const deleting = empDeletingIds.has(u.id);
+
             return (
-              <div key={t.id} className="teachers__card">
+              <div key={u.id} className="teachers__card">
                 <div className="teachers__card-left">
                   <div className="teachers__avatar" aria-hidden>
                     {initial}
                   </div>
                   <div>
-                    <p className="teachers__name">{t.name || "Без имени"}</p>
+                    <p className="teachers__name">{fullName(u) || "Без имени"}</p>
                     <div className="teachers__meta">
-                      <span>{t.phone || "—"}</span>
-                      <span>{t.subject || "направление не указано"}</span>
+                      <span>{u.email || "—"}</span>
+                      <span>•</span>
+                      <span>{roleLabel}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="teachers__card-actions">
+                <div style={{ display: "flex", gap: 8 }}>
                   <button
                     type="button"
                     className="teachers__btn teachers__btn--secondary"
-                    onClick={() => openEdit(t)}
-                    title="Редактировать"
+                    onClick={() => openEmpEdit(u)}
+                    title="Изменить сотрудника"
                   >
                     <FaEdit /> Изменить
                   </button>
-
                   <button
                     type="button"
                     className="teachers__btn teachers__btn--danger"
-                    onClick={() => removeTeacher(t.id)}
+                    onClick={() => removeEmployee(u)}
                     disabled={deleting}
-                    title="Удалить"
+                    title="Удалить сотрудника"
                   >
                     <FaTrash /> {deleting ? "Удаление…" : "Удалить"}
                   </button>
@@ -622,75 +586,114 @@ function SchoolTeachers() {
             );
           })}
 
-          {filtered.length === 0 && (
-            <div className="teachers__alert">Ничего не найдено.</div>
+          {filteredEmployees.length === 0 && employees.length > 0 && (
+            <div className="teachers__alert">Сотрудники по запросу не найдены.</div>
+          )}
+          {!loading && employees.length === 0 && (
+            <div className="teachers__alert">Пока нет сотрудников.</div>
           )}
         </div>
       )}
 
-      {/* Modal */}
-      {isModalOpen && (
+      {/* ===== MODALS ===== */}
+
+      {/* Role: Create */}
+      {roleCreateOpen && (
         <div
           className="teachers__modal-overlay"
           role="dialog"
           aria-modal="true"
+          onClick={() => !roleCreateSaving && setRoleCreateOpen(false)}
         >
-          <div className="teachers__modal">
+          <div className="teachers__modal" onClick={(e) => e.stopPropagation()}>
             <div className="teachers__modal-header">
-              <h3 className="teachers__modal-title">
-                {mode === "create"
-                  ? "Новый преподаватель"
-                  : "Изменить преподавателя"}
-              </h3>
+              <h3 className="teachers__modal-title">Новая роль</h3>
               <button
                 type="button"
                 className="teachers__icon-btn"
-                onClick={closeModal}
-                title="Закрыть"
+                onClick={() => !roleCreateSaving && setRoleCreateOpen(false)}
                 aria-label="Закрыть"
               >
                 <FaTimes />
               </button>
             </div>
 
-            <form className="teachers__form" onSubmit={submitTeacher}>
+            <form className="teachers__form" onSubmit={submitRoleCreate}>
               <div className="teachers__form-grid">
-                <div className="teachers__field">
+                <div className="teachers__field teachers__field--full">
                   <label className="teachers__label">
-                    Имя <span className="teachers__req">*</span>
+                    Название роли <span className="teachers__req">*</span>
                   </label>
                   <input
                     className="teachers__input"
-                    placeholder="Например, Алия"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Например: Контент-менеджер"
+                    value={roleCreateName}
+                    onChange={(e) => setRoleCreateName(e.target.value)}
                     required
                   />
                 </div>
+              </div>
 
-                <div className="teachers__field">
-                  <label className="teachers__label">Телефон</label>
-                  <input
-                    className="teachers__input"
-                    placeholder="+996 …"
-                    value={form.phone}
-                    onChange={(e) =>
-                      setForm({ ...form, phone: e.target.value })
-                    }
-                  />
+              {!!roleCreateErr && <div className="teachers__alert">{roleCreateErr}</div>}
+
+              <div className="teachers__form-actions">
+                <span className="teachers__actions-spacer" />
+                <div className="teachers__actions-right">
+                  <button
+                    type="button"
+                    className="teachers__btn teachers__btn--secondary"
+                    onClick={() => setRoleCreateOpen(false)}
+                    disabled={roleCreateSaving}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="teachers__btn teachers__btn--primary"
+                    disabled={roleCreateSaving}
+                  >
+                    {roleCreateSaving ? "Сохранение…" : "Создать роль"}
+                  </button>
                 </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
+      {/* Role: Edit */}
+      {roleEditOpen && (
+        <div
+          className="teachers__modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => !roleEditSaving && setRoleEditOpen(false)}
+        >
+          <div className="teachers__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="teachers__modal-header">
+              <h3 className="teachers__modal-title">Изменить роль</h3>
+              <button
+                type="button"
+                className="teachers__icon-btn"
+                onClick={() => !roleEditSaving && setRoleEditOpen(false)}
+                aria-label="Закрыть"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <form className="teachers__form" onSubmit={submitRoleEdit}>
+              <div className="teachers__form-grid">
                 <div className="teachers__field teachers__field--full">
                   <label className="teachers__label">
-                    Направление / предмет
+                    Название роли <span className="teachers__req">*</span>
                   </label>
                   <input
                     className="teachers__input"
-                    placeholder="Например, Английский / Frontend"
-                    value={form.subject}
-                    onChange={(e) =>
-                      setForm({ ...form, subject: e.target.value })
-                    }
+                    placeholder="Название роли"
+                    value={roleEditName}
+                    onChange={(e) => setRoleEditName(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -701,23 +704,245 @@ function SchoolTeachers() {
                   <button
                     type="button"
                     className="teachers__btn teachers__btn--secondary"
-                    onClick={closeModal}
-                    disabled={saving}
+                    onClick={() => setRoleEditOpen(false)}
+                    disabled={roleEditSaving}
                   >
                     Отмена
                   </button>
                   <button
                     type="submit"
                     className="teachers__btn teachers__btn--primary"
-                    disabled={saving}
+                    disabled={roleEditSaving}
                   >
-                    {saving
-                      ? mode === "create"
-                        ? "Сохранение…"
-                        : "Обновление…"
-                      : mode === "create"
-                      ? "Сохранить"
-                      : "Сохранить изменения"}
+                    {roleEditSaving ? "Сохранение…" : "Сохранить изменения"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Employee: Create */}
+      {empCreateOpen && (
+        <div
+          className="teachers__modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => !empSaving && setEmpCreateOpen(false)}
+        >
+          <div className="teachers__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="teachers__modal-header">
+              <h3 className="teachers__modal-title">Новый сотрудник</h3>
+              <button
+                type="button"
+                className="teachers__icon-btn"
+                onClick={() => !empSaving && setEmpCreateOpen(false)}
+                aria-label="Закрыть"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <form className="teachers__form" onSubmit={submitEmployeeCreate}>
+              <div className="teachers__form-grid">
+                <div className="teachers__field">
+                  <label className="teachers__label">
+                    Email <span className="teachers__req">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    className="teachers__input"
+                    placeholder="user@mail.com"
+                    value={empForm.email}
+                    onChange={(e) => setEmpForm((p) => ({ ...p, email: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                <div className="teachers__field">
+                  <label className="teachers__label">
+                    Имя <span className="teachers__req">*</span>
+                  </label>
+                  <input
+                    className="teachers__input"
+                    placeholder="Алия"
+                    value={empForm.first_name}
+                    onChange={(e) => setEmpForm((p) => ({ ...p, first_name: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                <div className="teachers__field">
+                  <label className="teachers__label">
+                    Фамилия <span className="teachers__req">*</span>
+                  </label>
+                  <input
+                    className="teachers__input"
+                    placeholder="Жумалиева"
+                    value={empForm.last_name}
+                    onChange={(e) => setEmpForm((p) => ({ ...p, last_name: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                <div className="teachers__field teachers__field--full">
+                  <label className="teachers__label">
+                    Роль <span className="teachers__req">*</span>
+                  </label>
+                  <select
+                    className="teachers__input"
+                    value={empForm.roleChoice}
+                    onChange={(e) => setEmpForm((p) => ({ ...p, roleChoice: e.target.value }))}
+                    required
+                  >
+                    <option value="">Выберите роль</option>
+                    {roleOptions.map((o) => (
+                      <option key={o.key} value={o.key}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {!!empErr && <div className="teachers__alert">{empErr}</div>}
+
+              <div className="teachers__form-actions">
+                <span className="teachers__actions-spacer" />
+                <div className="teachers__actions-right">
+                  <button
+                    type="button"
+                    className="teachers__btn teachers__btn--secondary"
+                    onClick={() => setEmpCreateOpen(false)}
+                    disabled={empSaving}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="teachers__btn teachers__btn--primary"
+                    disabled={empSaving}
+                  >
+                    {empSaving ? "Сохранение…" : "Создать сотрудника"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Employee: Edit */}
+      {empEditOpen && (
+        <div
+          className="teachers__modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => !empEditSaving && setEmpEditOpen(false)}
+        >
+          <div className="teachers__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="teachers__modal-header">
+              <h3 className="teachers__modal-title">Изменить сотрудника</h3>
+              <button
+                type="button"
+                className="teachers__icon-btn"
+                onClick={() => !empEditSaving && setEmpEditOpen(false)}
+                aria-label="Закрыть"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <form className="teachers__form" onSubmit={submitEmployeeEdit}>
+              <div className="teachers__form-grid">
+                <div className="teachers__field">
+                  <label className="teachers__label">
+                    Email <span className="teachers__req">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    className="teachers__input"
+                    placeholder="user@mail.com"
+                    value={empEditForm.email}
+                    onChange={(e) =>
+                      setEmpEditForm((p) => ({ ...p, email: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="teachers__field">
+                  <label className="teachers__label">
+                    Имя <span className="teachers__req">*</span>
+                  </label>
+                  <input
+                    className="teachers__input"
+                    placeholder="Имя"
+                    value={empEditForm.first_name}
+                    onChange={(e) =>
+                      setEmpEditForm((p) => ({ ...p, first_name: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="teachers__field">
+                  <label className="teachers__label">
+                    Фамилия <span className="teachers__req">*</span>
+                  </label>
+                  <input
+                    className="teachers__input"
+                    placeholder="Фамилия"
+                    value={empEditForm.last_name}
+                    onChange={(e) =>
+                      setEmpEditForm((p) => ({ ...p, last_name: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="teachers__field teachers__field--full">
+                  <label className="teachers__label">
+                    Роль <span className="teachers__req">*</span>
+                  </label>
+                  <select
+                    className="teachers__input"
+                    value={empEditForm.roleChoice}
+                    onChange={(e) =>
+                      setEmpEditForm((p) => ({ ...p, roleChoice: e.target.value }))
+                    }
+                    required
+                  >
+                    <option value="">Выберите роль</option>
+                    {roleOptions.map((o) => (
+                      <option key={o.key} value={o.key}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {!!empEditErr && <div className="teachers__alert">{empEditErr}</div>}
+
+              <div className="teachers__form-actions">
+                <span className="teachers__actions-spacer" />
+                <div className="teachers__actions-right">
+                  <button
+                    type="button"
+                    className="teachers__btn teachers__btn--secondary"
+                    onClick={() => setEmpEditOpen(false)}
+                    disabled={empEditSaving}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="teachers__btn teachers__btn--primary"
+                    disabled={empEditSaving}
+                  >
+                    {empEditSaving ? "Сохранение…" : "Сохранить изменения"}
                   </button>
                 </div>
               </div>

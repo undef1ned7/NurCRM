@@ -1,4 +1,78 @@
 .analytics {
+  .kpiGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .kpiCard {
+    background: #fff;
+    border: 1px solid #eef0f2;
+    border-radius: 16px;
+    padding: 16px 18px;
+    box-shadow: 0 2px 10px rgba(16, 24, 40, 0.04);
+  }
+  .kpiLabel {
+    color: #6b7280;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .kpiValue {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin-top: 6px;
+  }
+
+  .chartsGrid {
+    display: grid;
+    gap: 16px;
+    &--three {
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 900px) {
+      &--three {
+        grid-template-columns: 1.4fr 1fr 1fr;
+      }
+    }
+  }
+  .chartCard {
+    background: #fff;
+    border: 1px solid #eef0f2;
+    border-radius: 16px;
+    padding: 12px;
+    min-height: 320px;
+    box-shadow: 0 2px 10px rgba(16, 24, 40, 0.04);
+  }
+  .ordersByStatusCard {
+    background: #fff;
+    border: 1px solid #eef0f2;
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+  .statusList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .statusItem {
+    border-left: 4px solid #6366f1;
+    padding: 8px 12px;
+    background: #fafafa;
+    border-radius: 10px;
+  }
+  .divider {
+    margin: 16px 0;
+    border: none;
+    border-top: 1px solid #eee;
+  }
+}
+
+.analytics {
   margin-top: 20px;
   padding: 30px;
   font-family: "Roboto", sans-serif;

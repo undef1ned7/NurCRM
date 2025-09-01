@@ -4,6 +4,7 @@ import {
   deleteProductInCart,
   doSearch,
   getProductCheckout,
+  getProductInvoice,
   historySellProduct,
   historySellProductDetail,
   manualFilling,
@@ -25,6 +26,7 @@ const initialState = {
   history: [],
   historyDetail: null,
   pdf: null,
+  // errorBarcode: null,
 };
 
 const saleSlice = createSlice({
@@ -81,8 +83,14 @@ const saleSlice = createSlice({
         state.loading = true;
       })
       .addCase(sendBarCode.fulfilled, (state, { payload }) => {
-        state.barcode = payload;
         state.loading = false;
+        if (payload) {
+          state.barcodeError = payload;
+        } else {
+          state.barcodeError = {
+            detail: "Что-то пошло не так. Попробуйте снова.",
+          };
+        }
       })
       .addCase(sendBarCode.rejected, (state, { payload }) => {
         state.barcodeError = payload;
@@ -140,6 +148,17 @@ const saleSlice = createSlice({
         state.loading = false;
       })
       .addCase(getProductCheckout.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.loading = false;
+      })
+      .addCase(getProductInvoice.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getProductInvoice.fulfilled, (state, { payload }) => {
+        // state.pdf = payload;
+        state.loading = false;
+      })
+      .addCase(getProductInvoice.rejected, (state, { payload }) => {
         state.error = payload;
         state.loading = false;
       });

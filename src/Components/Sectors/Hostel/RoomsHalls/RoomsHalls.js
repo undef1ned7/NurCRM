@@ -1,12 +1,19 @@
-// ВКЛАДКИ «Комнаты / Залы» на одной странице
-// GET/POST/PUT/DELETE /booking/hotels/… и /booking/rooms/…
-
-import { useEffect, useMemo, useState } from "react";
-import { FaPlus, FaSearch, FaTimes } from "react-icons/fa";
-import api from "../../../../api";
+// src/components/RoomsHalls/RoomsHalls.jsx
+import React, { useEffect, useMemo, useState } from "react";
 import "./RoomsHalls.scss";
+import { FaSearch, FaPlus, FaTimes } from "react-icons/fa";
+import api from "../../../../api";
 
-/* ===== нормализация ===== */
+/* ===== helpers ===== */
+const asArray = (data) =>
+  Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+
+const prettyPrice = (p) => {
+  const n = Number(p);
+  return Number.isFinite(n) ? n.toLocaleString() : p || "0";
+};
+
+/* ===== normalizers ===== */
 const normalizeHotel = (h) => ({
   id: h.id,
   name: h.name ?? "",
@@ -20,27 +27,41 @@ const normalizeHall = (h) => ({
   name: h.name ?? "",
   capacity: Number(h.capacity ?? 0),
   location: h.location ?? "",
+  price: typeof h.price === "string" ? h.price : String(h.price ?? ""),
 });
 
-/* ===== компонент ===== */
+const normalizeBed = (b) => ({
+  id: b.id,
+  name: b.name ?? "",
+  capacity: Number(b.capacity ?? 0),
+  price: typeof b.price === "string" ? b.price : String(b.price ?? ""),
+  description: b.description ?? "",
+});
+
+/* ===================== Component ===================== */
 export default function RoomsHalls() {
-  const TABS = { HOTELS: "hotels", HALLS: "halls" };
+  const TABS = { HOTELS: "hotels", HALLS: "halls", BEDS: "beds" };
   const [tab, setTab] = useState(TABS.HOTELS);
 
-  // Комнаты (гостиницы)
+  // Комнаты (API)
   const [hotels, setHotels] = useState([]);
   const [loadingHotels, setLoadingHotels] = useState(true);
   const [errorHotels, setErrorHotels] = useState("");
 
-  // Залы
+  // Залы (API) — теперь с price
   const [halls, setHalls] = useState([]);
   const [loadingHalls, setLoadingHalls] = useState(true);
   const [errorHalls, setErrorHalls] = useState("");
 
+  // Койко-места (API)
+  const [beds, setBeds] = useState([]);
+  const [loadingBeds, setLoadingBeds] = useState(true);
+  const [errorBeds, setErrorBeds] = useState("");
+
   // Поиск
   const [q, setQ] = useState("");
 
-  // Модалки (каждая своя)
+  // Модалки и формы
   const [hotelModalOpen, setHotelModalOpen] = useState(false);
   const [hotelEditingId, setHotelEditingId] = useState(null);
   const [hotelForm, setHotelForm] = useState({
@@ -56,22 +77,28 @@ export default function RoomsHalls() {
     name: "",
     capacity: 1,
     location: "",
+    price: "",
+  });
+
+  const [bedModalOpen, setBedModalOpen] = useState(false);
+  const [bedEditingId, setBedEditingId] = useState(null);
+  const [bedForm, setBedForm] = useState({
+    name: "",
+    capacity: 1,
+    price: "",
+    description: "",
   });
 
   const [saving, setSaving] = useState(false);
 
-  /* ====== загрузка ====== */
+  /* ===================== Load ===================== */
   useEffect(() => {
     const loadHotels = async () => {
       try {
         setLoadingHotels(true);
         setErrorHotels("");
         const { data } = await api.get("/booking/hotels/");
-        const rows = Array.isArray(data?.results)
-          ? data.results
-          : Array.isArray(data)
-          ? data
-          : [];
+        const rows = asArray(data);
         setHotels(rows.map(normalizeHotel));
       } catch (e) {
         console.error(e);
@@ -86,11 +113,7 @@ export default function RoomsHalls() {
         setLoadingHalls(true);
         setErrorHalls("");
         const { data } = await api.get("/booking/rooms/");
-        const rows = Array.isArray(data?.results)
-          ? data.results
-          : Array.isArray(data)
-          ? data
-          : [];
+        const rows = asArray(data);
         setHalls(rows.map(normalizeHall));
       } catch (e) {
         console.error(e);
@@ -100,12 +123,27 @@ export default function RoomsHalls() {
       }
     };
 
-    // Грузим параллельно
+    const loadBeds = async () => {
+      try {
+        setLoadingBeds(true);
+        setErrorBeds("");
+        const { data } = await api.get("/booking/beds/");
+        const rows = asArray(data);
+        setBeds(rows.map(normalizeBed));
+      } catch (e) {
+        console.error(e);
+        setErrorBeds("Не удалось загрузить койко-места");
+      } finally {
+        setLoadingBeds(false);
+      }
+    };
+
     loadHotels();
     loadHalls();
+    loadBeds();
   }, []);
 
-  /* ===== CRUD: HOTELS ===== */
+  /* ===================== CRUD: Hotels (API) ===================== */
   const createHotel = async (payload) => {
     const { data } = await api.post("/booking/hotels/", payload);
     return normalizeHotel(data);
@@ -118,7 +156,7 @@ export default function RoomsHalls() {
     await api.delete(`/booking/hotels/${id}/`);
   };
 
-  /* ===== CRUD: HALLS ===== */
+  /* ===================== CRUD: Halls (API, with price) ===================== */
   const createHall = async (payload) => {
     const { data } = await api.post("/booking/rooms/", payload);
     return normalizeHall(data);
@@ -131,12 +169,20 @@ export default function RoomsHalls() {
     await api.delete(`/booking/rooms/${id}/`);
   };
 
-  /* ===== helpers ===== */
-  const prettyPrice = (p) => {
-    const n = Number(p);
-    return Number.isFinite(n) ? n.toLocaleString() : p || "0";
+  /* ===================== CRUD: Beds (API) ===================== */
+  const createBed = async (payload) => {
+    const { data } = await api.post("/booking/beds/", payload);
+    return normalizeBed(data);
+  };
+  const updateBed = async (id, payload) => {
+    const { data } = await api.put(`/booking/beds/${id}/`, payload);
+    return normalizeBed(data);
+  };
+  const deleteBed = async (id) => {
+    await api.delete(`/booking/beds/${id}/`);
   };
 
+  /* ===================== Filters ===================== */
   const filteredHotels = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return hotels;
@@ -151,13 +197,23 @@ export default function RoomsHalls() {
     const t = q.trim().toLowerCase();
     if (!t) return halls;
     return halls.filter((h) =>
-      [h.name, h.location, h.capacity].some((v) =>
+      [h.name, h.location, h.capacity, h.price].some((v) =>
         String(v).toLowerCase().includes(t)
       )
     );
   }, [q, halls]);
 
-  /* ===== модалки: открыть/закрыть ===== */
+  const filteredBeds = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return beds;
+    return beds.filter((b) =>
+      [b.name, b.description, b.capacity, b.price].some((v) =>
+        String(v).toLowerCase().includes(t)
+      )
+    );
+  }, [q, beds]);
+
+  /* ===================== Modals Open ===================== */
   const openHotelCreate = () => {
     setHotelEditingId(null);
     setHotelForm({ name: "", capacity: 1, price: "", description: "" });
@@ -176,23 +232,44 @@ export default function RoomsHalls() {
 
   const openHallCreate = () => {
     setHallEditingId(null);
-    setHallForm({ name: "", capacity: 1, location: "" });
+    setHallForm({ name: "", capacity: 1, location: "", price: "" });
     setHallModalOpen(true);
   };
   const openHallEdit = (h) => {
     setHallEditingId(h.id);
-    setHallForm({ name: h.name, capacity: h.capacity, location: h.location });
+    setHallForm({
+      name: h.name,
+      capacity: h.capacity,
+      location: h.location,
+      price: h.price ?? "",
+    });
     setHallModalOpen(true);
   };
 
-  /* ===== сабмиты ===== */
+  const openBedCreate = () => {
+    setBedEditingId(null);
+    setBedForm({ name: "", capacity: 1, price: "", description: "" });
+    setBedModalOpen(true);
+  };
+  const openBedEdit = (b) => {
+    setBedEditingId(b.id);
+    setBedForm({
+      name: b.name,
+      capacity: b.capacity,
+      price: b.price ?? "",
+      description: b.description ?? "",
+    });
+    setBedModalOpen(true);
+  };
+
+  /* ===================== Submits ===================== */
   const submitHotel = async (e) => {
     e.preventDefault();
-    if (!hotelForm.name.trim()) return;
+    if (!hotelForm.name.trim() || !String(hotelForm.price).trim()) return;
     const payload = {
       name: hotelForm.name.trim(),
       capacity: Number(hotelForm.capacity) || 0,
-      price: String(hotelForm.price ?? "").trim(), // decimal-string
+      price: String(hotelForm.price ?? "").trim(),
       description: hotelForm.description?.trim() || "",
     };
     try {
@@ -217,11 +294,18 @@ export default function RoomsHalls() {
 
   const submitHall = async (e) => {
     e.preventDefault();
-    if (!hallForm.name.trim() || !hallForm.location.trim()) return;
+    if (
+      !hallForm.name.trim() ||
+      !hallForm.location.trim() ||
+      !String(hallForm.price).trim()
+    )
+      return;
+
     const payload = {
       name: hallForm.name.trim(),
       capacity: Number(hallForm.capacity) || 0,
       location: hallForm.location.trim(),
+      price: String(hallForm.price ?? "").trim(),
     };
     try {
       setSaving(true);
@@ -234,7 +318,7 @@ export default function RoomsHalls() {
       }
       setHallModalOpen(false);
       setHallEditingId(null);
-      setHallForm({ name: "", capacity: 1, location: "" });
+      setHallForm({ name: "", capacity: 1, location: "", price: "" });
     } catch (e) {
       console.error(e);
       alert("Не удалось сохранить зал");
@@ -243,7 +327,36 @@ export default function RoomsHalls() {
     }
   };
 
-  /* ===== удаления ===== */
+  const submitBed = async (e) => {
+    e.preventDefault();
+    if (!bedForm.name.trim() || !String(bedForm.price).trim()) return;
+    const payload = {
+      name: bedForm.name.trim(),
+      capacity: Number(bedForm.capacity) || 0,
+      price: String(bedForm.price ?? "").trim(),
+      description: bedForm.description?.trim() || "",
+    };
+    try {
+      setSaving(true);
+      if (bedEditingId == null) {
+        const created = await createBed(payload);
+        setBeds((p) => [created, ...p]);
+      } else {
+        const updated = await updateBed(bedEditingId, payload);
+        setBeds((p) => p.map((x) => (x.id === bedEditingId ? updated : x)));
+      }
+      setBedModalOpen(false);
+      setBedEditingId(null);
+      setBedForm({ name: "", capacity: 1, price: "", description: "" });
+    } catch (e) {
+      console.error(e);
+      alert("Не удалось сохранить койко-место");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* ===================== Deletions ===================== */
   const onDeleteHotel = async (id) => {
     if (!window.confirm("Удалить комнату?")) return;
     try {
@@ -266,12 +379,25 @@ export default function RoomsHalls() {
     }
   };
 
-  /* ===== рендер ===== */
+  const onDeleteBed = async (id) => {
+    if (!window.confirm("Удалить койко-место?")) return;
+    try {
+      await deleteBed(id);
+      setBeds((p) => p.filter((x) => x.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert("Не удалось удалить койко-место");
+    }
+  };
+
+  /* ===================== Render ===================== */
   const isHotels = tab === TABS.HOTELS;
+  const isHalls = tab === TABS.HALLS;
+  const isBeds = tab === TABS.BEDS;
 
   return (
     <section className="rh">
-      {/* Вкладки */}
+      {/* Tabs */}
       <div className="rh__tabs">
         <button
           className={`rh__tab ${isHotels ? "rh__tab--active" : ""}`}
@@ -280,21 +406,31 @@ export default function RoomsHalls() {
           Комнаты
         </button>
         <button
-          className={`rh__tab ${!isHotels ? "rh__tab--active" : ""}`}
+          className={`rh__tab ${isHalls ? "rh__tab--active" : ""}`}
           onClick={() => setTab(TABS.HALLS)}
         >
           Залы
         </button>
+        <button
+          className={`rh__tab ${isBeds ? "rh__tab--active" : ""}`}
+          onClick={() => setTab(TABS.BEDS)}
+        >
+          Койко-места
+        </button>
       </div>
 
-      {/* Хедер списка */}
+      {/* Header */}
       <header className="rh__header">
         <div>
-          <h2 className="rh__title">{isHotels ? "Комнаты" : "Залы"}</h2>
+          <h2 className="rh__title">
+            {isHotels ? "Комнаты" : isHalls ? "Залы" : "Койко-места"}
+          </h2>
           <p className="rh__subtitle">
             {isHotels
               ? "Создание, редактирование и список всех комнат"
-              : "Создание, редактирование и список всех залов"}
+              : isHalls
+              ? "Создание, редактирование и список всех залов"
+              : "Создание, редактирование и список всех койко-мест (хостел)"}
           </p>
         </div>
 
@@ -306,7 +442,9 @@ export default function RoomsHalls() {
               placeholder={
                 isHotels
                   ? "Поиск по названию, описанию, вместимости, цене"
-                  : "Поиск по названию, локации или вместимости"
+                  : isHalls
+                  ? "Поиск по названию, локации, вместимости и цене"
+                  : "Поиск по названию, описанию, количеству мест и цене"
               }
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -320,10 +458,17 @@ export default function RoomsHalls() {
             >
               <FaPlus /> Добавить
             </button>
-          ) : (
+          ) : isHalls ? (
             <button
               className="rh__btn rh__btn--primary"
               onClick={openHallCreate}
+            >
+              <FaPlus /> Добавить
+            </button>
+          ) : (
+            <button
+              className="rh__btn rh__btn--primary"
+              onClick={openBedCreate}
             >
               <FaPlus /> Добавить
             </button>
@@ -331,7 +476,7 @@ export default function RoomsHalls() {
         </div>
       </header>
 
-      {/* Списки */}
+      {/* Lists */}
       {isHotels ? (
         loadingHotels ? (
           <div className="rh__empty">Загрузка…</div>
@@ -378,40 +523,88 @@ export default function RoomsHalls() {
             )}
           </div>
         )
-      ) : loadingHalls ? (
+      ) : isHalls ? (
+        loadingHalls ? (
+          <div className="rh__empty">Загрузка…</div>
+        ) : errorHalls ? (
+          <div className="rh__empty">{errorHalls}</div>
+        ) : (
+          <div className="rh__list">
+            {filteredHalls.map((h) => (
+              <div key={h.id} className="rh__row">
+                <div className="rh__rowLeft">
+                  <div className="rh__name">{h.name}</div>
+                  <div className="rh__meta">
+                    <span className="rh__badge">Вместимость: {h.capacity}</span>
+                    <span className="rh__badge">
+                      Локация: {h.location || "—"}
+                    </span>
+                    <span className="rh__price">
+                      {prettyPrice(h.price)} сом
+                    </span>
+                  </div>
+                </div>
+                <div className="rh__rowRight">
+                  <button
+                    className="rh__btn rh__btn--secondary"
+                    onClick={() => openHallEdit(h)}
+                  >
+                    Изменить
+                  </button>
+                  <button
+                    className="rh__btn rh__btn--secondary"
+                    onClick={() => onDeleteHall(h.id)}
+                  >
+                    Удалить
+                  </button>
+                </div>
+              </div>
+            ))}
+            {filteredHalls.length === 0 && (
+              <div className="rh__empty">Ничего не найдено</div>
+            )}
+          </div>
+        )
+      ) : // Beds
+      loadingBeds ? (
         <div className="rh__empty">Загрузка…</div>
-      ) : errorHalls ? (
-        <div className="rh__empty">{errorHalls}</div>
+      ) : errorBeds ? (
+        <div className="rh__empty">{errorBeds}</div>
       ) : (
         <div className="rh__list">
-          {filteredHalls.map((h) => (
-            <div key={h.id} className="rh__row">
+          {filteredBeds.map((b) => (
+            <div key={b.id} className="rh__row">
               <div className="rh__rowLeft">
-                <div className="rh__name">{h.name}</div>
+                <div className="rh__name">{b.name}</div>
                 <div className="rh__meta">
-                  <span className="rh__badge">Вместимость: {h.capacity}</span>
-                  <span className="rh__badge">
-                    Локация: {h.location || "—"}
-                  </span>
+                  <span className="rh__badge">Мест: {b.capacity}</span>
+                  <span className="rh__price">{prettyPrice(b.price)} сом</span>
                 </div>
+                {b.description && (
+                  <div className="rh__desc" title={b.description}>
+                    {b.description.length > 140
+                      ? b.description.slice(0, 140) + "…"
+                      : b.description}
+                  </div>
+                )}
               </div>
               <div className="rh__rowRight">
                 <button
                   className="rh__btn rh__btn--secondary"
-                  onClick={() => openHallEdit(h)}
+                  onClick={() => openBedEdit(b)}
                 >
                   Изменить
                 </button>
                 <button
                   className="rh__btn rh__btn--secondary"
-                  onClick={() => onDeleteHall(h.id)}
+                  onClick={() => onDeleteBed(b.id)}
                 >
                   Удалить
                 </button>
               </div>
             </div>
           ))}
-          {filteredHalls.length === 0 && (
+          {filteredBeds.length === 0 && (
             <div className="rh__empty">Ничего не найдено</div>
           )}
         </div>
@@ -523,7 +716,7 @@ export default function RoomsHalls() {
         </div>
       )}
 
-      {/* Модал: Залы */}
+      {/* Модал: Залы (с ценой) */}
       {hallModalOpen && (
         <div
           className="rh__modalOverlay"
@@ -589,6 +782,22 @@ export default function RoomsHalls() {
                     required
                   />
                 </div>
+
+                <div className="rh__field">
+                  <label className="rh__label">
+                    Цена (сом) <span className="rh__req">*</span>
+                  </label>
+                  <input
+                    inputMode="decimal"
+                    className="rh__input"
+                    placeholder="Напр., 1200.00"
+                    value={hallForm.price}
+                    onChange={(e) =>
+                      setHallForm({ ...hallForm, price: e.target.value })
+                    }
+                    required
+                  />
+                </div>
               </div>
 
               <div className="rh__formActions">
@@ -596,6 +805,114 @@ export default function RoomsHalls() {
                   type="button"
                   className="rh__btn rh__btn--secondary"
                   onClick={() => setHallModalOpen(false)}
+                  disabled={saving}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  className="rh__btn rh__btn--primary"
+                  disabled={saving}
+                >
+                  {saving ? "Сохранение…" : "Сохранить"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Модал: Койко-места (API) */}
+      {bedModalOpen && (
+        <div
+          className="rh__modalOverlay"
+          onClick={() => setBedModalOpen(false)}
+        >
+          <div className="rh__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="rh__modalHeader">
+              <div className="rh__modalTitle">
+                {bedEditingId == null
+                  ? "Новое койко-место"
+                  : "Изменить койко-место"}
+              </div>
+              <button
+                className="rh__iconBtn"
+                onClick={() => setBedModalOpen(false)}
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <form className="rh__form" onSubmit={submitBed}>
+              <div className="rh__formGrid">
+                <div className="rh__field">
+                  <label className="rh__label">
+                    Название <span className="rh__req">*</span>
+                  </label>
+                  <input
+                    className="rh__input"
+                    maxLength={200}
+                    value={bedForm.name}
+                    onChange={(e) =>
+                      setBedForm({ ...bedForm, name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="rh__field">
+                  <label className="rh__label">
+                    Количество мест <span className="rh__req">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="rh__input"
+                    value={bedForm.capacity}
+                    onChange={(e) =>
+                      setBedForm({
+                        ...bedForm,
+                        capacity: Number(e.target.value),
+                      })
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="rh__field">
+                  <label className="rh__label">
+                    Цена (сом) <span className="rh__req">*</span>
+                  </label>
+                  <input
+                    inputMode="decimal"
+                    className="rh__input"
+                    placeholder="Напр., 700.00"
+                    value={bedForm.price}
+                    onChange={(e) =>
+                      setBedForm({ ...bedForm, price: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="rh__field">
+                  <label className="rh__label">Описание</label>
+                  <textarea
+                    rows={3}
+                    className="rh__input"
+                    value={bedForm.description}
+                    onChange={(e) =>
+                      setBedForm({ ...bedForm, description: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="rh__formActions">
+                <button
+                  type="button"
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => setBedModalOpen(false)}
                   disabled={saving}
                 >
                   Отмена

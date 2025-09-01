@@ -32,7 +32,7 @@ export const loginUserAsync = createAsyncThunk(
       const response = await loginUser(props.formData);
       if (response.access) {
         localStorage.setItem("accessToken", response.access);
-        props.navigate("/crm/analytics/");
+        props.navigate("/crm/");
       }
       return response;
     } catch (error) {
