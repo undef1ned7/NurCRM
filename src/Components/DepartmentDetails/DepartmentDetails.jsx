@@ -4,6 +4,8 @@ import Modal from "./Modal";
 import Select from "./Select"; // Используется для выбора сотрудника и для выбора доступов в модалке
 import AccessList from "./AccessList"; // Используется только для отображения/редактирования доступов в таблице
 import "./DepartmentDetails.scss"; // Импортируем стили для DepartmentDetails
+import { useDispatch } from "react-redux";
+import { updateEmployees } from "../../store/creators/departmentCreators";
 // --- API Configuration ---
 const BASE_URL = "https://app.nurcrm.kg/api";
 const AUTH_TOKEN = localStorage.getItem("accessToken");
@@ -52,13 +54,17 @@ const DepartmentDetails = () => {
 
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [editingEmployee, setEditingEmployee] = useState({
+    first_name: "",
+    last_name: "",
+  });
   const [profile, setProfile] = useState(null);
 
   const [employeeForm, setEmployeeForm] = useState({
     employee_id: "",
     accesses: [],
   });
+  const [state, setState] = useState({});
 
   const convertBackendAccessesToLabels = useCallback((accessData) => {
     const labelsArray = [];
@@ -375,6 +381,32 @@ const DepartmentDetails = () => {
     }
   };
 
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setEditingEmployee((prev) => ({ ...prev, [name]: value }));
+  };
+  const dispatch = useDispatch();
+
+  const onFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const { id, first_name = "", last_name = "" } = editingEmployee;
+      await dispatch(
+        updateEmployees({
+          id,
+          data: {
+            first_name: first_name.trim(),
+            last_name: last_name.trim(),
+          },
+        })
+      ).unwrap();
+      fetchDepartmentDetails();
+      handleCloseEditEmployeeModal();
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   if (loading && !department) {
     return <div className="container">Загрузка данных отдела...</div>;
   }
@@ -470,18 +502,19 @@ const DepartmentDetails = () => {
                       </span>
                     )}
                   </td>
-                  <td>
+                  <td className="row-btn">
                     <button
-                      className="actionDots"
+                      className="bar__btn bar__btn--secondary"
                       onClick={() => handleOpenEditEmployeeModal(employee)}
                     >
-                      <i className="fa fa-ellipsis-h"></i>
+                      Редактировать
                     </button>
                     <button
+                      className="bar__btn bar__btn--secondary"
                       onClick={() => handleRemoveEmployee(employee.id)}
                       title="Удалить сотрудника из отдела"
                     >
-                      <i className="fa fa-trash"></i>
+                      Удалить
                     </button>
                   </td>
                 </tr>
@@ -560,18 +593,24 @@ const DepartmentDetails = () => {
           editingEmployee?.first_name || ""
         } ${editingEmployee?.last_name || ""}`}
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleCloseEditEmployeeModal();
-          }}
-          className="form"
-        >
+        <form onSubmit={onFormSubmit} className="form">
           <p>
-            <strong>Имя:</strong> {editingEmployee?.first_name}
+            <strong>Имя:</strong>{" "}
+            <input
+              type="text"
+              name="first_name"
+              onChange={onChange}
+              value={editingEmployee?.first_name}
+            />
           </p>
           <p>
-            <strong>Фамилия:</strong> {editingEmployee?.last_name}
+            <strong>Фамилия:</strong>{" "}
+            <input
+              type="text"
+              name="last_name"
+              onChange={onChange}
+              value={editingEmployee?.last_name}
+            />
           </p>
 
           <div className="modalActions">

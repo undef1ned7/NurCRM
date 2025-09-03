@@ -31,8 +31,20 @@ import {
   fetchClientsAsync,
 } from "../../../store/creators/clientCreators";
 import { useUser } from "../../../store/slices/userSlice";
+import {
+  addCashFlows,
+  getCashBoxes,
+  useCash,
+} from "../../../store/slices/cashSlice";
 
-const SellModal = ({ onClose, id }) => {
+const SellModal = ({ onClose, id, selectCashBox }) => {
+  const { list: cashBoxes } = useCash();
+  const [cashData, setCashData] = useState({
+    cashbox: "",
+    type: "income",
+    name: "",
+    amount: "",
+  });
   const { list } = useClient();
   const [clientId, setClientId] = useState("");
   const dispatch = useDispatch();
@@ -131,11 +143,11 @@ const SellModal = ({ onClose, id }) => {
     setActiveTab(index);
     setIsTabSelected(true); // включаем отображение контента
   };
-  const filterClient = list.filter((item) => item.type === "client");
 
   useEffect(() => {
     dispatch(doSearch({ search: "" }));
   }, [activeTab, dispatch]);
+  const filterClient = list.filter((item) => item.type === "client");
 
   useEffect(() => {
     dispatch(fetchClientsAsync());
@@ -148,7 +160,7 @@ const SellModal = ({ onClose, id }) => {
       const result = await dispatch(
         productCheckout({ id: start?.id, bool: true, clientId: clientId })
       ).unwrap();
-
+      await dispatch(addCashFlows(cashData)).unwrap();
       if (result?.sale_id) {
         const pdfBlob = await dispatch(
           getProductCheckout(result.sale_id)
@@ -156,6 +168,8 @@ const SellModal = ({ onClose, id }) => {
         const pdfInvoiceBlob = await dispatch(
           getProductInvoice(result.sale_id)
         ).unwrap();
+
+        dispatch(historySellProduct());
 
         // Создаём ссылку и скачиваем файл
         const url = window.URL.createObjectURL(pdfBlob);
@@ -186,13 +200,14 @@ const SellModal = ({ onClose, id }) => {
       const result = await dispatch(
         productCheckout({ id: start?.id, bool: false, clientId: clientId })
       ).unwrap();
-
+      await dispatch(addCashFlows(cashData)).unwrap();
       if (result?.sale_id) {
         const pdfInvoiceBlob = await dispatch(
           getProductInvoice(result.sale_id)
         ).unwrap();
 
-        // Создаём ссылку и скачиваем файл
+        dispatch(historySellProduct());
+
         const url = window.URL.createObjectURL(pdfInvoiceBlob);
         const link = document.createElement("a");
         link.href = url;
@@ -209,6 +224,21 @@ const SellModal = ({ onClose, id }) => {
       alert(err.detail);
     }
   };
+
+  useEffect(() => {
+    const client = list.find((item) => item.id === clientId);
+
+    setCashData((prev) => ({
+      ...prev,
+      cashbox: selectCashBox,
+      name: client ? client.full_name : clientId, // если нашли — берём full_name, иначе показываем clientId
+      amount: start?.total,
+    }));
+  }, [start, clientId, list, selectCashBox]);
+
+  useEffect(() => {
+    dispatch(getCashBoxes());
+  }, []);
 
   return (
     <div className="add-modal">
@@ -386,12 +416,14 @@ const Sell = () => {
   const navigate = useNavigate();
   const { history, start } = useSale();
   // const { start } = useSale();
+  const { list: cashBoxes } = useCash();
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showSellModal, setShowSellModal] = useState(false);
+  const [selectCashBox, setSelectCashBox] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -502,6 +534,21 @@ const Sell = () => {
     }
   }, [showSellModal, dispatch]);
 
+  const kindTranslate = {
+    new: "Новый",
+    paid: "Оплаченный",
+    canceled: "Отмененный",
+  };
+  useEffect(() => {
+    dispatch(getCashBoxes());
+  }, []);
+
+  useEffect(() => {
+    if (cashBoxes.length > 0) {
+      setSelectCashBox(cashBoxes[0].id);
+    }
+  }, [cashBoxes]);
+
   return (
     <div>
       <div className="sklad__header">
@@ -549,9 +596,21 @@ const Sell = () => {
               📷 Сканировать штрих-код
             </button>
           )} */}
-        <button className="sklad__add" onClick={() => setShowSellModal(true)}>
-          <Plus size={16} style={{ marginRight: "4px" }} /> Продать товар
-        </button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <select
+            value={selectCashBox}
+            onChange={(e) => setSelectCashBox(e.target.value)}
+            className="employee__search-wrapper"
+          >
+            {cashBoxes?.map((cash) => (
+              <option value={cash.id}>{cash.name}</option>
+            ))}
+          </select>
+          <button className="sklad__add" onClick={() => setShowSellModal(true)}>
+            <Plus size={16} style={{ marginRight: "4px" }} /> Продать товар
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -573,7 +632,7 @@ const Sell = () => {
                 </th>
                 <th></th>
                 <th>№</th>
-                <th>Почта</th>
+                <th>Клиент</th>
                 {/* <th>Описание</th> */}
                 <th>Цена</th>
                 <th>Статус</th>
@@ -597,9 +656,9 @@ const Sell = () => {
                     />
                   </td>
                   <td>{index + 1}</td>
-                  <td>{item.user_display}</td>
+                  <td>{item.client_name ? item.client_name : "Нет имени"}</td>
                   <td>{item.total}</td>
-                  <td>{item.status}</td>
+                  <td>{kindTranslate[item.status] || item.status}</td>
                   <td>{new Date(item.created_at).toLocaleString()}</td>
                 </tr>
               ))}
@@ -626,7 +685,11 @@ const Sell = () => {
         </button>
       </div>
       {showSellModal && (
-        <SellModal id={start?.id} onClose={() => setShowSellModal(false)} />
+        <SellModal
+          id={start?.id}
+          selectCashBox={selectCashBox}
+          onClose={() => setShowSellModal(false)}
+        />
       )}
     </div>
   );

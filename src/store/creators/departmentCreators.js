@@ -1,9 +1,10 @@
 // src/creators/departmentCreators.js
-import { createAsyncThunk } from '@reduxjs/toolkit';
-import departmentAnalyticsApi from '../../api/departments';
+import { createAsyncThunk } from "@reduxjs/toolkit";
+import departmentAnalyticsApi from "../../api/departments";
+import api from "../../api";
 
 export const fetchDepartmentsAsync = createAsyncThunk(
-  'departments/fetchAll',
+  "departments/fetchAll",
   async (_, thunkAPI) => {
     try {
       return await departmentAnalyticsApi.getDepartmentAnalytics();
@@ -14,12 +15,24 @@ export const fetchDepartmentsAsync = createAsyncThunk(
 );
 
 export const fetchDepartmentByIdAsync = createAsyncThunk(
-  'departments/fetchById',
+  "departments/fetchById",
   async (id, thunkAPI) => {
     try {
       return await departmentAnalyticsApi.getDepartmentAnalytics(id);
     } catch (err) {
       return thunkAPI.rejectWithValue(err);
+    }
+  }
+);
+
+export const updateEmployees = createAsyncThunk(
+  "update/employee",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const { data: response } = api.patch(`/users/employees/${id}/`, data);
+      return response;
+    } catch (e) {
+      return rejectWithValue(e);
     }
   }
 );

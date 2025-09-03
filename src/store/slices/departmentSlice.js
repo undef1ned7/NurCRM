@@ -1,6 +1,10 @@
 // src/slices/departmentSlice.js
-import { createSlice } from '@reduxjs/toolkit';
-import { fetchDepartmentsAsync, fetchDepartmentByIdAsync } from '../creators/departmentCreators';
+import { createSlice } from "@reduxjs/toolkit";
+import {
+  fetchDepartmentsAsync,
+  fetchDepartmentByIdAsync,
+  updateEmployees,
+} from "../creators/departmentCreators";
 
 const initialState = {
   list: [],
@@ -10,7 +14,7 @@ const initialState = {
 };
 
 const departmentSlice = createSlice({
-  name: 'departments',
+  name: "departments",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
@@ -26,7 +30,7 @@ const departmentSlice = createSlice({
       })
       .addCase(fetchDepartmentsAsync.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Ошибка при получении отделов';
+        state.error = action.payload || "Ошибка при получении отделов";
       })
       // Fetch by ID
       .addCase(fetchDepartmentByIdAsync.pending, (state) => {
@@ -39,7 +43,19 @@ const departmentSlice = createSlice({
       })
       .addCase(fetchDepartmentByIdAsync.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Ошибка при получении отдела';
+        state.error = action.payload || "Ошибка при получении отдела";
+      })
+      .addCase(updateEmployees.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateEmployees.fulfilled, (state, action) => {
+        state.loading = false;
+        // state.selected = action.payload;
+      })
+      .addCase(updateEmployees.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

@@ -951,6 +951,12 @@ export default function Zakaz() {
     return product ? product.name : "Неизвестный продукт";
   };
 
+  const kindTranslate = {
+    new: "Новый",
+    pending: "В процессе",
+    completed: "Завершен",
+  };
+
   return (
     <div className="zakaz">
       <div className="zakaz__tabs">
@@ -1039,7 +1045,7 @@ export default function Zakaz() {
                           : "default"
                       }`}
                     >
-                      {order.status}
+                      {kindTranslate[order.status] || order.status}
                     </span>
                   </td>
                   <td>{order.customer_name}</td>

@@ -26,7 +26,15 @@ import BarcodeScanner from "../../pages/Sell/BarcodeScanner";
 import { useUser } from "../../../store/slices/userSlice";
 import AddProductBarcode from "./AddProductBarcode";
 import { useClient } from "../../../store/slices/ClientSlice";
-import { fetchClientsAsync } from "../../../store/creators/clientCreators";
+import {
+  createClientAsync,
+  fetchClientsAsync,
+} from "../../../store/creators/clientCreators";
+import {
+  addCashFlows,
+  getCashBoxes,
+  useCash,
+} from "../../../store/slices/cashSlice";
 
 const AddBrandModal = ({ onClose }) => {
   const dispatch = useDispatch();
@@ -382,7 +390,7 @@ const FilterModal = ({
   );
 };
 
-const AddModal = ({ onClose, onSaveSuccess }) => {
+const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
   const { list } = useClient();
   console.log(list);
 
@@ -404,6 +412,26 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
     quantity: "",
     client: "",
   });
+
+  const { 0: state, 1: setState } = useState({
+    full_name: "",
+    phone: "",
+    email: "",
+    date: new Date().toISOString().split("T")[0],
+    type: "suppliers",
+  });
+
+  const [cashData, setCashData] = useState({
+    cashbox: "",
+    type: "expense",
+    name: "",
+    amount: "",
+  });
+  const [showInputs, setShowInputs] = useState(false);
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setState((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -450,6 +478,7 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
 
     try {
       await dispatch(createProductAsync(payload)).unwrap();
+      await dispatch(addCashFlows(cashData)).unwrap();
       onClose();
       onSaveSuccess();
     } catch (err) {
@@ -457,6 +486,17 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
       alert(
         `Ошибка при добавлении товара: ${err.message || JSON.stringify(err)}`
       );
+    }
+  };
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await dispatch(createClientAsync(state)).unwrap();
+      dispatch(fetchClientsAsync());
+      setShowInputs(false);
+    } catch (e) {
+      console.log(e);
     }
   };
   const filterClient = list.filter((item) => item.type === "suppliers");
@@ -548,6 +588,46 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
                 </option>
               ))}
             </select>
+
+            <button
+              className="create-client"
+              onClick={() => setShowInputs(!showInputs)}
+            >
+              {showInputs ? "Отменить" : "Создать поставщика"}
+            </button>
+            {showInputs && (
+              <form
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  rowGap: "10px",
+                }}
+                onSubmit={onSubmit}
+              >
+                <input
+                  className="add-modal__input"
+                  onChange={onChange}
+                  type="text"
+                  placeholder="ФИО"
+                  name="full_name"
+                />
+                <input
+                  className="add-modal__input"
+                  onChange={onChange}
+                  type="text"
+                  name="phone"
+                  placeholder="Телефон"
+                />
+                <input
+                  className="add-modal__input"
+                  onChange={onChange}
+                  type="email"
+                  name="email"
+                  placeholder="Почта"
+                />
+                <button className="create-client">Создать</button>
+              </form>
+            )}
           </div>
 
           <div className="add-modal__section">
@@ -609,14 +689,26 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
     dispatch(fetchClientsAsync());
   }, []);
 
+  // const filterClient = list.filter((item) => item.type === "client");
+
   useEffect(() => {
     if (barcodeError) {
       setActiveTab(1);
       setIsTabSelected(true);
     }
   }, [barcodeError]);
-  console.log("sector:", company?.sector?.name);
-  console.log("plan:", company?.subscription_plan?.name);
+
+  useEffect(() => {
+    setCashData((prev) => ({
+      ...prev,
+      cashbox: selectCashBox,
+      name: newItemData.name,
+      amount: newItemData.price,
+    }));
+  }, [newItemData]);
+
+  // console.log("sector:", company?.sector?.name);
+  // console.log("plan:", company?.subscription_plan?.name);
 
   return (
     <div className="add-modal">
@@ -734,6 +826,45 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
                   </option>
                 ))}
               </select>
+              <button
+                className="create-client"
+                onClick={() => setShowInputs(!showInputs)}
+              >
+                {showInputs ? "Отменить" : "Создать поставщика"}
+              </button>
+              {showInputs && (
+                <form
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    rowGap: "10px",
+                  }}
+                  onSubmit={onSubmit}
+                >
+                  <input
+                    className="add-modal__input"
+                    onChange={onChange}
+                    type="text"
+                    placeholder="ФИО"
+                    name="full_name"
+                  />
+                  <input
+                    className="add-modal__input"
+                    onChange={onChange}
+                    type="text"
+                    name="phone"
+                    placeholder="Телефон"
+                  />
+                  <input
+                    className="add-modal__input"
+                    onChange={onChange}
+                    type="email"
+                    name="email"
+                    placeholder="Почта"
+                  />
+                  <button className="create-client">Создать</button>
+                </form>
+              )}
             </div>
 
             <div className="add-modal__section">
@@ -912,12 +1043,14 @@ export default function () {
     deleting,
     // categories.
   } = useSelector((state) => state.product);
+  const { list: cashBoxes } = useCash();
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showSellModal, setShowSellModal] = useState(false);
+  const [selectCashBox, setSelectCashBox] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -1024,6 +1157,19 @@ export default function () {
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, []);
+
+  useEffect(() => {
+    dispatch(getCashBoxes());
+  }, []);
+
+  console.log(cashBoxes);
+
+  useEffect(() => {
+    if (cashBoxes.length > 0) {
+      setSelectCashBox(cashBoxes[0].id);
+    }
+  }, [cashBoxes]);
+
   return (
     <div className="sklad">
       {/* <div className="vitrina__header" style={{ margin: "15px 0" }}>
@@ -1088,9 +1234,20 @@ export default function () {
               📷 Сканировать штрих-код
             </button>
           )} */}
-          <button className="sklad__add" onClick={handleAdd}>
-            <Plus size={16} style={{ marginRight: "4px" }} /> Добавить товар
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <select
+              value={selectCashBox}
+              onChange={(e) => setSelectCashBox(e.target.value)}
+              className="employee__search-wrapper"
+            >
+              {cashBoxes?.map((cash) => (
+                <option value={cash.id}>{cash.name}</option>
+              ))}
+            </select>
+            <button className="sklad__add" onClick={handleAdd}>
+              <Plus size={16} style={{ marginRight: "4px" }} /> Добавить товар
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -1187,6 +1344,8 @@ export default function () {
         <AddModal
           onClose={() => setShowAddModal(false)}
           onSaveSuccess={handleSaveSuccess}
+          cashBoxes={cashBoxes}
+          selectCashBox={selectCashBox}
         />
       )}
       {showSellModal && <SellModal onClose={() => setShowSellModal(false)} />}

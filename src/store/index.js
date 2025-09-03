@@ -10,6 +10,7 @@ import departmentReducer from "./slices/departmentSlice"; // Импортиру�
 import clientReducer from "./slices/ClientSlice"; // Импортируем редюсер для клиентов
 import saleReducer from "./slices/saleSlice";
 import instagramReducer from "./slices/InstagramSlice";
+import cashReducer from "./slices/cashSlice";
 const store = configureStore({
   reducer: {
     user: userReducer,
@@ -23,6 +24,7 @@ const store = configureStore({
     client: clientReducer,
     sale: saleReducer,
     instagram: instagramReducer,
+    cash: cashReducer,
   },
 });
 
