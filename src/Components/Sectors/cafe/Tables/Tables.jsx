@@ -9,24 +9,39 @@ import {
   FaMapMarkedAlt,
 } from "react-icons/fa";
 import api from "../../../../api";
-import "./Tables.scss";
+import "./tables.scss";
 
 const STATUSES = [
   { value: "free", label: "Свободен" },
   { value: "busy", label: "Занят" },
 ];
 
-export default function CafeTables() {
-  // Табы
-  const [activeTab, setActiveTab] = useState("tables"); // 'tables' | 'zones'
+// универсально достаём список из пагинации/без неё
+const listFrom = (r) => r?.data?.results || r?.data || [];
 
-  // ЗОНЫ
+// неоплаченные статусы
+const isUnpaidStatus = (s) => {
+  const v = (s || "").toString().toLowerCase();
+  return ![
+    "paid",
+    "оплачен",
+    "canceled",
+    "cancelled",
+    "отменён",
+    "отменен",
+  ].includes(v);
+};
+
+const Tables = () => {
+  const [activeTab, setActiveTab] = useState("tables");
+
+  // зоны
   const [zones, setZones] = useState([]);
   const [zoneModalOpen, setZoneModalOpen] = useState(false);
   const [zoneEditId, setZoneEditId] = useState(null);
   const [zoneTitle, setZoneTitle] = useState("");
 
-  // СТОЛЫ
+  // столы
   const [tables, setTables] = useState([]);
   const [query, setQuery] = useState("");
   const [tableModalOpen, setTableModalOpen] = useState(false);
@@ -38,16 +53,34 @@ export default function CafeTables() {
     status: "free",
   });
 
-  // helpers
-  const getList = (r) => r?.data?.results || r?.data || [];
-  const zoneIdOfTable = (t) => t?.zone?.id || t?.zone || "";
+  // заказы (только неоплаченные)
+  const [ordersUnpaid, setOrdersUnpaid] = useState([]);
 
-  const zonesMap = useMemo(() => {
-    const m = new Map();
-    zones.forEach((z) => m.set(z.id, z.title));
-    return m;
-  }, [zones]);
+  // первичная загрузка
+  useEffect(() => {
+    (async () => {
+      try {
+        const [z, t, o] = await Promise.all([
+          api.get("/cafe/zones/"),
+          api.get("/cafe/tables/"),
+          api.get("/cafe/orders/"),
+        ]);
+        setZones(listFrom(z));
+        setTables(listFrom(t));
+        setOrdersUnpaid(
+          (listFrom(o) || []).filter((ord) => isUnpaidStatus(ord.status))
+        );
+      } catch (e) {
+        console.error("Ошибка начальной загрузки:", e);
+      }
+    })();
+  }, []);
 
+  // справочники
+  const zonesMap = useMemo(
+    () => new Map(zones.map((z) => [z.id, z.title])),
+    [zones]
+  );
   const zoneTitleByAny = (zoneField) => {
     if (!zoneField) return "";
     if (typeof zoneField === "string")
@@ -55,33 +88,51 @@ export default function CafeTables() {
     return zoneField.title || zonesMap.get(zoneField.id) || "";
   };
 
-  const zoneCounts = useMemo(() => {
-    const counts = {};
-    tables.forEach((t) => {
-      const zid = zoneIdOfTable(t);
-      if (!zid) return;
-      counts[zid] = (counts[zid] || 0) + 1;
-    });
-    return counts;
-  }, [tables]);
+  // неоплаченные заказы по столам
+  const unpaidByTable = useMemo(() => {
+    const m = new Map();
+    for (const o of ordersUnpaid) {
+      const ex = m.get(o.table) || { orders: [] };
+      ex.orders.push(o);
+      m.set(o.table, ex);
+    }
+    return m;
+  }, [ordersUnpaid]);
 
-  // initial load
+  // автоосвобождение: если у стола нет неоплаченных, а статус не "free" — переводим в "free"
   useEffect(() => {
+    const toFree = tables.filter(
+      (t) => t && t.status !== "free" && !unpaidByTable.has(t.id)
+    );
+    if (!toFree.length) return;
+
     (async () => {
-      try {
-        const [z, t] = await Promise.all([
-          api.get("/cafe/zones/"),
-          api.get("/cafe/tables/"),
-        ]);
-        setZones(getList(z));
-        setTables(getList(t));
-      } catch (e) {
-        console.error("Ошибка начальной загрузки:", e);
+      for (const t of toFree) {
+        try {
+          await api.patch(`/cafe/tables/${t.id}/`, { status: "free" });
+          setTables((prev) =>
+            prev.map((x) => (x.id === t.id ? { ...x, status: "free" } : x))
+          );
+        } catch {
+          try {
+            await api.put(`/cafe/tables/${t.id}/`, {
+              number: t.number,
+              zone: t.zone?.id || t.zone,
+              places: t.places,
+              status: "free",
+            });
+            setTables((prev) =>
+              prev.map((x) => (x.id === t.id ? { ...x, status: "free" } : x))
+            );
+          } catch (e2) {
+            console.error("Не удалось освободить стол", t.id, e2);
+          }
+        }
       }
     })();
-  }, []);
+  }, [unpaidByTable, tables]);
 
-  // filter tables (для вкладки Столы)
+  // поиск по столам
   const filteredTables = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return tables;
@@ -93,24 +144,21 @@ export default function CafeTables() {
     });
   }, [tables, query, zonesMap]);
 
-  // ===== Zones CRUD
+  /* ───────── ZONES: create / edit / delete ───────── */
   const openCreateZone = () => {
     setZoneEditId(null);
     setZoneTitle("");
     setZoneModalOpen(true);
   };
-
   const openEditZone = (z) => {
     setZoneEditId(z.id);
     setZoneTitle(z.title || "");
     setZoneModalOpen(true);
   };
-
   const saveZone = async (e) => {
     e.preventDefault();
     const payload = { title: zoneTitle.trim() };
     if (!payload.title) return;
-
     try {
       if (zoneEditId) {
         const res = await api.put(`/cafe/zones/${zoneEditId}/`, payload);
@@ -126,13 +174,11 @@ export default function CafeTables() {
       console.error("Ошибка сохранения зоны:", e2);
     }
   };
-
   const removeZone = async (id) => {
     if (!window.confirm("Удалить зону?")) return;
     try {
       await api.delete(`/cafe/zones/${id}/`);
       setZones((prev) => prev.filter((z) => z.id !== id));
-      // визуально поправим столы, если их зона удалена
       setTables((prev) =>
         prev.map((t) =>
           (t.zone?.id || t.zone) === id ? { ...t, zone: id } : t
@@ -143,7 +189,7 @@ export default function CafeTables() {
     }
   };
 
-  // ===== Tables CRUD
+  /* ───────── TABLES: create / edit / delete ───────── */
   const openCreateTable = () => {
     setTableEditId(null);
     setForm({
@@ -154,7 +200,6 @@ export default function CafeTables() {
     });
     setTableModalOpen(true);
   };
-
   const openEditTable = (row) => {
     setTableEditId(row.id);
     setForm({
@@ -165,19 +210,15 @@ export default function CafeTables() {
     });
     setTableModalOpen(true);
   };
-
   const saveTable = async (e) => {
     e.preventDefault();
     const payload = {
       number: Number(form.number) || 0,
       zone: form.zone,
       places: Math.max(1, Number(form.places) || 1),
-      status: STATUSES.some((s) => s.value === form.status)
-        ? form.status
-        : "free",
+      status: ["free", "busy"].includes(form.status) ? form.status : "free",
     };
     if (!payload.number || !payload.zone) return;
-
     try {
       if (tableEditId) {
         const res = await api.put(`/cafe/tables/${tableEditId}/`, payload);
@@ -193,7 +234,6 @@ export default function CafeTables() {
       console.error("Ошибка сохранения стола:", e2);
     }
   };
-
   const removeTable = async (id) => {
     if (!window.confirm("Удалить стол?")) return;
     try {
@@ -206,16 +246,16 @@ export default function CafeTables() {
 
   return (
     <section className="tables">
-      {/* Заголовок */}
       <div className="tables__header">
         <div>
           <h2 className="tables__title">Зал кафе</h2>
           <div className="tables__subtitle">
-            Сначала создайте <b>зоны</b>, затем добавляйте <b>столы</b>.
+            Стол с неоплаченными заказами подсвечивается{" "}
+            <b style={{ color: "#ef4444" }}>красным</b>. Оплата проводится в
+            разделе «Касса → Оплата».
           </div>
         </div>
 
-        {/* Табы-кнопки */}
         <div className="tables__actions">
           <button
             className={`tables__btn ${
@@ -240,7 +280,6 @@ export default function CafeTables() {
         </div>
       </div>
 
-      {/* ===== ВКЛАДКА: СТОЛЫ ===== */}
       {activeTab === "tables" && (
         <>
           <div className="tables__actions" style={{ marginTop: -6 }}>
@@ -264,43 +303,55 @@ export default function CafeTables() {
           </div>
 
           <div className="tables__list">
-            {filteredTables.map((t) => (
-              <article key={t.id} className="tables__card">
-                <div className="tables__card-left">
-                  <div className="tables__avatar">
-                    <FaChair />
-                  </div>
-                  <div>
-                    <h3 className="tables__name">Стол {t.number}</h3>
-                    <div className="tables__meta">
-                      <span className="tables__muted">
-                        Зона: {zoneTitleByAny(t.zone) || "—"}
-                      </span>
-                      <span className="tables__muted">Мест: {t.places}</span>
-                      <span className="tables__muted">
-                        Статус: {t.status === "free" ? "Свободен" : "Занят"}
-                      </span>
+            {filteredTables.map((t) => {
+              const hasUnpaid = !!unpaidByTable.get(t.id);
+              return (
+                <article
+                  key={t.id}
+                  className={`tables__card ${
+                    hasUnpaid ? "tables__card--unpaid" : ""
+                  }`}
+                >
+                  <div className="tables__card-left">
+                    <div className="tables__avatar">
+                      <FaChair />
+                    </div>
+                    <div>
+                      <h3 className="tables__name">Стол {t.number}</h3>
+                      <div className="tables__meta">
+                        <span className="tables__muted">
+                          Зона: {zoneTitleByAny(t.zone) || "—"}
+                        </span>
+                        <span className="tables__muted">Мест: {t.places}</span>
+                        <span className="tables__muted">
+                          Статус:{" "}
+                          {hasUnpaid
+                            ? "Занят (оплата)"
+                            : t.status === "free"
+                            ? "Свободен"
+                            : "Занят"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="tables__rowActions">
-                  <button
-                    className="tables__btn tables__btn--secondary"
-                    onClick={() => openEditTable(t)}
-                  >
-                    <FaEdit /> Изменить
-                  </button>
-                  <button
-                    className="tables__btn tables__btn--danger"
-                    onClick={() => removeTable(t.id)}
-                  >
-                    <FaTrash /> Удалить
-                  </button>
-                </div>
-              </article>
-            ))}
-
+                  <div className="tables__rowActions">
+                    <button
+                      className="tables__btn tables__btn--secondary"
+                      onClick={() => openEditTable(t)}
+                    >
+                      <FaEdit /> Изменить
+                    </button>
+                    <button
+                      className="tables__btn tables__btn--danger"
+                      onClick={() => removeTable(t.id)}
+                    >
+                      <FaTrash /> Удалить
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
             {!filteredTables.length && (
               <div className="tables__alert">
                 Ничего не найдено по запросу «{query}».
@@ -310,7 +361,6 @@ export default function CafeTables() {
         </>
       )}
 
-      {/* ===== ВКЛАДКА: ЗОНЫ ===== */}
       {activeTab === "zones" && (
         <>
           <div className="tables__actions" style={{ marginTop: -6 }}>
@@ -331,7 +381,11 @@ export default function CafeTables() {
                     <h3 className="tables__name">{z.title}</h3>
                     <div className="tables__meta">
                       <span className="tables__muted">
-                        Столов: {zoneCounts[z.id] || 0}
+                        Столов:{" "}
+                        {
+                          tables.filter((t) => (t.zone?.id || t.zone) === z.id)
+                            .length
+                        }
                       </span>
                     </div>
                   </div>
@@ -353,7 +407,6 @@ export default function CafeTables() {
                 </div>
               </article>
             ))}
-
             {!zones.length && (
               <div className="tables__alert">Зон пока нет.</div>
             )}
@@ -361,7 +414,7 @@ export default function CafeTables() {
         </>
       )}
 
-      {/* MODAL: ЗОНА */}
+      {/* ───────── MODALS ───────── */}
       {zoneModalOpen && (
         <div
           className="tables__modal-overlay"
@@ -387,7 +440,7 @@ export default function CafeTables() {
                   className="tables__input"
                   value={zoneTitle}
                   onChange={(e) => setZoneTitle(e.target.value)}
-                  placeholder="Например: этаж 1, VIP, Терраса"
+                  placeholder="Например: Этаж 1, VIP, Терраса"
                   required
                   maxLength={255}
                 />
@@ -413,7 +466,6 @@ export default function CafeTables() {
         </div>
       )}
 
-      {/* MODAL: СТОЛ */}
       {tableModalOpen && (
         <div
           className="tables__modal-overlay"
@@ -518,4 +570,6 @@ export default function CafeTables() {
       )}
     </section>
   );
-}
+};
+
+export default Tables;

@@ -86,10 +86,17 @@ const HIDE_RULES = [
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/zakaz"] } },
   { when: { sector: "Кафе" }, show: { toIncludes: ["/crm/cafe/stock"] } },
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/employ"] } },
+  { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/cafe/analytics"] } },
+  { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/cafe/stock"] } },
   { when: { sector: "Гостиница" }, hide: { toIncludes: ["crm/analytics"] } },
   { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/clients"] } },
+  { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/hostel/bar"] } },
   { when: { sector: "Барбершоп" }, hide: { toIncludes: ["crm/employ"] } },
-  { when: { sector: "Магазин" }, hide: { toIncludes: ["/crm/analytics"] } },
+  { when: { sector: "Школа" }, hide: { toIncludes: ["/crm/zakaz"] } },
+  {
+    when: { sector: "Магазин" },
+    hide: { toIncludes: ["/crm/market/analytics"] },
+  },
 ];
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {

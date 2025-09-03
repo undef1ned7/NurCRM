@@ -62,7 +62,7 @@ function fmtISO(iso) {
 }
 
 /* ========== component ========== */
-function CafeDocuments() {
+function Documents() {
   const [tab, setTab] = useState("folders"); // "folders" | "docs"
 
   /* ----- FOLDERS ----- */
@@ -1038,4 +1038,4 @@ function Preview({ url, name, folderName }) {
   );
 }
 
-export default CafeDocuments;
+export default Documents;

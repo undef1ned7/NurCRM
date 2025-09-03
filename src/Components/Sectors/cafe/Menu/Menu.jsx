@@ -1,16 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import "./Menu.scss";
-import {
-  FaSearch,
-  FaPlus,
-  FaTimes,
-  FaUtensils,
-  FaTag,
-  FaTrash,
-  FaEdit,
-} from "react-icons/fa";
+import { FaSearch, FaPlus, FaTimes, FaUtensils, FaTag, FaTrash, FaEdit } from "react-icons/fa";
 import api from "../../../../api";
+import "./menu.scss";
 
+/* helpers */
 const listFrom = (res) => res?.data?.results || res?.data || [];
 const toNum = (x) => {
   if (x === null || x === undefined) return 0;
@@ -18,25 +11,28 @@ const toNum = (x) => {
   return Number.isFinite(n) ? n : 0;
 };
 const fmtMoney = (n) =>
-  new Intl.NumberFormat("ru-RU", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(toNum(n));
+  new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+    toNum(n)
+  );
 
-export default function CafeMenu() {
+const Menu = () => {
+  // tabs
   const [activeTab, setActiveTab] = useState("items"); // items | categories
 
-  const [categories, setCategories] = useState([]); // {id,title}
-  const [warehouse, setWarehouse] = useState([]); // {id,title,unit,...}
+  // справочники
+  const [categories, setCategories] = useState([]);   // {id,title}
+  const [warehouse, setWarehouse] = useState([]);     // {id,title,unit,...}
 
+  // список
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [loadingCats, setLoadingCats] = useState(true);
 
+  // поиск
   const [queryItems, setQueryItems] = useState("");
   const [queryCats, setQueryCats] = useState("");
 
-  // блюдо модалка
+  // модалка блюда
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
@@ -44,10 +40,10 @@ export default function CafeMenu() {
     category: "",
     price: 0,
     is_active: true,
-    ingredients: [], // {product: uuid, amount: number}
+    ingredients: [], // { product: uuid, amount: number }
   });
 
-  // категория модалка
+  // модалка категории
   const [catModalOpen, setCatModalOpen] = useState(false);
   const [catEditId, setCatEditId] = useState(null);
   const [catTitle, setCatTitle] = useState("");
@@ -67,9 +63,9 @@ export default function CafeMenu() {
 
   const categoryTitle = (id) => categoriesMap.get(id) || "Без категории";
   const productTitle = (id) => warehouseMap.get(id)?.title || id || "";
-  const productUnit = (id) => warehouseMap.get(id)?.unit || "";
+  const productUnit  = (id) => warehouseMap.get(id)?.unit  || "";
 
-  // загрузка справочников
+  /* ===== загрузка ===== */
   useEffect(() => {
     (async () => {
       try {
@@ -109,7 +105,7 @@ export default function CafeMenu() {
     })();
   }, []);
 
-  // фильтры
+  /* ===== фильтры ===== */
   const filteredItems = useMemo(() => {
     const q = queryItems.trim().toLowerCase();
     if (!q) return items;
@@ -126,7 +122,7 @@ export default function CafeMenu() {
     return categories.filter((c) => (c.title || "").toLowerCase().includes(q));
   }, [categories, queryCats]);
 
-  // CRUD блюд
+  /* ===== CRUD: блюдо ===== */
   const openCreate = () => {
     setEditingId(null);
     setForm({
@@ -161,14 +157,11 @@ export default function CafeMenu() {
     const payload = {
       title: (form.title || "").trim(),
       category: form.category,
-      price: String(Math.max(0, Number(form.price) || 0)), // string($decimal)
+      price: String(Math.max(0, Number(form.price) || 0)), // decimal string
       is_active: !!form.is_active,
       ingredients: (form.ingredients || [])
         .filter((r) => r && r.product && (Number(r.amount) || 0) > 0)
-        .map((r) => ({
-          product: r.product,
-          amount: String(Math.max(0, Number(r.amount) || 0)), // string($decimal)
-        })),
+        .map((r) => ({ product: r.product, amount: String(Math.max(0, Number(r.amount) || 0)) })),
     };
     if (!payload.title || !payload.category) return;
 
@@ -178,9 +171,7 @@ export default function CafeMenu() {
         setItems((prev) => [...prev, res.data]);
       } else {
         const res = await api.put(`/cafe/menu-items/${editingId}/`, payload);
-        setItems((prev) =>
-          prev.map((m) => (m.id === editingId ? res.data : m))
-        );
+        setItems((prev) => prev.map((m) => (m.id === editingId ? res.data : m)));
       }
       setModalOpen(false);
     } catch (err) {
@@ -198,12 +189,9 @@ export default function CafeMenu() {
     }
   };
 
-  // ингредиенты в форме
+  // ингредиенты (форма)
   const addIngredientRow = () =>
-    setForm((f) => ({
-      ...f,
-      ingredients: [...(f.ingredients || []), { product: "", amount: 1 }],
-    }));
+    setForm((f) => ({ ...f, ingredients: [...(f.ingredients || []), { product: "", amount: 1 }] }));
 
   const changeIngredientRow = (idx, field, value) => {
     setForm((f) => {
@@ -217,12 +205,9 @@ export default function CafeMenu() {
   };
 
   const removeIngredientRow = (idx) =>
-    setForm((f) => ({
-      ...f,
-      ingredients: (f.ingredients || []).filter((_, i) => i !== idx),
-    }));
+    setForm((f) => ({ ...f, ingredients: (f.ingredients || []).filter((_, i) => i !== idx) }));
 
-  // CRUD категорий
+  /* ===== CRUD: категория ===== */
   const openCreateCat = () => {
     setCatEditId(null);
     setCatTitle("");
@@ -242,9 +227,7 @@ export default function CafeMenu() {
     try {
       if (catEditId) {
         const res = await api.put(`/cafe/categories/${catEditId}/`, payload);
-        setCategories((prev) =>
-          prev.map((c) => (c.id === catEditId ? res.data : c))
-        );
+        setCategories((prev) => prev.map((c) => (c.id === catEditId ? res.data : c)));
       } else {
         const res = await api.post("/cafe/categories/", payload);
         setCategories((prev) => [...prev, res.data]);
@@ -261,10 +244,12 @@ export default function CafeMenu() {
       await api.delete(`/cafe/categories/${id}/`);
       setCategories((prev) => prev.filter((c) => c.id !== id));
     } catch (e) {
+      // если FK — бэкенд может запретить удаление
       console.error("Ошибка удаления категории:", e);
     }
   };
 
+  /* ===== render ===== */
   return (
     <section className="menu">
       <div className="menu__header">
@@ -275,21 +260,13 @@ export default function CafeMenu() {
 
         <div className="menu__actions">
           <button
-            className={`menu__btn ${
-              activeTab === "items"
-                ? "menu__btn--primary"
-                : "menu__btn--secondary"
-            }`}
+            className={`menu__btn ${activeTab === "items" ? "menu__btn--primary" : "menu__btn--secondary"}`}
             onClick={() => setActiveTab("items")}
           >
             <FaUtensils /> Позиции
           </button>
           <button
-            className={`menu__btn ${
-              activeTab === "categories"
-                ? "menu__btn--primary"
-                : "menu__btn--secondary"
-            }`}
+            className={`menu__btn ${activeTab === "categories" ? "menu__btn--primary" : "menu__btn--secondary"}`}
             onClick={() => setActiveTab("categories")}
           >
             <FaTag /> Категории
@@ -297,14 +274,14 @@ export default function CafeMenu() {
         </div>
       </div>
 
-      {/* items tab */}
+      {/* ===== ВКЛАДКА: БЛЮДА ===== */}
       {activeTab === "items" && (
         <>
           <div className="menu__actions" style={{ marginTop: -6 }}>
             <div className="menu__search">
-              <FaSearch className="menu__search-icon" />
+              <FaSearch className="menu__searchIcon" aria-hidden />
               <input
-                className="menu__search-input"
+                className="menu__searchInput"
                 placeholder="Поиск: блюдо или категория…"
                 value={queryItems}
                 onChange={(e) => setQueryItems(e.target.value)}
@@ -327,8 +304,8 @@ export default function CafeMenu() {
             {!loadingItems &&
               filteredItems.map((m) => (
                 <article key={m.id} className="menu__card">
-                  <div className="menu__card-left">
-                    <div className="menu__avatar">
+                  <div className="menu__cardLeft">
+                    <div className="menu__avatar" aria-hidden>
                       <FaUtensils />
                     </div>
                     <div>
@@ -337,53 +314,31 @@ export default function CafeMenu() {
                         <span className="menu__muted">
                           <FaTag /> &nbsp;{categoryTitle(m.category)}
                         </span>
-                        <span className="menu__muted">
-                          Цена: {fmtMoney(m.price)} сом
-                        </span>
-                        <span
-                          className={`menu__status ${
-                            m.is_active
-                              ? "menu__status--on"
-                              : "menu__status--off"
-                          }`}
-                        >
+                        <span className="menu__muted">Цена: {fmtMoney(m.price)} сом</span>
+                        <span className={`menu__status ${m.is_active ? "menu__status--on" : "menu__status--off"}`}>
                           {m.is_active ? "Активно" : "Скрыто"}
                         </span>
                       </div>
 
-                      {Array.isArray(m.ingredients) &&
-                        m.ingredients.length > 0 && (
-                          <ul className="menu__recipeMini">
-                            {m.ingredients.slice(0, 4).map((ing, i) => (
-                              <li
-                                key={`${ing.id || ing.product}-${i}`}
-                                className="menu__muted"
-                              >
-                                •{" "}
-                                {ing.product_title || productTitle(ing.product)}{" "}
-                                — {toNum(ing.amount)}{" "}
-                                {ing.product_unit || productUnit(ing.product)}
-                              </li>
-                            ))}
-                            {m.ingredients.length > 4 && (
-                              <li className="menu__muted">…</li>
-                            )}
-                          </ul>
-                        )}
+                      {Array.isArray(m.ingredients) && m.ingredients.length > 0 && (
+                        <ul className="menu__recipeMini">
+                          {m.ingredients.slice(0, 4).map((ing, i) => (
+                            <li key={`${ing.id || ing.product}-${i}`} className="menu__muted">
+                              • {ing.product_title || productTitle(ing.product)} — {toNum(ing.amount)}{" "}
+                              {ing.product_unit || productUnit(ing.product)}
+                            </li>
+                          ))}
+                          {m.ingredients.length > 4 && <li className="menu__muted">…</li>}
+                        </ul>
+                      )}
                     </div>
                   </div>
 
                   <div className="menu__rowActions">
-                    <button
-                      className="menu__btn menu__btn--secondary"
-                      onClick={() => openEdit(m)}
-                    >
+                    <button className="menu__btn menu__btn--secondary" onClick={() => openEdit(m)}>
                       <FaEdit /> Изменить
                     </button>
-                    <button
-                      className="menu__btn menu__btn--danger"
-                      onClick={() => handleDelete(m.id)}
-                    >
+                    <button className="menu__btn menu__btn--danger" onClick={() => handleDelete(m.id)}>
                       <FaTrash /> Удалить
                     </button>
                   </div>
@@ -391,32 +346,27 @@ export default function CafeMenu() {
               ))}
 
             {!loadingItems && !filteredItems.length && (
-              <div className="menu__alert">
-                Ничего не найдено по «{queryItems}».
-              </div>
+              <div className="menu__alert">Ничего не найдено по «{queryItems}».</div>
             )}
           </div>
         </>
       )}
 
-      {/* categories tab */}
+      {/* ===== ВКЛАДКА: КАТЕГОРИИ ===== */}
       {activeTab === "categories" && (
         <>
           <div className="menu__actions" style={{ marginTop: -6 }}>
             <div className="menu__search">
-              <FaSearch className="menu__search-icon" />
+              <FaSearch className="menu__searchIcon" aria-hidden />
               <input
-                className="menu__search-input"
+                className="menu__searchInput"
                 placeholder="Поиск категории…"
                 value={queryCats}
                 onChange={(e) => setQueryCats(e.target.value)}
               />
             </div>
 
-            <button
-              className="menu__btn menu__btn--primary"
-              onClick={openCreateCat}
-            >
+            <button className="menu__btn menu__btn--primary" onClick={openCreateCat}>
               <FaPlus /> Новая категория
             </button>
           </div>
@@ -427,8 +377,8 @@ export default function CafeMenu() {
             {!loadingCats &&
               filteredCats.map((c) => (
                 <article key={c.id} className="menu__card">
-                  <div className="menu__card-left">
-                    <div className="menu__avatar">
+                  <div className="menu__cardLeft">
+                    <div className="menu__avatar" aria-hidden>
                       <FaTag />
                     </div>
                     <div>
@@ -437,16 +387,10 @@ export default function CafeMenu() {
                   </div>
 
                   <div className="menu__rowActions">
-                    <button
-                      className="menu__btn menu__btn--secondary"
-                      onClick={() => openEditCat(c)}
-                    >
+                    <button className="menu__btn menu__btn--secondary" onClick={() => openEditCat(c)}>
                       <FaEdit /> Изменить
                     </button>
-                    <button
-                      className="menu__btn menu__btn--danger"
-                      onClick={() => removeCat(c.id)}
-                    >
+                    <button className="menu__btn menu__btn--danger" onClick={() => removeCat(c.id)}>
                       <FaTrash /> Удалить
                     </button>
                   </div>
@@ -454,43 +398,31 @@ export default function CafeMenu() {
               ))}
 
             {!loadingCats && !filteredCats.length && (
-              <div className="menu__alert">
-                Ничего не найдено по «{queryCats}».
-              </div>
+              <div className="menu__alert">Ничего не найдено по «{queryCats}».</div>
             )}
           </div>
         </>
       )}
 
-      {/* Модалка: блюдо */}
+      {/* ===== МОДАЛКА: БЛЮДО ===== */}
       {modalOpen && (
-        <div
-          className="menu__modal-overlay"
-          onClick={() => setModalOpen(false)}
-        >
-          <div className="menu__modal" onClick={(e) => e.stopPropagation()}>
-            <div className="menu__modal-header">
-              <h3 className="menu__modal-title">
-                {editingId == null ? "Новая позиция" : "Изменить позицию"}
-              </h3>
-              <button
-                className="menu__icon-btn"
-                onClick={() => setModalOpen(false)}
-              >
+        <div className="menu-modal__overlay" onClick={() => setModalOpen(false)}>
+          <div className="menu-modal__card" onClick={(e) => e.stopPropagation()}>
+            <div className="menu-modal__header">
+              <h3 className="menu-modal__title">{editingId == null ? "Новая позиция" : "Изменить позицию"}</h3>
+              <button className="menu-modal__close" onClick={() => setModalOpen(false)} aria-label="Закрыть">
                 <FaTimes />
               </button>
             </div>
 
             <form className="menu__form" onSubmit={saveItem}>
-              <div className="menu__form-grid">
+              <div className="menu__formGrid">
                 <div className="menu__field">
                   <label className="menu__label">Название</label>
                   <input
                     className="menu__input"
                     value={form.title}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, title: e.target.value }))
-                    }
+                    onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                     required
                     maxLength={255}
                   />
@@ -501,9 +433,7 @@ export default function CafeMenu() {
                   <select
                     className="menu__input"
                     value={form.category}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, category: e.target.value }))
-                    }
+                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                     required
                   >
                     {categories.map((c) => (
@@ -521,12 +451,7 @@ export default function CafeMenu() {
                     min={0}
                     className="menu__input"
                     value={form.price}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        price: Math.max(0, Number(e.target.value) || 0),
-                      }))
-                    }
+                    onChange={(e) => setForm((f) => ({ ...f, price: Math.max(0, Number(e.target.value) || 0) }))}
                     required
                   />
                 </div>
@@ -536,9 +461,7 @@ export default function CafeMenu() {
                     <input
                       type="checkbox"
                       checked={form.is_active}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, is_active: e.target.checked }))
-                      }
+                      onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
                       style={{ marginRight: 8 }}
                     />
                     Активно в продаже
@@ -550,15 +473,13 @@ export default function CafeMenu() {
                 <div className="menu__subtitle">Ингредиенты (на 1 блюдо)</div>
 
                 {(form.ingredients || []).map((row, idx) => (
-                  <div key={idx} className="menu__form-grid">
+                  <div key={idx} className="menu__formGrid">
                     <div className="menu__field">
                       <label className="menu__label">Товар со склада</label>
                       <select
                         className="menu__input"
                         value={row.product || ""}
-                        onChange={(e) =>
-                          changeIngredientRow(idx, "product", e.target.value)
-                        }
+                        onChange={(e) => changeIngredientRow(idx, "product", e.target.value)}
                         required
                       >
                         <option value="">— Выберите товар —</option>
@@ -571,50 +492,34 @@ export default function CafeMenu() {
                     </div>
 
                     <div className="menu__field">
-                      <label className="menu__label">
-                        Норма (в ед. товара)
-                      </label>
+                      <label className="menu__label">Норма (в ед. товара)</label>
                       <input
                         type="number"
                         min={0}
                         step="any"
                         className="menu__input"
                         value={row.amount ?? 0}
-                        onChange={(e) =>
-                          changeIngredientRow(idx, "amount", e.target.value)
-                        }
+                        onChange={(e) => changeIngredientRow(idx, "amount", e.target.value)}
                         required
                       />
                     </div>
 
                     <div className="menu__field">
                       <label className="menu__label">&nbsp;</label>
-                      <button
-                        type="button"
-                        className="menu__btn menu__btn--danger"
-                        onClick={() => removeIngredientRow(idx)}
-                      >
+                      <button type="button" className="menu__btn menu__btn--danger" onClick={() => removeIngredientRow(idx)}>
                         <FaTrash /> Удалить ингредиент
                       </button>
                     </div>
                   </div>
                 ))}
 
-                <button
-                  type="button"
-                  className="menu__btn menu__btn--secondary"
-                  onClick={addIngredientRow}
-                >
+                <button type="button" className="menu__btn menu__btn--secondary" onClick={addIngredientRow}>
                   <FaPlus /> Добавить ингредиент
                 </button>
               </div>
 
-              <div className="menu__form-actions">
-                <button
-                  type="button"
-                  className="menu__btn menu__btn--secondary"
-                  onClick={() => setModalOpen(false)}
-                >
+              <div className="menu__formActions">
+                <button type="button" className="menu__btn menu__btn--secondary" onClick={() => setModalOpen(false)}>
                   Отмена
                 </button>
                 <button type="submit" className="menu__btn menu__btn--primary">
@@ -626,21 +531,13 @@ export default function CafeMenu() {
         </div>
       )}
 
-      {/* Модалка: категория */}
+      {/* ===== МОДАЛКА: КАТЕГОРИЯ ===== */}
       {catModalOpen && (
-        <div
-          className="menu__modal-overlay"
-          onClick={() => setCatModalOpen(false)}
-        >
-          <div className="menu__modal" onClick={(e) => e.stopPropagation()}>
-            <div className="menu__modal-header">
-              <h3 className="menu__modal-title">
-                {catEditId ? "Редактировать категорию" : "Новая категория"}
-              </h3>
-              <button
-                className="menu__icon-btn"
-                onClick={() => setCatModalOpen(false)}
-              >
+        <div className="menu-modal__overlay" onClick={() => setCatModalOpen(false)}>
+          <div className="menu-modal__card" onClick={(e) => e.stopPropagation()}>
+            <div className="menu-modal__header">
+              <h3 className="menu-modal__title">{catEditId ? "Редактировать категорию" : "Новая категория"}</h3>
+              <button className="menu-modal__close" onClick={() => setCatModalOpen(false)} aria-label="Закрыть">
                 <FaTimes />
               </button>
             </div>
@@ -658,12 +555,8 @@ export default function CafeMenu() {
                 />
               </div>
 
-              <div className="menu__form-actions">
-                <button
-                  type="button"
-                  className="menu__btn menu__btn--secondary"
-                  onClick={() => setCatModalOpen(false)}
-                >
+              <div className="menu__formActions">
+                <button type="button" className="menu__btn menu__btn--secondary" onClick={() => setCatModalOpen(false)}>
                   Отмена
                 </button>
                 <button type="submit" className="menu__btn menu__btn--primary">
@@ -676,4 +569,6 @@ export default function CafeMenu() {
       )}
     </section>
   );
-}
+};
+
+export default Menu;
