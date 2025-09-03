@@ -1,95 +1,142 @@
+
 import React from "react";
-import styles from "./Landing.module.scss";
-import logo from "../../Photo/logo2.png"; // Убедитесь, что путь к логотипу корректен
-import { Link } from "react-router-dom"; // Импортируем Link для навигации
+import { Link } from "react-router-dom";
 import Lang from "../../Lang/Lang";
+import logo from "../../Photo/logo2.png";
+import "./Landing.scss";
 
 const Landing = () => {
   return (
-    <div className={styles.landing}>
-      <header className={styles.header}>
-        <div className={styles.logoBox}>
-          <div className={styles.logoText}>
-            <img src={logo} alt="NUR CRM Logo" className={styles.logoImage} />
-          </div>
-          {/* Добавляем кнопки Вход и Регистрация */}
-          <div className={styles.authButtons}>
-            <Link to="/login" className={styles.buttonSecondary}>
-              Вход
+    <div className="landing">
+      <header className="landing__topbar" role="banner">
+        <div className="landing__container">
+          <div className="landing__topbar-row">
+            <Link to="/" className="landing__logo" aria-label="Главная">
+              <img src={logo} alt="NUR CRM" className="landing__logo-img" />
             </Link>
-            <Link to="/submit-application" className={styles.buttonPrimary}>
-              Оставить заявку
-            </Link>
+
+            <nav className="landing__auth" aria-label="Авторизация">
+              <Link to="/login" className="landing__btn landing__btn--secondary">Вход</Link>
+              <Link to="/submit-application" className="landing__btn landing__btn--primary">Оставить заявку</Link>
+              <Lang />
+            </nav>
+
           </div>
-          <Lang />
         </div>
-        <p className={styles.slogan}>Сила управления в ваших руках</p>
       </header>
 
-      {/* Узор в правом верхнем углу */}
-      {/* <div className={styles.patternTopRight} /> */}
+      <main className="landing__main" id="main">
+        {/* HERO */}
+        <section className="landing__hero" aria-label="Введение">
+          <div className="landing__container">
+            <div className="landing__hero-inner">
+              <h1 className="landing__hero-title">Сила управления в&nbsp;ваших руках</h1>
+              <p className="landing__hero-text">
+                Премиум-платформа для бизнеса: единый стек для кафе, строй-сферы, маркетов,
+                барбершопов/салонов красоты, школ и гостиниц — красиво, быстро, надёжно.
+              </p>
+              <div className="landing__hero-actions">
+                <Link to="/submit-application" className="landing__btn landing__btn--primary">Попробовать</Link>
+              </div>
 
-      <section className={styles.about}>
-        <h2>О нас</h2>
-        <p>
-          NUR CRM — это премиум-платформа для управления бизнесом. Эстетика,
-          точность и скорость — всё, что нужно настоящему делу.
-        </p>
-      </section>
+              <ul className="landing__trust">
+                <li className="landing__trust-item">Кафе</li>
+                <li className="landing__trust-item">Строй-сфера</li>
+                <li className="landing__trust-item">Маркет</li>
+                <li className="landing__trust-item">Барбершоп / Салон</li>
+                <li className="landing__trust-item">Школа</li>
+                <li className="landing__trust-item">Гостиница</li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
-      <section className={styles.features}>
-        <h2>Преимущества</h2>
-        <ul>
-          <li>⚡ Быстрое внедрение и простой интерфейс</li>
-          <li>🔒 Надёжная безопасность и защита данных</li>
-          <li>📊 Глубокая аналитика и кастомные отчёты</li>
-          <li>📱 Поддержка на мобильных устройствах</li>
-        </ul>
-      </section>
+        {/* ОТРАСЛИ */}
+        <section className="landing__section landing__section--industries">
+          <div className="landing__container">
+            <h2 className="landing__title">Отрасли</h2>
 
-      <section className={styles.pricing}>
-        <h2>Тарифы</h2>
-        <div className={styles.plans}>
-          <div className={styles.plan}>
-            <h3>Старт</h3>
-            <p>Минимум функций, максимум пользы</p>
-            <div className={styles.price}>500 сом</div>
+            <div className="landing__scroller" tabIndex="0" aria-label="Список отраслей">
+              {[
+                { t: "Кафе", d: "Столы, заказы, кухня/KDS, быстрые оплаты." },
+                { t: "Строй-сфера", d: "Сметы, заявки, объекты, материалы, акты." },
+                { t: "Маркет", d: "Товары, остатки, штрих-коды, касса, скидки." },
+                { t: "Барбершоп/Салон", d: "Записи, мастера, услуги, клиентская база." },
+                { t: "Школа", d: "Лиды, группы, расписания, счета, рассрочки." },
+                { t: "Гостиница", d: "Номера, брони, заселение/выезд, отчёты." }
+              ].map((i, idx) => (
+                <article className="landing__card" key={idx}>
+                  <div className="landing__card-ico" aria-hidden>
+                    <span className="landing__dot" />
+                  </div>
+                  <h3 className="landing__card-title">{i.t}</h3>
+                  <p className="landing__card-text">{i.d}</p>
+                </article>
+              ))}
+            </div>
           </div>
-          <div className={`${styles.plan} ${styles.highlight}`}>
-            <h3>Стандарт</h3>
-            <p>Аналитика, отчёты, поддержка 24/7</p>
-            <div className={styles.price}>3000 сом / мес</div>
+        </section>
+
+
+        {/* ТАРИФЫ */}
+        <section className="landing__section landing__section--pricing">
+          <div className="landing__container">
+            <h2 className="landing__title">Тарифы</h2>
+            <div className="landing__plans">
+              <article className="landing__plan">
+                <h3 className="landing__plan-name">Старт</h3>
+                <p className="landing__plan-desc">Минимум функций, максимум пользы</p>
+                <div className="landing__price">500 сом</div>
+              </article>
+
+              <article className="landing__plan landing__plan--highlight">
+                <div className="landing__badge">Хит</div>
+                <h3 className="landing__plan-name">Стандарт</h3>
+                <p className="landing__plan-desc">Аналитика, отчёты, поддержка 24/7</p>
+                <div className="landing__price">3000 сом / мес</div>
+              </article>
+
+              <article className="landing__plan">
+                <h3 className="landing__plan-name">Стандарт+</h3>
+                <p className="landing__plan-desc">Полная кастомизация и контроль</p>
+                <div className="landing__price">10000 сом / мес</div>
+              </article>
+            </div>
           </div>
-          <div className={styles.plan}>
-            <h3>Стандарт+</h3>
-            <p>Полный контроль и кастомизация</p>
-            <div className={styles.price}>10000 сом / мес</div>
+        </section>
+
+        {/* CTA */}
+        <section className="landing__cta">
+          <div className="landing__container">
+            <div className="landing__cta-card">
+              <h3 className="landing__cta-title">Готовы управлять эффективнее?</h3>
+              <p className="landing__cta-text">Подключим вашу отрасль за 1 день и перенесём данные аккуратно.</p>
+              <Link to="/submit-application" className="landing__btn landing__btn--primary">Получить консультацию</Link>
+            </div>
           </div>
+        </section>
+
+        {/* КОНТАКТЫ */}
+        <section className="landing__section landing__section--contact">
+          <div className="landing__container">
+            <h2 className="landing__title">Связь с нами</h2>
+            <p className="landing__text">
+              Email: <a className="landing__link" href="mailto:support@nurcrm.com">support@nurcrm.com</a>
+            </p>
+            <p className="landing__text">
+              Телефон: <a className="landing__link" href="tel:+996700123456">+996 700 123 456</a>
+            </p>
+            <p className="landing__text">
+              Telegram: <a className="landing__link" href="https://t.me/nurcrm" target="_blank" rel="noopener noreferrer">@nurcrm</a>
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <footer className="landing__footer">
+        <div className="landing__container">
+          <p className="landing__footer-text">© 2025 NUR CRM — Все права защищены.</p>
         </div>
-      </section>
-
-      <section className={styles.contact}>
-        <h2>Связь с нами</h2>
-        <p>
-          Email: <a href="mailto:support@nurcrm.com">support@nurcrm.com</a>
-        </p>
-        <p>
-          Телефон: <a href="tel:+996700123456">+996 700 123 456</a>
-        </p>
-        <p>
-          Telegram:{" "}
-          <a
-            href="https://t.me/nurcrm"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            @nurcrm
-          </a>
-        </p>
-      </section>
-
-      <footer className={styles.footer}>
-        <p>© 2025 NUR CRM — Все права защищены.</p>
       </footer>
     </div>
   );

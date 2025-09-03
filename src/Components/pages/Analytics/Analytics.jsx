@@ -1,451 +1,625 @@
+
+
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Chart as ChartJS } from "chart.js/auto";
-import { Line, Bar, Doughnut } from "react-chartjs-2";
 
-import { fetchOrderAnalytics } from "../../../store/creators/analyticsCreators";
-import DepartmentAnalyticsChart from "../../DepartmentAnalyticsChart/DepartmentAnalyticsChart";
+import { historySellProduct } from "../../../store/creators/saleThunk";
+import {
+  fetchProductsAsync,
+  fetchBrandsAsync,
+  fetchCategoriesAsync,
+} from "../../../store/creators/productCreators";
+import { useSale } from "../../../store/slices/saleSlice";
+
 import "./Analytics.scss";
-import { useUser } from "../../../store/slices/userSlice";
 
-// --- Chart.js setup
-const valueLabelPlugin = {
-  id: "valueLabelPlugin",
-  afterDatasetsDraw(chart, args, pluginOptions) {
-    const { ctx } = chart;
-    ctx.save();
-    const font = pluginOptions?.font || {
-      size: 11,
-      family: "Inter, Roboto, sans-serif",
-      weight: 600,
-    };
-    ctx.font = `${font.weight} ${font.size}px ${font.family}`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
-    ctx.fillStyle = pluginOptions?.color || "#111";
-
-    chart.data.datasets.forEach((dataset, datasetIndex) => {
-      const meta = chart.getDatasetMeta(datasetIndex);
-      if (meta.hidden) return;
-      // Показываем подписи только для bar-наборов
-      if (dataset.type && dataset.type !== "bar") return;
-      meta.data.forEach((element, index) => {
-        const value = dataset.data[index];
-        if (value == null) return;
-        const { x, y } = element.getProps(["x", "y"], true);
-        const yOffset = 6;
-        ctx.fillText(String(value), x, y - yOffset);
-      });
-    });
-    ctx.restore();
-  },
+/* -------------------- helpers -------------------- */
+const parseISO = (s) => {
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+};
+const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+const sortKeysAsc = (arr) => [...arr].sort((a, b) => (a > b ? 1 : -1));
+const num = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+const keyByGranularity = (date, g) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  if (g === "day") return `${y}-${m}-${d}`;
+  if (g === "year") return `${y}`;
+  return `${y}-${m}`; // month
 };
 
-ChartJS.register(valueLabelPlugin);
+/* -------------------- tiny SVG sparkline -------------------- */
+const Sparkline = ({ values = [], width = 520, height = 140 }) => {
+  if (!values.length) {
+    return <div className="analytics-sales__sparkline-empty">Нет данных</div>;
+  }
+  const pad = 8;
+  const W = width - pad * 2;
+  const H = height - pad * 2;
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const pts = values.map((v, i) => {
+    const x = pad + (i * W) / Math.max(1, values.length - 1);
+    const ratio = max === min ? 0.5 : (v - min) / (max - min);
+    const y = pad + (1 - ratio) * H;
+    return [x, y];
+  });
+  const d = pts.map(([x, y], i) => (i === 0 ? `M${x},${y}` : `L${x},${y}`)).join(" ");
+
+  return (
+    <svg className="analytics-sales__sparkline" viewBox={`0 0 ${width} ${height}`} role="img">
+      {/* baseline */}
+      <polyline
+        fill="none"
+        stroke="var(--c-border)"
+        strokeWidth="1"
+        points={`${pad},${height - pad} ${width - pad},${height - pad}`}
+      />
+      <path d={d} fill="none" stroke="var(--c-primary)" strokeWidth="2" />
+      {pts.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="2.2" fill="var(--c-primary)" />
+      ))}
+    </svg>
+  );
+};
+
+/* ============================================================= */
 
 const Analytics = () => {
   const dispatch = useDispatch();
-  const { data, loading, error } = useSelector((state) => state.analytics);
-  const { company } = useUser();
 
+  // из saleSlice
+  const { history = [], loading: salesLoading, error: salesError } = useSale();
+
+  // из productSlice
+  const {
+    list: products = [],
+    brands = [],
+    categories = [],
+    loading: productsLoading,
+  } = useSelector((s) => s.product);
+
+  /* ---------- controls ---------- */
   const [startDate, setStartDate] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-01-01`;
+    const n = new Date();
+    return `${n.getFullYear()}-01-01`;
   });
-  const [endDate, setEndDate] = useState(() => {
-    const now = new Date();
-    return now.toISOString().split("T")[0];
-  });
-  const [statusFilter, setStatusFilter] = useState("");
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [granularity, setGranularity] = useState("month"); // day | month | year
+  const [activeTab, setActiveTab] = useState("sales"); // sales | inventory | taxonomy
 
+  /* ---------- fetch once ---------- */
   useEffect(() => {
-    dispatch(
-      fetchOrderAnalytics({
-        start_date: startDate,
-        end_date: endDate,
-        status: statusFilter === "" ? null : statusFilter,
-      })
-    );
-  }, [dispatch, startDate, endDate, statusFilter]);
+    dispatch(historySellProduct({ search: "" }));
+    dispatch(fetchProductsAsync({ page: 1, page_size: 1000 })); // подгоните под ваш API
+    dispatch(fetchBrandsAsync());
+    dispatch(fetchCategoriesAsync());
+  }, [dispatch]);
 
-  const lan = localStorage.getItem("i18nextLng") || "ru";
-  const nf = useMemo(() => {
+  /* ---------- formatters ---------- */
+  const lan = (typeof localStorage !== "undefined" && localStorage.getItem("i18nextLng")) || "ru";
+  const nfMoney = useMemo(() => {
     try {
       return new Intl.NumberFormat(lan === "en" ? "en-US" : "ru-RU", {
         style: "currency",
         currency: "KGS",
         maximumFractionDigits: 0,
       });
-    } catch (e) {
+    } catch {
       return { format: (n) => `${Number(n).toLocaleString("ru-RU")} сом` };
     }
   }, [lan]);
-  const nfInt = useMemo(
-    () => new Intl.NumberFormat(lan === "en" ? "en-US" : "ru-RU"),
-    [lan]
+  const nfInt = useMemo(() => new Intl.NumberFormat(lan === "en" ? "en-US" : "ru-RU"), [lan]);
+
+  /* ---------- date range ---------- */
+  const inRange = (d) => {
+    const sd = parseISO(startDate);
+    const ed = parseISO(endDate);
+    if (!d || !sd || !ed) return false;
+    const from = new Date(sd.getFullYear(), sd.getMonth(), sd.getDate(), 0, 0, 0);
+    const to = new Date(ed.getFullYear(), ed.getMonth(), ed.getDate(), 23, 59, 59);
+    return d >= from && d <= to;
+  };
+
+  const quickPreset = (preset) => {
+    const now = new Date();
+    if (preset === "thisMonth") {
+      const sd = new Date(now.getFullYear(), now.getMonth(), 1);
+      const ed = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setStartDate(sd.toISOString().slice(0, 10));
+      setEndDate(ed.toISOString().slice(0, 10));
+      setGranularity("day");
+    }
+    if (preset === "lastMonth") {
+      const sd = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const ed = new Date(now.getFullYear(), now.getMonth(), 0);
+      setStartDate(sd.toISOString().slice(0, 10));
+      setEndDate(ed.toISOString().slice(0, 10));
+      setGranularity("day");
+    }
+    if (preset === "ytd") {
+      const sd = new Date(now.getFullYear(), 0, 1);
+      setStartDate(sd.toISOString().slice(0, 10));
+      setEndDate(now.toISOString().slice(0, 10));
+      setGranularity("month");
+    }
+    if (preset === "thisYear") {
+      const sd = new Date(now.getFullYear(), 0, 1);
+      const ed = new Date(now.getFullYear(), 11, 31);
+      setStartDate(sd.toISOString().slice(0, 10));
+      setEndDate(ed.toISOString().slice(0, 10));
+      setGranularity("month");
+    }
+  };
+
+  /* ====================== SALES ====================== */
+  const salesFiltered = useMemo(
+    () => (history || []).filter((r) => inRange(parseISO(r?.created_at))),
+    [history, startDate, endDate]
   );
 
-  // --- Colors / helpers
-  const statusColors = {
-    new: "rgba(255,159,64,0.8)",
-    pending: "rgba(54,162,235,0.8)",
-    completed: "rgba(75,192,192,0.8)",
-    cancelled: "rgba(255,99,132,0.8)",
-    processing: "rgba(153,102,255,0.8)",
-  };
-  const solid = (rgba) => rgba.replace(/0\.8|0\.7|0\.5/g, "1");
+  const salesTotals = useMemo(() => {
+    const count = salesFiltered.length;
+    const revenue = salesFiltered.reduce((acc, r) => acc + num(r?.total), 0);
+    // если бы была себестоимость по строкам продажи — считали бы валовую маржу
+    return { count, revenue, avg: count ? revenue / count : 0 };
+  }, [salesFiltered]);
 
-  // --- Derive arrays
-  const orderStatus = data?.orders_by_status || [];
-  const labels = orderStatus.map((s) => s.status);
-  const counts = orderStatus.map((s) => s.order_count ?? 0);
-  const amounts = orderStatus.map((s) => Math.round(s.total_amount ?? 0));
-  const avgAmounts = orderStatus.map((s) => Math.round(s.average_amount ?? 0));
+  const salesSeries = useMemo(() => {
+    const bucket = new Map();
+    for (const r of salesFiltered) {
+      const d = parseISO(r?.created_at);
+      if (!d) continue;
+      const key = keyByGranularity(d, granularity);
+      bucket.set(key, num(bucket.get(key)) + num(r?.total));
+    }
+    const keys = sortKeysAsc(Array.from(bucket.keys()));
+    return { labels: keys, values: keys.map((k) => Math.round(num(bucket.get(k)))) };
+  }, [salesFiltered, granularity]);
 
-  // --- Beautiful charts
-  const combinedBarLineData = {
-    labels,
-    datasets: [
-      {
-        type: "bar",
-        label: "Кол-во заказов",
-        data: counts,
-        backgroundColor: (ctx) =>
-          statusColors[labels[ctx.dataIndex]] || "rgba(99,102,241,0.8)",
-        borderColor: (ctx) =>
-          solid(statusColors[labels[ctx.dataIndex]] || "rgba(99,102,241,1)"),
-        borderWidth: 1,
-        borderRadius: 8,
-        maxBarThickness: 48,
-        yAxisID: "yCount",
-      },
-      {
-        type: "line",
-        label: "Сумма по статусу (сом)",
-        data: amounts,
-        borderColor: "#111827",
-        pointBackgroundColor: "#111827",
-        pointRadius: 4,
-        tension: 0.35,
-        yAxisID: "yAmount",
-      },
-    ],
-  };
+  /* ====================== INVENTORY ====================== */
+  const LOW_STOCK_THRESHOLD = 5;
 
-  const combinedBarLineOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top" },
-      title: {
-        display: true,
-        text: "Статусы: количество vs. сумма",
-        font: { size: 18, weight: "700" },
-      },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            if (ctx.dataset.yAxisID === "yAmount")
-              return ` ${nf.format(ctx.parsed.y)}`;
-            return ` ${nfInt.format(ctx.parsed.y)} шт.`;
-          },
-        },
-      },
-      valueLabelPlugin: {
-        color: "#111",
-        font: { size: 11, family: "Inter, Roboto, sans-serif", weight: 600 },
-      },
-    },
-    scales: {
-      yCount: {
-        type: "linear",
-        position: "left",
-        grid: { drawBorder: false },
-        ticks: { stepSize: 1, precision: 0 },
-        title: { display: true, text: "Заказы" },
-      },
-      yAmount: {
-        type: "linear",
-        position: "right",
-        grid: { drawBorder: false, display: false },
-        ticks: {
-          callback: (v) => nf.format(v),
-        },
-        title: { display: true, text: "Сумма" },
-      },
-      x: { grid: { display: false } },
-    },
-    animation: { duration: 700 },
-  };
+  const inventoryKPIs = useMemo(() => {
+    const totalSkus = products.length;
+    const lowStock = products.filter((p) => num(p?.quantity) <= LOW_STOCK_THRESHOLD).length;
 
-  const doughnutData = {
-    labels,
-    datasets: [
-      {
-        label: "Доля (по количеству)",
-        data: counts,
-        backgroundColor: labels.map(
-          (l) => statusColors[l] || "rgba(99,102,241,0.8)"
-        ),
-        borderColor: "#fff",
-        borderWidth: 2,
-        hoverOffset: 6,
-      },
-    ],
-  };
+    const stockValueByPrice = products.reduce(
+      (acc, p) => acc + num(p?.price) * num(p?.quantity),
+      0
+    );
 
-  const doughnutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "bottom" },
-      title: { display: true, text: "Доля статусов (по количеству)" },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => ` ${ctx.label}: ${nfInt.format(ctx.parsed)} шт.`,
-        },
-      },
-    },
-    cutout: "62%",
-  };
+    const stockValueByCost =
+      products.some((p) => "cost_price" in p)
+        ? products.reduce((acc, p) => acc + num(p?.cost_price) * num(p?.quantity), 0)
+        : null;
 
-  const avgBarData = {
-    labels,
-    datasets: [
-      {
-        label: "Средний чек (сом)",
-        data: avgAmounts,
-        borderColor: labels.map((l) =>
-          solid(statusColors[l] || "rgba(99,102,241,1)")
-        ),
-        backgroundColor: labels.map(
-          (l) => statusColors[l] || "rgba(99,102,241,0.8)"
-        ),
-        borderWidth: 1,
-        borderRadius: 10,
-        maxBarThickness: 46,
-      },
-    ],
-  };
+    return { totalSkus, lowStock, stockValueByPrice, stockValueByCost };
+  }, [products]);
 
-  const avgBarOptions = {
-    indexAxis: "y",
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      title: { display: true, text: "Средний чек по статусам" },
-      tooltip: {
-        callbacks: { label: (ctx) => ` ${nf.format(ctx.parsed.x)}` },
-      },
-      valueLabelPlugin: { color: "#111" },
-    },
-    scales: {
-      x: {
-        grid: { drawBorder: false },
-        ticks: { callback: (v) => nf.format(v) },
-      },
-      y: { grid: { display: false } },
-    },
-  };
+  const topCategories = useMemo(() => {
+    const m = new Map();
+    products.forEach((p) => {
+      const key = p?.category || p?.category_name || "Без категории";
+      m.set(key, num(m.get(key)) + 1);
+    });
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  }, [products]);
 
-  const kindTranslate = {
-    new: "Новые",
-    pending: "Ожидающие",
-    completed: "Готовые",
-  };
+  const lowStockList = useMemo(
+    () => [...products].sort((a, b) => num(a?.quantity) - num(b?.quantity)).slice(0, 10),
+    [products]
+  );
 
-  const tabs = [
-    {
-      label: "Аналитика",
-      content: (
-        <>
-          <div className="filterSection">
-            <h3 className="filterTitle">Фильтры для аналитики заказов</h3>
-            <div className="filterControls">
-              <label>
-                С:
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="dateInput"
-                />
-              </label>
-              <label>
-                До:
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="dateInput"
-                />
-              </label>
-              <label>
-                Статус:
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="selectInput"
-                >
-                  <option value="">Все</option>
-                  <option value="new">Новый</option>
-                  <option value="pending">Ожидает подтверждения</option>
-                  <option value="completed">Готов к выдаче</option>
-                </select>
-              </label>
-            </div>
-          </div>
+  // ABC по **стоимости запаса** (если есть cost_price, используем его; иначе price)
+  const abcStats = useMemo(() => {
+    if (!products.length) return { A: 0, B: 0, C: 0, list: [] };
+    const items = products.map((p) => {
+      const value =
+        "cost_price" in p ? num(p.cost_price) * num(p.quantity) : num(p.price) * num(p.quantity);
+      return { id: p.id, name: p.name, value };
+    });
+    items.sort((a, b) => b.value - a.value);
+    const total = items.reduce((s, x) => s + x.value, 0) || 1;
+    let acc = 0;
+    let A = 0,
+      B = 0,
+      C = 0;
+    const tagged = items.map((it) => {
+      acc += it.value;
+      const share = acc / total;
+      let tag = "C";
+      if (share <= 0.8) tag = "A";
+      else if (share <= 0.95) tag = "B";
+      if (tag === "A") A += 1;
+      else if (tag === "B") B += 1;
+      else C += 1;
+      return { ...it, tag };
+    });
+    return { A, B, C, list: tagged.slice(0, 10) };
+  }, [products]);
 
-          <hr className="divider" />
+  /* ====================== TAXONOMY ====================== */
+  const brandStats = useMemo(() => {
+    const m = new Map();
+    products.forEach((p) => {
+      const key = p?.brand || p?.brand_name || "Без бренда";
+      m.set(key, num(m.get(key)) + 1);
+    });
+    const pairs = Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+    return { total: brands.length || pairs.length, top: pairs.slice(0, 10) };
+  }, [products, brands]);
 
-          {loading ? (
-            <p className="loadingMessage">Загрузка данных аналитики...</p>
-          ) : error ? (
-            <p className="errorMessage">
-              Ошибка:{" "}
-              {error.message || "Не удалось загрузить данные аналитики."}
-            </p>
-          ) : !data || !data.summary || !data.orders_by_status ? (
-            <p className="noDataMessage">
-              Данные аналитики не загружены или отсутствуют. Выберите фильтры.
-            </p>
-          ) : (
-            <>
-              <div className="kpiGrid">
-                <div className="kpiCard">
-                  <div className="kpiLabel">Всего заказов</div>
-                  <div className="kpiValue">
-                    {nfInt.format(data.summary.total_orders ?? 0)}
-                  </div>
-                </div>
-                <div className="kpiCard">
-                  <div className="kpiLabel">Общая сумма</div>
-                  <div className="kpiValue">
-                    {nf.format(data.summary.total_amount ?? 0)}
-                  </div>
-                </div>
-                <div className="kpiCard">
-                  <div className="kpiLabel">Средний чек</div>
-                  <div className="kpiValue">
-                    {nf.format(data.summary.average_order_amount ?? 0)}
-                  </div>
-                </div>
-              </div>
+  const categoryStats = useMemo(() => {
+    const m = new Map();
+    products.forEach((p) => {
+      const key = p?.category || p?.category_name || "Без категории";
+      m.set(key, num(m.get(key)) + 1);
+    });
+    const pairs = Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+    return { total: categories.length || pairs.length, top: pairs.slice(0, 10) };
+  }, [products, categories]);
 
-              <div className="chartsGrid chartsGrid--three">
-                <div className="chartCard">
-                  <Bar
-                    data={combinedBarLineData}
-                    options={combinedBarLineOptions}
-                  />
-                </div>
-                <div className="chartCard">
-                  <Doughnut data={doughnutData} options={doughnutOptions} />
-                </div>
-                <div className="chartCard">
-                  <Bar data={avgBarData} options={avgBarOptions} />
-                </div>
-              </div>
-
-              <div className="ordersByStatusCard">
-                <h3 className="cardTitle">Заказы по статусам</h3>
-                {orderStatus.length > 0 ? (
-                  <ul className="statusList">
-                    {orderStatus.map((item) => (
-                      <li
-                        key={item.status}
-                        className="statusItem"
-                        style={{
-                          borderColor: solid(
-                            statusColors[item.status] || "#6366F1"
-                          ),
-                        }}
-                      >
-                        <span className="statusName">
-                          {kindTranslate[item.status] || item.status}:{" "}
-                        </span>
-                        <span className="statusCount">
-                          {nfInt.format(item.order_count ?? 0)} заказов, на
-                          сумму
-                        </span>
-                        <span className="statusAmount">
-                          {nf.format(item.total_amount ?? 0)}
-                        </span>{" "}
-                        <span className="statusAvgAmount">
-                          (средняя: {nf.format(item.average_amount ?? 0)})
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="noDataMessage">
-                    Нет данных по статусам для выбранных фильтров.
-                  </p>
-                )}
-              </div>
-            </>
-          )}
-        </>
-      ),
-    },
-    { label: "Аналитика отделов", content: <DepartmentAnalyticsChart /> },
+  /* ====================== UI ====================== */
+  const TABS = [
+    { key: "sales", label: "Продажи" },
+    { key: "inventory", label: "Склад" },
+    { key: "taxonomy", label: "Бренды/Категории" },
   ];
 
-  const [activeTab, setActiveTab] = useState(0);
-  const languageFunc = () => {
-    if (lan === "ru") return "app-ru";
-    if (lan === "ky") return "app-ky";
-    if (lan === "en") return "app-en";
-    return "app-ru";
-  };
-
   return (
-    <div className={`${languageFunc()} analytics`}>
-      {company?.subscription_plan?.name === "Старт" ? (
-        tabs[0].content
-      ) : (
-        <>
-          <div className="vitrina__header" style={{ marginBottom: 15 }}>
-            <div className="vitrina__tabs">
-              {tabs.map((tab, index) => (
-                <span
-                  key={index}
-                  className={`vitrina__tab ${
-                    index === activeTab ? "vitrina__tab--active" : ""
-                  }`}
-                  onClick={() => setActiveTab(index)}
+    <div className="analytics">
+      <div className="analytics__tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={`analytics__tab ${activeTab === t.key ? "analytics__tab--active" : ""}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ---------------- SALES ---------------- */}
+      {activeTab === "sales" && (
+        <section className="analytics-sales">
+          <div className="analytics-sales__controls">
+            <div className="analytics-sales__presets">
+              <button onClick={() => quickPreset("thisMonth")}>Этот месяц</button>
+              <button onClick={() => quickPreset("lastMonth")}>Прошлый месяц</button>
+              <button onClick={() => quickPreset("ytd")}>Год-к-дате</button>
+              <button onClick={() => quickPreset("thisYear")}>Весь год</button>
+            </div>
+            <div className="analytics-sales__range">
+              <label className="analytics-sales__label">
+                С
+                <input
+                  type="date"
+                  className="analytics-sales__input"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </label>
+              <label className="analytics-sales__label">
+                До
+                <input
+                  type="date"
+                  className="analytics-sales__input"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </label>
+
+              <div className="analytics-sales__segmented">
+                <button
+                  className={granularity === "day" ? "is-active" : ""}
+                  onClick={() => setGranularity("day")}
                 >
-                  {tab.label}
-                </span>
-              ))}
+                  Дни
+                </button>
+                <button
+                  className={granularity === "month" ? "is-active" : ""}
+                  onClick={() => setGranularity("month")}
+                >
+                  Месяцы
+                </button>
+                <button
+                  className={granularity === "year" ? "is-active" : ""}
+                  onClick={() => setGranularity("year")}
+                >
+                  Годы
+                </button>
+              </div>
             </div>
           </div>
-          {tabs[activeTab].content}
-        </>
+
+          <div className="analytics-sales__kpis">
+            <div className="analytics-sales__kpi">
+              <div className="analytics-sales__kpi-label">Число продаж</div>
+              <div className="analytics-sales__kpi-value">
+                {nfInt.format(salesTotals.count)}
+              </div>
+            </div>
+            <div className="analytics-sales__kpi">
+              <div className="analytics-sales__kpi-label">Выручка</div>
+              <div className="analytics-sales__kpi-value">
+                {nfMoney.format(salesTotals.revenue)}
+              </div>
+            </div>
+            <div className="analytics-sales__kpi">
+              <div className="analytics-sales__kpi-label">Средний чек</div>
+              <div className="analytics-sales__kpi-value">
+                {nfMoney.format(salesTotals.avg)}
+              </div>
+            </div>
+          </div>
+
+          <div className="analytics-sales__card">
+            {salesLoading ? (
+              <div className="analytics-sales__note">Загрузка истории продаж…</div>
+            ) : salesError ? (
+              <div className="analytics-sales__error">Ошибка: {String(salesError)}</div>
+            ) : (
+              <>
+                <div className="analytics-sales__card-title">
+                  Динамика выручки ({granularity === "day" ? "дни" : granularity === "month" ? "месяцы" : "годы"})
+                </div>
+                <Sparkline values={salesSeries.values} />
+                <div className="analytics-sales__legend">
+                  {salesSeries.labels.map((l, i) => (
+                    <span className="analytics-sales__legend-item" key={i}>
+                      {l}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="analytics-sales__card">
+            <div className="analytics-sales__card-title">Последние продажи</div>
+            {salesFiltered.length ? (
+              <div className="analytics-sales__table-wrap">
+                <table className="analytics-sales__table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Пользователь</th>
+                      <th>Сумма</th>
+                      <th>Статус</th>
+                      <th>Дата</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salesFiltered.slice(0, 10).map((r, i) => (
+                      <tr key={r?.id ?? i}>
+                        <td>{i + 1}</td>
+                        <td>{r?.user_display || "—"}</td>
+                        <td>{nfMoney.format(num(r?.total))}</td>
+                        <td>{r?.status || "—"}</td>
+                        <td>
+                          {r?.created_at ? new Date(r.created_at).toLocaleString() : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="analytics-sales__note">Нет продаж в выбранном периоде.</div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ---------------- INVENTORY ---------------- */}
+      {activeTab === "inventory" && (
+        <section className="analytics-inventory">
+          <div className="analytics-inventory__kpis">
+            <div className="analytics-inventory__kpi">
+              <div className="analytics-inventory__kpi-label">Всего SKU</div>
+              <div className="analytics-inventory__kpi-value">
+                {nfInt.format(products.length)}
+              </div>
+            </div>
+            <div className="analytics-inventory__kpi">
+              <div className="analytics-inventory__kpi-label">Стоимость склада</div>
+              <div className="analytics-inventory__kpi-value">
+                {inventoryKPIs.stockValueByCost != null
+                  ? nfMoney.format(inventoryKPIs.stockValueByCost)
+                  : nfMoney.format(inventoryKPIs.stockValueByPrice)}
+              </div>
+            </div>
+            <div className="analytics-inventory__kpi">
+              <div className="analytics-inventory__kpi-label">Низкие остатки (≤5)</div>
+              <div className="analytics-inventory__kpi-value">
+                {nfInt.format(inventoryKPIs.lowStock)}
+              </div>
+            </div>
+          </div>
+
+          <div className="analytics-inventory__grid">
+            <div className="analytics-inventory__card">
+              <div className="analytics-inventory__card-title">
+                Топ-10 категорий по кол-ву SKU
+              </div>
+              <ul className="analytics-inventory__bars">
+                {topCategories.length ? (
+                  topCategories.map(([name, count], i) => {
+                    const max = topCategories[0][1] || 1;
+                    const width = clamp(Math.round((count / max) * 100), 5, 100);
+                    return (
+                      <li className="analytics-inventory__bar" key={i}>
+                        <span className="analytics-inventory__bar-name" title={name}>
+                          {name}
+                        </span>
+                        <span className="analytics-inventory__bar-track">
+                          <span
+                            className="analytics-inventory__bar-fill"
+                            style={{ width: `${width}%` }}
+                          />
+                        </span>
+                        <span className="analytics-inventory__bar-value">
+                          {nfInt.format(count)}
+                        </span>
+                      </li>
+                    );
+                  })
+                ) : (
+                  <li className="analytics-inventory__empty">Нет данных</li>
+                )}
+              </ul>
+            </div>
+
+            <div className="analytics-inventory__card">
+              <div className="analytics-inventory__card-title">
+                Топ-10 с минимальными остатками
+              </div>
+              <ul className="analytics-inventory__list">
+                {lowStockList.length ? (
+                  lowStockList.map((p, i) => (
+                    <li className="analytics-inventory__row" key={p?.id ?? i}>
+                      <span className="analytics-inventory__row-name" title={p?.name || "—"}>
+                        {p?.name || "—"}
+                      </span>
+                      <span className="analytics-inventory__row-qty">
+                        Остаток: {nfInt.format(num(p?.quantity))}
+                      </span>
+                    </li>
+                  ))
+                ) : (
+                  <li className="analytics-inventory__empty">Нет данных</li>
+                )}
+              </ul>
+            </div>
+          </div>
+
+          <div className="analytics-inventory__card">
+            <div className="analytics-inventory__card-title">ABC по стоимости запаса</div>
+            <div className="analytics-inventory__abc">
+              <div className="analytics-inventory__abc-badge analytics-inventory__abc-badge--a">
+                A: {nfInt.format(abcStats.A)}
+              </div>
+              <div className="analytics-inventory__abc-badge analytics-inventory__abc-badge--b">
+                B: {nfInt.format(abcStats.B)}
+              </div>
+              <div className="analytics-inventory__abc-badge analytics-inventory__abc-badge--c">
+                C: {nfInt.format(abcStats.C)}
+              </div>
+            </div>
+            <ul className="analytics-inventory__list">
+              {abcStats.list.length ? (
+                abcStats.list.map((it, i) => (
+                  <li className="analytics-inventory__row" key={it.id ?? i}>
+                    <span className="analytics-inventory__row-name" title={it.name}>
+                      {it.name}
+                    </span>
+                    <span className="analytics-inventory__row-qty">
+                      {it.tag} · {nfMoney.format(it.value)}
+                    </span>
+                  </li>
+                ))
+              ) : (
+                <li className="analytics-inventory__empty">Нет данных</li>
+              )}
+            </ul>
+            <p className="analytics-inventory__note">
+              * Если есть <code>cost_price</code>, используется он. Иначе считаем по <code>price</code>.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* ---------------- TAXONOMY ---------------- */}
+      {activeTab === "taxonomy" && (
+        <section className="analytics-taxonomy">
+          <div className="analytics-taxonomy__grid">
+            <div className="analytics-taxonomy__card">
+              <div className="analytics-taxonomy__card-title">
+                Бренды{" "}
+                <span className="analytics-taxonomy__muted">
+                  (всего: {nfInt.format(brandStats.total)})
+                </span>
+              </div>
+              <ul className="analytics-taxonomy__bars">
+                {brandStats.top.length ? (
+                  brandStats.top.map(([name, count], i) => {
+                    const max = brandStats.top[0][1] || 1;
+                    const width = clamp(Math.round((count / max) * 100), 5, 100);
+                    return (
+                      <li className="analytics-taxonomy__bar" key={i}>
+                        <span className="analytics-taxonomy__bar-name" title={name}>
+                          {name}
+                        </span>
+                        <span className="analytics-taxonomy__bar-track">
+                          <span
+                            className="analytics-taxonomy__bar-fill"
+                            style={{ width: `${width}%` }}
+                          />
+                        </span>
+                        <span className="analytics-taxonomy__bar-value">
+                          {nfInt.format(count)}
+                        </span>
+                      </li>
+                    );
+                  })
+                ) : (
+                  <li className="analytics-taxonomy__empty">Нет данных</li>
+                )}
+              </ul>
+            </div>
+
+            <div className="analytics-taxonomy__card">
+              <div className="analytics-taxonomy__card-title">
+                Категории{" "}
+                <span className="analytics-taxonomy__muted">
+                  (всего: {nfInt.format(categoryStats.total)})
+                </span>
+              </div>
+              <ul className="analytics-taxonomy__bars">
+                {categoryStats.top.length ? (
+                  categoryStats.top.map(([name, count], i) => {
+                    const max = categoryStats.top[0][1] || 1;
+                    const width = clamp(Math.round((count / max) * 100), 5, 100);
+                    return (
+                      <li className="analytics-taxonomy__bar" key={i}>
+                        <span className="analytics-taxonomy__bar-name" title={name}>
+                          {name}
+                        </span>
+                        <span className="analytics-taxonomy__bar-track">
+                          <span
+                            className="analytics-taxonomy__bar-fill"
+                            style={{ width: `${width}%` }}
+                          />
+                        </span>
+                        <span className="analytics-taxonomy__bar-value">
+                          {nfInt.format(count)}
+                        </span>
+                      </li>
+                    );
+                  })
+                ) : (
+                  <li className="analytics-taxonomy__empty">Нет данных</li>
+                )}
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* общие подсказки */}
+      {(productsLoading || salesLoading) && (
+        <div className="analytics__loading">Обновляем данные…</div>
       )}
     </div>
   );
 };
 
 export default Analytics;
-
-/*
-SCSS-подсказки для улучшения визуала (добавьте в Analytics.scss):
-
-.analytics {
-  .kpiGrid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-bottom: 16px; }
-  .kpiCard { background: #fff; border: 1px solid #eef0f2; border-radius: 16px; padding: 16px 18px; box-shadow: 0 2px 10px rgba(16,24,40,.04); }
-  .kpiLabel { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-  .kpiValue { font-size: 24px; font-weight: 700; color: #111827; margin-top: 6px; }
-
-  .chartsGrid { display: grid; gap: 16px; &--three { grid-template-columns: 1fr; }
-    @media (min-width: 900px) { &--three { grid-template-columns: 1.4fr 1fr 1fr; } }
-  }
-  .chartCard { background: #fff; border: 1px solid #eef0f2; border-radius: 16px; padding: 12px; min-height: 320px; box-shadow: 0 2px 10px rgba(16,24,40,.04); }
-  .ordersByStatusCard { background: #fff; border: 1px solid #eef0f2; border-radius: 16px; padding: 16px; margin-top: 16px; }
-  .statusList { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .statusItem { border-left: 4px solid #6366F1; padding: 8px 12px; background: #fafafa; border-radius: 10px; }
-  .divider { margin: 16px 0; border: none; border-top: 1px solid #eee; }
-}
-*/
