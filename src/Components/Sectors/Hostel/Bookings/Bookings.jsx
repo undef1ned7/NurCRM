@@ -1,5 +1,5 @@
+// src/components/Bookings/Bookings.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import "./Bookings.scss";
 import {
   FaSearch,
   FaPlus,
@@ -10,44 +10,13 @@ import {
 import api from "../../../../api";
 import {
   getAll as getAllClients,
-  linkBookingToClient,
-  createClient,
+  createClient, // мини-добавление клиента
 } from "../Clients/clientStore";
+import "./Bookings.scss";
 
 /* ===== helpers ===== */
-const asArray = (d) =>
-  Array.isArray(d?.results) ? d.results : Array.isArray(d) ? d : [];
-
-const normalizeBooking = (b) => ({
-  id: b.id,
-  hotel: b.hotel ?? null,
-  room: b.room ?? null,
-  bed: b.bed ?? null, // <— поддержка койко-мест в API
-  qty: Number(b.qty ?? 1) || 1, // <— если бэк хранит количество мест
-  start_time: b.start_time ?? "",
-  end_time: b.end_time ?? "",
-  purpose: b.purpose ?? "",
-  client: b.client ?? null,
-  total: Number(b.total) || 0,
-});
-const normalizeHotel = (h) => ({
-  id: h.id,
-  name: h.name ?? "",
-  price: h.price ?? "",
-  capacity: Number(h.capacity ?? 0),
-});
-const normalizeRoom = (r) => ({
-  id: r.id,
-  name: r.name ?? "",
-  capacity: Number(r.capacity ?? 0),
-});
-const normalizeBed = (b) => ({
-  id: b.id,
-  name: b.name ?? "",
-  price: typeof b.price === "string" ? b.price : String(b.price ?? ""),
-  capacity: Number(b.capacity ?? 0),
-  description: b.description ?? "",
-});
+const asArray = (data) =>
+  Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 
 const toLocalInput = (iso) => (iso ? iso.slice(0, 16) : "");
 const toApiDatetime = (local) =>
@@ -70,7 +39,7 @@ const addDays = (iso, n) => {
   d.setDate(d.getDate() + n);
   return d.toISOString().slice(0, 10);
 };
-const eachDateInclusive = (startISODate, endISODate) => {
+const eachDateExclusiveEnd = (startISODate, endISODate) => {
   const res = [];
   let cur = startISODate;
   while (cur < endISODate) {
@@ -87,16 +56,51 @@ const startOfCalendarGrid = (d) => {
   res.setDate(sDate.getDate() - dow);
   return res;
 };
-
-/* ===== Список: скрываем завершённые (по end_time < today) ===== */
 const todayStart = () => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 };
 
+/* ===== normalizers ===== */
+const normalizeBooking = (b) => ({
+  id: b.id,
+  hotel: b.hotel ?? null,
+  room: b.room ?? null,
+  bed: b.bed ?? null,
+  qty: Number(b.qty ?? 1) || 1,
+  start_time: b.start_time ?? "",
+  end_time: b.end_time ?? "",
+  purpose: b.purpose ?? "",
+  client: b.client ?? null,
+  total: Number(b.total) || 0,
+  status: b.status || "created",
+  __src: "api",
+});
+const normalizeHotel = (h) => ({
+  id: h.id,
+  name: h.name ?? "",
+  price: h.price ?? "",
+  capacity: Number(h.capacity ?? 0),
+  description: h.description ?? "",
+});
+const normalizeRoom = (r) => ({
+  id: r.id,
+  name: r.name ?? "",
+  capacity: Number(r.capacity ?? 0),
+  location: r.location ?? "",
+  price: typeof r.price === "string" ? r.price : String(r.price ?? ""),
+});
+const normalizeBed = (b) => ({
+  id: b.id,
+  name: b.name ?? "",
+  price: typeof b.price === "string" ? b.price : String(b.price ?? ""),
+  capacity: Number(b.capacity ?? 0),
+  description: b.description ?? "",
+});
+
 const Bookings = () => {
-  const [items, setItems] = useState([]); // ВСЕ брони (API): hotel/room/bed
+  const [items, setItems] = useState([]); // все брони (только API)
   const [hotels, setHotels] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [beds, setBeds] = useState([]);
@@ -104,6 +108,8 @@ const Bookings = () => {
   // клиенты
   const [clients, setClients] = useState([]);
   const [clientQuery, setClientQuery] = useState("");
+
+  // мини-добавление клиента
   const [showClientAdd, setShowClientAdd] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
@@ -116,6 +122,7 @@ const Bookings = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // главный селект типа
   const OBJECT_TYPES = { HOTEL: "hotel", ROOM: "room", BED: "bed" };
   const [objectType, setObjectType] = useState(OBJECT_TYPES.HOTEL);
 
@@ -127,7 +134,7 @@ const Bookings = () => {
     start_time: "",
     end_time: "",
     purpose: "",
-    client: null,
+    client: null, // ОБЯЗАТЕЛЬНО
   });
 
   /* ===== load ===== */
@@ -143,11 +150,15 @@ const Bookings = () => {
         api.get("/booking/beds/"),
       ]);
 
-      const apiBookings = asArray(bRes.data).map(normalizeBooking);
+      const apiBookings = asArray(bRes.data).map((x) => normalizeBooking(x));
+      const hotelsArr = asArray(hRes.data).map(normalizeHotel);
+      const roomsArr = asArray(rRes.data).map(normalizeRoom);
+      const bedsArr = asArray(bedsRes.data).map(normalizeBed);
+
       setItems(apiBookings);
-      setHotels(asArray(hRes.data).map(normalizeHotel));
-      setRooms(asArray(rRes.data).map(normalizeRoom));
-      setBeds(asArray(bedsRes.data).map(normalizeBed));
+      setHotels(hotelsArr);
+      setRooms(roomsArr);
+      setBeds(bedsArr);
     } catch (e) {
       console.error(e);
       setError("Не удалось загрузить данные по броням");
@@ -158,11 +169,8 @@ const Bookings = () => {
 
   const refreshClients = async () => {
     try {
-      const raw = await Promise.resolve(
-        typeof getAllClients === "function" ? getAllClients() : []
-      );
-      const list = Array.isArray(raw) ? raw : [];
-      const sorted = [...list].sort((a, b) => {
+      const list = await getAllClients();
+      const sorted = [...(Array.isArray(list) ? list : [])].sort((a, b) => {
         const da = new Date(a.updated_at || 0).getTime();
         const db = new Date(b.updated_at || 0).getTime();
         if (db !== da) return db - da;
@@ -189,16 +197,12 @@ const Bookings = () => {
   const bedName = (id) =>
     beds.find((b) => String(b.id) === String(id))?.name || "—";
 
-  const hotelPriceById = (id) => {
-    const p = hotels.find((h) => String(h.id) === String(id))?.price;
-    const n = Number(p);
-    return Number.isFinite(n) ? n : 0;
-  };
-  const bedPriceById = (id) => {
-    const p = beds.find((b) => String(b.id) === String(id))?.price;
-    const n = Number(p);
-    return Number.isFinite(n) ? n : 0;
-  };
+  const hotelPriceById = (id) =>
+    Number(hotels.find((h) => String(h.id) === String(id))?.price) || 0;
+  const roomPriceById = (id) =>
+    Number(rooms.find((r) => String(r.id) === String(id))?.price) || 0;
+  const bedPriceById = (id) =>
+    Number(beds.find((b) => String(b.id) === String(id))?.price) || 0;
   const bedCapacityById = (id) =>
     Number(beds.find((b) => String(b.id) === String(id))?.capacity || 0);
 
@@ -271,7 +275,7 @@ const Bookings = () => {
   const relevantItems = useMemo(() => {
     if (!form.hotel && !form.room && !form.bed) return [];
     return items
-      .filter((b) => !(b.id === editingId))
+      .filter((b) => b.id !== editingId)
       .filter(
         (b) =>
           (form.hotel && b.hotel === form.hotel) ||
@@ -280,7 +284,6 @@ const Bookings = () => {
       );
   }, [items, form.hotel, form.room, form.bed, editingId]);
 
-  // для койки суммируем qty, для остальных — по 1
   const occupancyMap = useMemo(() => {
     const map = new Map(); // YYYY-MM-DD -> count (или суммарное qty)
     relevantItems.forEach((b) => {
@@ -288,7 +291,7 @@ const Bookings = () => {
       const e = (b.end_time || "").slice(0, 10);
       if (!s || !e) return;
       const inc = b.bed ? Number(b.qty ?? 1) || 1 : 1;
-      eachDateInclusive(s, e).forEach((d) => {
+      eachDateExclusiveEnd(s, e).forEach((d) => {
         map.set(d, (map.get(d) || 0) + inc);
       });
     });
@@ -300,7 +303,7 @@ const Bookings = () => {
     const sDate = (form.start_time || "").slice(0, 10);
     const eDate = (form.end_time || "").slice(0, 10);
     if (!sDate || !eDate) return [];
-    return eachDateInclusive(sDate, eDate);
+    return eachDateExclusiveEnd(sDate, eDate);
   }, [form.start_time, form.end_time]);
 
   const bedMinAvailable = useMemo(() => {
@@ -347,7 +350,7 @@ const Bookings = () => {
     return 1;
   }, [form.bed, beds]);
 
-  /* ===== CRUD ===== */
+  /* ===== CRUD: delete (API) ===== */
   const destroyApiBooking = async (id) => {
     await api.delete(`/booking/bookings/${id}/`);
   };
@@ -357,6 +360,12 @@ const Bookings = () => {
     try {
       await destroyApiBooking(id);
       setItems((prev) => prev.filter((x) => x.id !== id));
+      // уведомим Клиентов
+      try {
+        window.dispatchEvent(
+          new CustomEvent("clients:booking-deleted", { detail: { id } })
+        );
+      } catch {}
     } catch (e) {
       console.error(e);
       setError("Не удалось удалить бронь");
@@ -364,24 +373,6 @@ const Bookings = () => {
   };
 
   /* ===== submit ===== */
-  const toClientBookingRef = (raw, totalOverride = null) => ({
-    id: raw.id,
-    number: null,
-    status: raw.status || "created",
-    from: (raw.start_time || "").slice(0, 10),
-    to: (raw.end_time || "").slice(0, 10),
-    total: Number(totalOverride ?? raw.total) || 0,
-    created_at: raw.created_at || new Date().toISOString(),
-    hotel: raw.hotel || null,
-    room: raw.room || (raw.bed ? raw.bed : null),
-    hotel_name: raw.hotel ? hotelName(raw.hotel) : "",
-    room_name: raw.room
-      ? roomName(raw.room)
-      : raw.bed
-      ? `Койко-место: ${bedName(raw.bed)}${raw.qty ? ` × ${raw.qty}` : ""}`
-      : "",
-  });
-
   const invalidRange = useMemo(() => {
     if (!form.start_time || !form.end_time) return false;
     return new Date(form.end_time) < new Date(form.start_time);
@@ -410,6 +401,10 @@ const Bookings = () => {
       setError("Дата окончания не может быть раньше даты начала");
       return;
     }
+    if (!form.client) {
+      setError("Выберите клиента");
+      return;
+    }
     if (hasConflict) {
       setError(
         "Выбранные даты заняты или недостаточно мест. Измените диапазон/количество."
@@ -421,7 +416,7 @@ const Bookings = () => {
       start_time: toApiDatetime(form.start_time),
       end_time: toApiDatetime(form.end_time),
       purpose: (form.purpose || "").trim(),
-      ...(form.client ? { client: form.client } : {}),
+      client: form.client,
     };
     const nights = countNights(
       payloadCommon.start_time,
@@ -436,50 +431,46 @@ const Bookings = () => {
         hotel: objectType === OBJECT_TYPES.HOTEL ? form.hotel : null,
         room: objectType === OBJECT_TYPES.ROOM ? form.room : null,
         bed: objectType === OBJECT_TYPES.BED ? form.bed : null,
-        ...(objectType === OBJECT_TYPES.BED
-          ? { qty: Math.max(1, Number(form.qty || 1)) }
-          : {}),
+        qty:
+          objectType === OBJECT_TYPES.BED
+            ? Math.max(1, Number(form.qty || 1))
+            : 1,
         ...payloadCommon,
       };
 
-      // локальный расчёт суммы (для отображения/линковки к клиенту)
       const pricePerNight = payloadApi.hotel
         ? hotelPriceById(payloadApi.hotel)
+        : payloadApi.room
+        ? roomPriceById(payloadApi.room)
         : payloadApi.bed
         ? bedPriceById(payloadApi.bed)
         : 0;
-      const totalLocal = nights * pricePerNight * (payloadApi.qty || 1);
 
+      const totalLocal =
+        nights * pricePerNight * (payloadApi.bed ? payloadApi.qty : 1);
+
+      let saved;
       if (editingId == null) {
-        // CREATE
         const { data } = await api.post("/booking/bookings/", payloadApi);
-        const saved = normalizeBooking(data);
+        saved = normalizeBooking({ ...data, total: data.total || totalLocal });
         setItems((prev) => [saved, ...prev]);
-
-        try {
-          const ref = toClientBookingRef(
-            { ...data, ...payloadApi },
-            totalLocal || data.total
-          );
-          linkBookingToClient?.(form.client || null, ref);
-        } catch {}
       } else {
-        // UPDATE
         const { data } = await api.put(
           `/booking/bookings/${editingId}/`,
           payloadApi
         );
-        const saved = normalizeBooking(data);
+        saved = normalizeBooking({ ...data, total: data.total || totalLocal });
         setItems((prev) => prev.map((x) => (x.id === editingId ? saved : x)));
-
-        try {
-          const ref = toClientBookingRef(
-            { ...data, ...payloadApi, id: editingId },
-            totalLocal || data.total
-          );
-          linkBookingToClient?.(form.client || null, ref);
-        } catch {}
       }
+
+      // <<< ВАЖНО: оповещаем страницу Клиентов о сохранённой броне
+      try {
+        window.dispatchEvent(
+          new CustomEvent("clients:booking-saved", {
+            detail: { booking: saved },
+          })
+        );
+      } catch {}
 
       setModalOpen(false);
       setEditingId(null);
@@ -501,8 +492,9 @@ const Bookings = () => {
     }
   };
 
-  /* ===== list ===== */
+  /* ===== список ===== */
   const filtered = useMemo(() => {
+    // скрыть завершённые (end_time < сегодня 00:00)
     const now0 = todayStart().getTime();
     const activeOnly = items.filter((b) => {
       const endT = b.end_time ? new Date(b.end_time).getTime() : 0;
@@ -536,19 +528,26 @@ const Bookings = () => {
   );
 
   /* ===== мини-добавление клиента ===== */
-  const onCreateClientInline = () => {
+  const onCreateClientInline = async () => {
     const name = (newClientName || "").trim();
     const phone = (newClientPhone || "").trim();
     if (!name) {
       alert("Введите имя клиента");
       return;
     }
-    const created = createClient({ full_name: name, phone });
-    refreshClients();
-    setForm((f) => ({ ...f, client: created.id }));
-    setShowClientAdd(false);
-    setNewClientName("");
-    setNewClientPhone("");
+    try {
+      // createClient понимает {name, phone} и {full_name, phone}
+      const created = await createClient({ name, phone });
+      await refreshClients();
+      setForm((f) => ({ ...f, client: created.id }));
+      setShowClientAdd(false);
+      setNewClientName("");
+      setNewClientPhone("");
+      // дополнительно можно подсветить созданного — достаточно выбранного состояния
+    } catch (e) {
+      console.error(e);
+      alert("Не удалось создать клиента");
+    }
   };
 
   return (
@@ -556,10 +555,6 @@ const Bookings = () => {
       <header className="bookings__header">
         <div>
           <h2 className="bookings__title">Бронирования</h2>
-          <p className="bookings__subtitle">
-            Выберите тип объекта, даты и назначение. Для койко-мест можно
-            бронировать несколько мест.
-          </p>
         </div>
 
         <div className="bookings__actions">
@@ -591,11 +586,15 @@ const Bookings = () => {
             const nights = countNights(b.start_time, b.end_time);
             const price = b.hotel
               ? hotelPriceById(b.hotel)
+              : b.room
+              ? roomPriceById(b.room)
               : b.bed
               ? bedPriceById(b.bed)
               : 0;
             const qty = Number(b.qty ?? 1) || 1;
-            const totalShow = Number(b.total) || nights * price * qty || 0;
+            const totalShow =
+              Number(b.total) || nights * price * (b.bed ? qty : 1) || 0;
+
             const label = b.hotel
               ? `Гостиница: ${hotelName(b.hotel)}`
               : b.room
@@ -619,11 +618,9 @@ const Bookings = () => {
                     {b.bed && (
                       <span className="bookings__badge">Мест: {qty}</span>
                     )}
-                    {(b.hotel || b.bed) && (
-                      <span className="bookings__badge">
-                        Сумма: {fmtMoney(totalShow)}
-                      </span>
-                    )}
+                    <span className="bookings__badge">
+                      Сумма: {fmtMoney(totalShow)}
+                    </span>
                   </div>
                 </div>
 
@@ -677,7 +674,7 @@ const Bookings = () => {
 
             <form className="bookings__form" onSubmit={onSubmit}>
               <div className="bookings__formGrid">
-                {/* Тип объекта */}
+                {/* ==== Тип объекта ==== */}
                 <div className="bookings__field">
                   <label className="bookings__label">
                     Тип объекта <span className="bookings__req">*</span>
@@ -706,7 +703,7 @@ const Bookings = () => {
                   </select>
                 </div>
 
-                {/* Комната */}
+                {/* ==== Комната ==== */}
                 {objectType === OBJECT_TYPES.HOTEL && (
                   <div className="bookings__field">
                     <label className="bookings__label">Комната</label>
@@ -744,7 +741,7 @@ const Bookings = () => {
                   </div>
                 )}
 
-                {/* Зал */}
+                {/* ==== Зал ==== */}
                 {objectType === OBJECT_TYPES.ROOM && (
                   <div className="bookings__field">
                     <label className="bookings__label">Зал</label>
@@ -780,7 +777,7 @@ const Bookings = () => {
                   </div>
                 )}
 
-                {/* Койко-место */}
+                {/* ==== Койко-место ==== */}
                 {objectType === OBJECT_TYPES.BED && (
                   <>
                     <div className="bookings__field">
@@ -856,7 +853,7 @@ const Bookings = () => {
                   </>
                 )}
 
-                {/* Период */}
+                {/* ==== Период ==== */}
                 <div className="bookings__field bookings__field--range">
                   <label className="bookings__label">
                     Период <span className="bookings__req">*</span>
@@ -904,7 +901,7 @@ const Bookings = () => {
                   )}
                 </div>
 
-                {/* Назначение */}
+                {/* ==== Назначение ==== */}
                 <div
                   className="bookings__field"
                   style={{ gridColumn: "1 / -1" }}
@@ -923,25 +920,14 @@ const Bookings = () => {
                   />
                 </div>
 
-                {/* Календарь занятости */}
-                {(form.hotel || form.room || form.bed) && (
-                  <div
-                    className="bookings__calendarWrap"
-                    style={{ gridColumn: "1 / -1" }}
-                  >
-                    <AvailabilityCalendar
-                      occupancyMap={occupancyMap}
-                      fullThreshold={calFullThreshold}
-                    />
-                  </div>
-                )}
-
-                {/* Клиент + добавление клиента */}
+                {/* ==== Клиент ==== */}
                 <div
                   className="bookings__field"
                   style={{ gridColumn: "1 / -1" }}
                 >
-                  <label className="bookings__label">Клиент</label>
+                  <label className="bookings__label">
+                    Клиент <span className="bookings__req">*</span>
+                  </label>
                   <div className="bookings__clientPicker">
                     <div className="bookings__row">
                       <input
@@ -1048,6 +1034,18 @@ const Bookings = () => {
                     )}
                   </div>
                 </div>
+
+                {(form.hotel || form.room || form.bed) && (
+                  <div
+                    className="bookings__calendarWrap"
+                    style={{ gridColumn: "1 / -1" }}
+                  >
+                    <AvailabilityCalendar
+                      occupancyMap={occupancyMap}
+                      fullThreshold={calFullThreshold}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="bookings__formHint">
@@ -1086,7 +1084,7 @@ const Bookings = () => {
   );
 };
 
-/* ===== Календарь занятости ===== */
+/* ===== Календарь ===== */
 const AvailabilityCalendar = ({ occupancyMap, fullThreshold = 1 }) => {
   const [month, setMonth] = useState(() => new Date());
 
@@ -1107,11 +1105,7 @@ const AvailabilityCalendar = ({ occupancyMap, fullThreshold = 1 }) => {
   );
 
   const ymd = (d) => d.toISOString().slice(0, 10);
-  const isFull = (date) => {
-    const ds = ymd(date);
-    const count = occupancyMap.get(ds) || 0;
-    return count >= fullThreshold;
-  };
+  const isFull = (date) => (occupancyMap.get(ymd(date)) || 0) >= fullThreshold;
   const isToday = (d) => ymd(d) === ymd(new Date());
   const inMonth = (d) => d.getMonth() === month.getMonth();
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import "./Analytics.scss";
 import api from "../../../../api";
+import "./Analytics.scss";
 
 /* ===== LOCAL ARCHIVE (чтобы брони не стирались из аналитики) ===== */
 const BOOK_ARCHIVE_KEY = "nurcrm_bookings_archive_v1";
@@ -24,7 +24,7 @@ const mergeArchive = (oldList, incomingList) => {
   incomingList.forEach((b) => {
     const key = String(b.id);
     const prev = map.get(key) || {};
-    map.set(key, { ...prev, ...b }); // обновим полями из API
+    map.set(key, { ...prev, ...b });
   });
   return Array.from(map.values());
 };
@@ -92,7 +92,6 @@ const normalizeIncome = (x) => ({
   amount: num(x.total ?? x.amount ?? x.sum ?? 0),
   status: x.status || x.state || "",
 });
-
 const normalizeHotel = (h) => ({
   id: h.id,
   name: h.name || h.title || "—",
@@ -114,18 +113,18 @@ const normalizeBooking = (b) => ({
   id: b.id || b.uuid || String(Math.random()),
   hotel: b.hotel ?? null,
   room: b.room ?? null,
-  bed: b.bed ?? null, // для койко-мест
+  bed: b.bed ?? null,
   qty: Number(b.qty ?? 1) || 1,
   start_time: b.start_time || b.start || b.checkin || "",
   end_time: b.end_time || b.end || b.checkout || "",
   amount: num(
     b.amount ?? b.total ?? b.total_price ?? b.price ?? b.sum ?? b.value ?? 0
   ),
-  __src: b.__src || "api", // "api" | "arch"
+  __src: b.__src || "api",
 });
 
-/* ===== sale details modal ===== */
-function SaleModal({ id, onClose }) {
+/* ===== sale details modal (отдельный BEM-блок: analytics-modal) ===== */
+const SaleModal = ({ id, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [sale, setSale] = useState(null);
@@ -177,79 +176,82 @@ function SaleModal({ id, onClose }) {
   }, [id]);
 
   return (
-    <div className="modalOverlay" onClick={onClose}>
+    <div className="analytics-modal__overlay" onClick={onClose}>
       <div
-        className="modal"
+        className="analytics-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        <div className="modalHeader">
-          <div className="modalTitle">Продажа #{(id || "").slice(0, 8)}…</div>
-          <button className="iconBtn" onClick={onClose} aria-label="Закрыть">
+        <div className="analytics-modal__header">
+          <div className="analytics-modal__title">
+            Продажа #{(id || "").slice(0, 8)}…
+          </div>
+          <button
+            className="analytics-modal__icon-btn"
+            onClick={onClose}
+            aria-label="Закрыть"
+          >
             ×
           </button>
         </div>
 
-        <div className="modalBody">
+        <div className="analytics-modal__body">
           {loading ? (
-            <div className="card">Загрузка…</div>
+            <div className="analytics__card">Загрузка…</div>
           ) : err ? (
-            <div
-              className="card"
-              style={{
-                color: "#b91c1c",
-                background: "#fef2f2",
-                borderColor: "#fee2e2",
-              }}
-            >
-              {err}
-            </div>
+            <div className="analytics__card analytics__card--error">{err}</div>
           ) : sale ? (
             <>
-              <div className="list scrollSectionY">
-                <div className="card">
-                  <div className="name">Создано</div>
-                  <div className="price">
+              <div className="analytics__list analytics__scroll-y">
+                <div className="analytics__card">
+                  <div className="analytics__name">Создано</div>
+                  <div className="analytics__price">
                     {sale.createdAt
                       ? new Date(sale.createdAt).toLocaleString()
                       : "—"}
                   </div>
                 </div>
-                <div className="card">
-                  <div className="name">Итого</div>
-                  <div className="price">{fmtMoney(sale.total)}</div>
+                <div className="analytics__card">
+                  <div className="analytics__name">Итого</div>
+                  <div className="analytics__price">{fmtMoney(sale.total)}</div>
                 </div>
               </div>
 
-              <div className="tableWrap">
-                <div className="tableScroll scrollBoth">
-                  <div className="table table3 tableMin">
-                    <div className="thead sticky">
-                      <div className="cell">Товар</div>
-                      <div className="cell">Штрих-код</div>
-                      <div className="cell cellRight">Сумма</div>
+              <div className="analytics__table-wrap">
+                <div className="analytics__table-scroll analytics__scroll-both">
+                  <div className="analytics__table analytics__table--3col analytics__table--min">
+                    <div className="analytics__thead analytics__sticky">
+                      <div className="analytics__cell">Товар</div>
+                      <div className="analytics__cell">Штрих-код</div>
+                      <div className="analytics__cell analytics__cell--right">
+                        Сумма
+                      </div>
                     </div>
-                    <div className="tbody">
+                    <div className="analytics__tbody">
                       {sale.items.length ? (
                         sale.items.map((it) => (
-                          <div key={it.id} className="row">
-                            <div className="cell">
-                              <div className="name">{it.name}</div>
-                              <div className="meta">
-                                <span className="badge">
+                          <div key={it.id} className="analytics__row">
+                            <div className="analytics__cell">
+                              <div className="analytics__name">{it.name}</div>
+                              <div className="analytics__meta">
+                                <span className="analytics__badge">
                                   {it.qty} × {fmtMoney(it.unit_price)}
                                 </span>
                               </div>
                             </div>
-                            <div className="cell">{it.barcode || "—"}</div>
-                            <div className="cell cellRight">
+                            <div className="analytics__cell">
+                              {it.barcode || "—"}
+                            </div>
+                            <div className="analytics__cell analytics__cell--right">
                               {fmtMoney(it.line_total)}
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="empty">Позиции отсутствуют</div>
+                        <div className="analytics__empty">
+                          Позиции отсутствуют
+                        </div>
                       )}
                     </div>
                   </div>
@@ -259,27 +261,32 @@ function SaleModal({ id, onClose }) {
           ) : null}
         </div>
 
-        <div className="modalFooter">
-          <button className="btn btnSecondary" onClick={() => load()}>
+        <div className="analytics-modal__footer">
+          <button
+            className="analytics__btn analytics__btn--secondary"
+            onClick={load}
+          >
             Обновить
           </button>
-          <button className="btn btnPrimary" onClick={onClose}>
+          <button
+            className="analytics__btn analytics__btn--primary"
+            onClick={onClose}
+          >
             Закрыть
           </button>
         </div>
       </div>
     </div>
   );
-}
+};
 
 /* ===== main ===== */
-export default function Analytics() {
+const Analytics = () => {
   const [tab, setTab] = useState("sales"); // 'sales' | 'bookings'
   const [status, setStatus] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  // быстрые периоды
   const setRange = (days) => {
     const end = new Date();
     const start = new Date();
@@ -311,7 +318,7 @@ export default function Analytics() {
   const arrow = (key) =>
     sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
 
-  async function loadSales() {
+  const loadSales = async () => {
     try {
       setLoadingSales(true);
       setSalesErr("");
@@ -337,7 +344,7 @@ export default function Analytics() {
     } finally {
       setLoadingSales(false);
     }
-  }
+  };
   useEffect(() => {
     loadSales();
   }, []);
@@ -380,13 +387,13 @@ export default function Analytics() {
     download("sales.csv", csv);
   };
 
-  /* ===== BOOKINGS (теперь только API + вечный архив) ===== */
+  /* ===== BOOKINGS (API + вечный архив) ===== */
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [bookErr, setBookErr] = useState("");
   const [bookings, setBookings] = useState([]);
   const [hotels, setHotels] = useState([]);
   const [rooms, setRooms] = useState([]);
-  const [beds, setBeds] = useState([]); // из API
+  const [beds, setBeds] = useState([]);
 
   const hotelById = useMemo(
     () => Object.fromEntries(hotels.map((h) => [String(h.id), h])),
@@ -423,7 +430,6 @@ export default function Analytics() {
     try {
       setLoadingBookings(true);
       setBookErr("");
-
       const [bRes, hRes, rRes, bedsRes] = await Promise.all([
         api.get("/booking/bookings/"),
         api.get("/booking/hotels/"),
@@ -436,11 +442,9 @@ export default function Analytics() {
       const roomsArr = asArray(rRes.data).map(normalizeRoom);
       const bedsArr = asArray(bedsRes.data).map(normalizeBed);
 
-      // 1) обновляем архив
       const oldArchive = loadArchive();
       const newArchive = mergeArchive(oldArchive, apiBookings);
 
-      // 2) пометим источник: то, что пришло сейчас — "api", остальное — "arch"
       const currentIds = new Set(apiBookings.map((b) => String(b.id)));
       const archiveWithSrc = newArchive.map((b) => ({
         ...b,
@@ -449,7 +453,6 @@ export default function Analytics() {
 
       saveArchive(archiveWithSrc);
 
-      // 3) показываем именно архив (ничего не «исчезает» после удаления на бэке)
       setBookings(archiveWithSrc);
       setHotels(hotelsArr);
       setRooms(roomsArr);
@@ -465,7 +468,6 @@ export default function Analytics() {
     loadBookings();
   }, []);
 
-  // фильтр только по периоду
   const bookingsFiltered = useMemo(
     () => bookings.filter((b) => inRange(b.start_time, from, to)),
     [bookings, from, to]
@@ -510,17 +512,17 @@ export default function Analytics() {
   };
 
   return (
-    <section className="services">
+    <section className="analytics">
       {/* Header */}
-      <header className="header">
+      <header className="analytics__header">
         <div>
-          <h2 className="title">Аналитика</h2>
-          <p className="subtitle">Компактные списки с прокруткой</p>
+          <h2 className="analytics__title">Аналитика</h2>
+          <p className="analytics__subtitle">Компактные списки с прокруткой</p>
         </div>
 
-        <div className="actions scrollX">
+        <div className="analytics__actions analytics__scroll-x">
           <select
-            className="input"
+            className="analytics__input"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             title="Статус чеков"
@@ -534,7 +536,7 @@ export default function Analytics() {
 
           <input
             type="date"
-            className="input"
+            className="analytics__input"
             value={from}
             max={to || undefined}
             onChange={(e) => setFrom(e.target.value)}
@@ -543,7 +545,7 @@ export default function Analytics() {
           />
           <input
             type="date"
-            className="input"
+            className="analytics__input"
             value={to}
             min={from || undefined}
             onChange={(e) => setTo(e.target.value)}
@@ -552,35 +554,37 @@ export default function Analytics() {
           />
 
           <div
-            className="chips chipsScroll"
+            className="analytics__chips"
             role="group"
             aria-label="Быстрые периоды"
           >
             <button
-              className={`chip ${!from && !to ? "chipActive" : ""}`}
+              className={`analytics__chip ${
+                !from && !to ? "analytics__chip--active" : ""
+              }`}
               onClick={clearRange}
             >
               Все
             </button>
-            <button className="chip" onClick={() => setRange(1)}>
+            <button className="analytics__chip" onClick={() => setRange(1)}>
               Сегодня
             </button>
-            <button className="chip" onClick={() => setRange(7)}>
+            <button className="analytics__chip" onClick={() => setRange(7)}>
               7 дней
             </button>
-            <button className="chip" onClick={() => setRange(30)}>
+            <button className="analytics__chip" onClick={() => setRange(30)}>
               30 дней
             </button>
           </div>
 
           <button
-            className="btn btnSecondary"
+            className="analytics__btn analytics__btn--secondary"
             onClick={() => (tab === "sales" ? loadSales() : loadBookings())}
           >
             Обновить
           </button>
           <button
-            className="btn btnPrimary"
+            className="analytics__btn analytics__btn--primary"
             onClick={() => (tab === "sales" ? exportSales() : exportBookings())}
           >
             Экспорт CSV
@@ -589,15 +593,19 @@ export default function Analytics() {
       </header>
 
       {/* Tabs */}
-      <div className="tabs scrollX">
+      <div className="analytics__tabs analytics__scroll-x">
         <button
-          className={`tab ${tab === "sales" ? "tabActive" : ""}`}
+          className={`analytics__tab ${
+            tab === "sales" ? "analytics__tab--active" : ""
+          }`}
           onClick={() => setTab("sales")}
         >
           Продажи
         </button>
         <button
-          className={`tab ${tab === "bookings" ? "tabActive" : ""}`}
+          className={`analytics__tab ${
+            tab === "bookings" ? "analytics__tab--active" : ""
+          }`}
           onClick={() => setTab("bookings")}
         >
           Брони
@@ -606,45 +614,49 @@ export default function Analytics() {
 
       {/* BODY */}
       {tab === "sales" ? (
-        <div className="body">
-          {/* KPI — компакт */}
-          <div className="kpis">
-            <div className="kpi">
-              <div className="kpiLabel">Приход</div>
-              <div className="kpiValue">{fmtMoney(salesTotals.sum)}</div>
+        <div className="analytics__body">
+          {/* KPI */}
+          <div className="analytics__kpis">
+            <div className="analytics__kpi">
+              <div className="analytics__kpi-label">Приход</div>
+              <div className="analytics__kpi-value">
+                {fmtMoney(salesTotals.sum)}
+              </div>
             </div>
-            <div className="kpi">
-              <div className="kpiLabel">Средний чек</div>
-              <div className="kpiValue">{fmtMoney(salesTotals.avg)}</div>
+            <div className="analytics__kpi">
+              <div className="analytics__kpi-label">Средний чек</div>
+              <div className="analytics__kpi-value">
+                {fmtMoney(salesTotals.avg)}
+              </div>
             </div>
           </div>
 
           {/* Таблица чеков */}
-          <div className="tableWrap">
-            <div className="tableScroll scrollBoth">
-              <div className="table table2 tableMinNarrow">
-                <div className="thead sticky">
+          <div className="analytics__table-wrap">
+            <div className="analytics__table-scroll analytics__scroll-both">
+              <div className="analytics__table analytics__table--2col analytics__table--min-narrow">
+                <div className="analytics__thead analytics__sticky">
                   <button
-                    className="cell hCell"
+                    className="analytics__cell analytics__hcell"
                     onClick={() => toggleSort("date")}
                   >
                     Дата{arrow("date")}
                   </button>
                   <button
-                    className="cell hCell cellRight"
+                    className="analytics__cell analytics__hcell analytics__cell--right"
                     onClick={() => toggleSort("amount")}
                   >
                     Сумма{arrow("amount")}
                   </button>
                 </div>
-                <div className="tbody">
+                <div className="analytics__tbody">
                   {loadingSales ? (
-                    <div className="empty">Загрузка…</div>
+                    <div className="analytics__empty">Загрузка…</div>
                   ) : incomesSorted.length ? (
                     incomesSorted.map((r) => (
                       <div
                         key={r.id}
-                        className="row"
+                        className="analytics__row"
                         role="button"
                         tabIndex={0}
                         title="Открыть детали чека"
@@ -653,14 +665,16 @@ export default function Analytics() {
                           e.key === "Enter" ? setOpenId(r.id) : null
                         }
                       >
-                        <div className="cell">{fmtDateTime(r.created_at)}</div>
-                        <div className="cell cellRight">
+                        <div className="analytics__cell">
+                          {fmtDateTime(r.created_at)}
+                        </div>
+                        <div className="analytics__cell analytics__cell--right">
                           {fmtMoney(r.amount)}
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="empty">Нет данных</div>
+                    <div className="analytics__empty">Нет данных</div>
                   )}
                 </div>
               </div>
@@ -668,56 +682,55 @@ export default function Analytics() {
           </div>
 
           {salesErr && (
-            <div
-              className="card"
-              style={{
-                color: "#b91c1c",
-                background: "#fef2f2",
-                borderColor: "#fee2e2",
-              }}
-            >
+            <div className="analytics__card analytics__card--error">
               {salesErr}
             </div>
           )}
           {openId && <SaleModal id={openId} onClose={() => setOpenId(null)} />}
         </div>
       ) : (
-        <div className="body">
-          {/* KPI — компакт */}
-          <div className="kpis">
-            <div className="kpi">
-              <div className="kpiLabel">Приходов (заезды)</div>
-              <div className="kpiValue">{bookingsTotals.count}</div>
+        <div className="analytics__body">
+          {/* KPI */}
+          <div className="analytics__kpis analytics__kpis--3">
+            <div className="analytics__kpi">
+              <div className="analytics__kpi-label">Приходов (заезды)</div>
+              <div className="analytics__kpi-value">{bookingsTotals.count}</div>
             </div>
-            <div className="kpi">
-              <div className="kpiLabel">Сумма по заездам</div>
-              <div className="kpiValue">{fmtMoney(bookingsTotals.sum)}</div>
+            <div className="analytics__kpi">
+              <div className="analytics__kpi-label">Сумма по заездам</div>
+              <div className="analytics__kpi-value">
+                {fmtMoney(bookingsTotals.sum)}
+              </div>
             </div>
-            <div className="kpi">
-              <div className="kpiLabel">Средний приход</div>
-              <div className="kpiValue">{fmtMoney(bookingsTotals.avg)}</div>
+            <div className="analytics__kpi">
+              <div className="analytics__kpi-label">Средний приход</div>
+              <div className="analytics__kpi-value">
+                {fmtMoney(bookingsTotals.avg)}
+              </div>
             </div>
           </div>
 
           {/* Таблица брони */}
-          <div className="tableWrap">
-            <div className="tableScroll scrollBoth">
-              <div className="table table4 tableMinWide">
-                <div className="thead sticky">
-                  <div className="cell">Объект</div>
-                  <div className="cell">Период</div>
-                  <div className="cell">Ночей</div>
-                  <div className="cell cellRight">Сумма</div>
+          <div className="analytics__table-wrap">
+            <div className="analytics__table-scroll analytics__scroll-both">
+              <div className="analytics__table analytics__table--4col analytics__table--min-wide">
+                <div className="analytics__thead analytics__sticky">
+                  <div className="analytics__cell">Объект</div>
+                  <div className="analytics__cell">Период</div>
+                  <div className="analytics__cell">Ночей</div>
+                  <div className="analytics__cell analytics__cell--right">
+                    Сумма
+                  </div>
                 </div>
-                <div className="tbody">
+                <div className="analytics__tbody">
                   {loadingBookings ? (
-                    <div className="empty">Загрузка…</div>
+                    <div className="analytics__empty">Загрузка…</div>
                   ) : bookingsWithAmount.length ? (
                     bookingsWithAmount.map((b) => {
                       const label = b.bed
-                        ? `Койко-место: ${bedName(b.bed)}${
-                            b.qty ? ` × ${b.qty}` : ""
-                          }`
+                        ? `Койко-место: ${
+                            b.bed ? b.bed && (b.bed.name || "") : ""
+                          }${b.qty ? ` × ${b.qty}` : ""}`
                         : b.hotel
                         ? `Гостиница: ${hotelName(b.hotel)}`
                         : `Зал: ${roomName(b.room)}`;
@@ -725,29 +738,29 @@ export default function Analytics() {
                       return (
                         <div
                           key={`${b.id}`}
-                          className="row"
+                          className="analytics__row"
                           title={
                             b.__src === "arch"
                               ? "Удалено на бэке (из архива)"
                               : "Из API"
                           }
                         >
-                          <div className="cell">
-                            <div className="name">{label}</div>
+                          <div className="analytics__cell">
+                            <div className="analytics__name">{label}</div>
                           </div>
-                          <div className="cell">
+                          <div className="analytics__cell">
                             {fmtDateTime(b.start_time)} —{" "}
                             {fmtDateTime(b.end_time)}
                           </div>
-                          <div className="cell">{nights}</div>
-                          <div className="cell cellRight">
+                          <div className="analytics__cell">{nights}</div>
+                          <div className="analytics__cell analytics__cell--right">
                             {b._amount ? fmtMoney(b._amount) : "—"}
                           </div>
                         </div>
                       );
                     })
                   ) : (
-                    <div className="empty">Нет заездов</div>
+                    <div className="analytics__empty">Нет заездов</div>
                   )}
                 </div>
               </div>
@@ -755,14 +768,7 @@ export default function Analytics() {
           </div>
 
           {bookErr && (
-            <div
-              className="card"
-              style={{
-                color: "#b91c1c",
-                background: "#fef2f2",
-                borderColor: "#fee2e2",
-              }}
-            >
+            <div className="analytics__card analytics__card--error">
               {bookErr}
             </div>
           )}
@@ -770,4 +776,6 @@ export default function Analytics() {
       )}
     </section>
   );
-}
+};
+
+export default Analytics;

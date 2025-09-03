@@ -1,35 +1,30 @@
+// src/components/Clients/clientStore.js
 import api from "../../../../api";
 
 /**
- * Клиенты — ТОЛЬКО через бэкенд (/main/clients/).
- * localStorage НЕ используется.
- * Поле notes предполагается на бэке (если его нет — добавьте).
+ * Клиенты — ТОЛЬКО через эндпоинт /booking/clients/.
+ * На бэке поля: id (uuid), name, phone, text (заметки)
  */
 
 const normalizeClient = (c) => ({
   id: c.id,
-  type: c.type ?? "client",
-  status: c.status ?? "new",
-  full_name: c.full_name ?? "",
+  full_name: c.name ?? "",     // приводим к единому виду для фронта
   phone: c.phone ?? "",
-  notes: c.notes ?? "",
+  notes: c.text ?? "",
   created_at: c.created_at || null,
   updated_at: c.updated_at || null,
 });
 
 /* DRF: вытянуть все страницы */
 async function fetchAllClients() {
-  let url = "/main/clients/";
+  let url = "/booking/clients/";
   const acc = [];
   let guard = 0;
 
   while (url && guard < 50) {
     const { data } = await api.get(url);
-    const arr = Array.isArray(data?.results)
-      ? data.results
-      : Array.isArray(data)
-      ? data
-      : [];
+    const arr = Array.isArray(data?.results) ? data.results
+              : Array.isArray(data) ? data : [];
     acc.push(...arr);
     url = data?.next || null;
     guard += 1;
@@ -42,87 +37,32 @@ export async function getAll() {
   return await fetchAllClients();
 }
 
+/**
+ * Принимаем как {full_name, phone, notes} так и {name, phone, text}
+ * и мапим в серверный формат {name, phone, text}
+ */
 export async function createClient(dto) {
   const payload = {
-    type: "client",
-    status: "new",
-    full_name: (dto.full_name || "").trim(),
-    phone: (dto.phone || "").trim(),
-    notes: (dto.notes || "").trim(),
+    name:  (dto.full_name ?? dto.name ?? "").trim(),
+    phone: (dto.phone ?? "").trim(),
+    text:  (dto.notes ?? dto.text ?? "").trim(),
   };
-  const { data } = await api.post("/main/clients/", payload);
+  const { data } = await api.post("/booking/clients/", payload);
   return normalizeClient(data);
 }
 
 export async function updateClient(id, patch) {
   const payload = {
-    type: "client",
-    full_name: (patch.full_name || "").trim(),
-    phone: (patch.phone || "").trim(),
-    notes: (patch.notes || "").trim(),
+    name:  (patch.full_name ?? patch.name ?? "").trim(),
+    phone: (patch.phone ?? "").trim(),
+    text:  (patch.notes ?? patch.text ?? "").trim(),
   };
-  const { data } = await api.put(`/main/clients/${id}/`, payload);
+  // можно PATCH, но оставим PUT — зависит от бэка
+  const { data } = await api.put(`/booking/clients/${id}/`, payload);
   return normalizeClient(data);
 }
 
 export async function removeClient(id) {
-  await api.delete(`/main/clients/${id}/`);
+  await api.delete(`/booking/clients/${id}/`);
   return true;
-}
-
-/* ====== DEALS (как было) ====== */
-export async function getDeals(clientId) {
-  if (!clientId) return [];
-  let url = `/main/clients/${clientId}/deals/`;
-  const acc = [];
-  let guard = 0;
-
-  while (url && guard < 50) {
-    const { data } = await api.get(url);
-    const arr = Array.isArray(data?.results)
-      ? data.results
-      : Array.isArray(data)
-      ? data
-      : [];
-    acc.push(...arr);
-    url = data?.next || null;
-    guard += 1;
-  }
-  return acc;
-}
-
-export async function createDeal(clientId, dto) {
-  if (!clientId) throw new Error("clientId is required");
-  const { data } = await api.post(`/main/clients/${clientId}/deals/`, {
-    ...dto,
-  });
-  return data;
-}
-
-export async function updateDeal(clientId, dealId, patch) {
-  if (!clientId || !dealId) throw new Error("clientId and dealId are required");
-  const { data } = await api.put(`/main/clients/${clientId}/deals/${dealId}/`, {
-    ...patch,
-  });
-  return data;
-}
-
-export async function removeDeal(clientId, dealId) {
-  if (!clientId || !dealId) throw new Error("clientId and dealId are required");
-  await api.delete(`/main/clients/${clientId}/deals/${dealId}/`);
-  return true;
-}
-
-/* ====== LINK BOOKING TO CLIENT ====== */
-export async function linkBookingToClient(clientId, bookingId, dto = {}) {
-  if (!clientId || !bookingId)
-    throw new Error("clientId and bookingId are required");
-
-  const payload = {
-    booking: bookingId, // ключ связи с бронью
-    ...dto, // доп. поля (например, сумма, статус и т.д.)
-  };
-
-  const { data } = await api.post(`/main/clients/${clientId}/deals/`, payload);
-  return data;
 }

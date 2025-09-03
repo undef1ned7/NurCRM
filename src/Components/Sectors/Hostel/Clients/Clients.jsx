@@ -1,28 +1,27 @@
-// src/components/Clients/Clients.jsx
-import React, { useEffect, useMemo, useState } from "react";
-import "./Clients.scss";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../../../api";
+import "./Clients.scss";
 import {
-  getAll,
   createClient,
-  updateClient,
+  getAll,
   removeClient,
+  updateClient,
 } from "./clientStore";
 
 /* ===== helpers ===== */
 const fmtMoney = (v) => (Number(v) || 0).toLocaleString() + " с";
 const phoneNorm = (p) => (p || "").replace(/[^\d+]/g, "");
-const statusRu = (v) => {
-  const m = {
+const statusRu = (v) =>
+  ({
     new: "Новое",
     created: "Создано",
     paid: "Оплачено",
     completed: "Завершено",
     canceled: "Отменено",
     active: "Активно",
-  };
-  return m[v] || v || "—";
-};
+  }[v] ||
+  v ||
+  "—");
 const asArray = (data) =>
   Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 const num = (v) => {
@@ -34,7 +33,7 @@ const toYmd = (iso) => (iso ? String(iso).slice(0, 10) : "");
 /* ===== normalizers ===== */
 const normalizeBooking = (b) => ({
   id: b.id,
-  client: b.client == null ? null : String(b.client), // ключ храним строкой
+  client: b.client == null ? null : String(b.client),
   hotel: b.hotel ?? null,
   room: b.room ?? null,
   bed: b.bed ?? null,
@@ -46,6 +45,7 @@ const normalizeBooking = (b) => ({
   created_at: b.created_at || null,
 });
 
+/* справочники */
 const normalizeHotel = (h) => ({
   id: h.id,
   name: h.name ?? "",
@@ -63,45 +63,59 @@ const normalizeBed = (b) => ({
   capacity: Number(b.capacity ?? 0),
 });
 
-/* nights */
-const nightsBetween = (startIso, endIso) => {
-  if (!startIso || !endIso) return 1;
-  const ms = new Date(endIso) - new Date(startIso);
+/* misc */
+const nightsBetween = (a, b) => {
+  if (!a || !b) return 1;
+  const ms = new Date(b) - new Date(a);
   const d = Math.ceil(ms / (24 * 60 * 60 * 1000));
   return Math.max(1, d);
 };
 
-export default function Clients() {
-  const [rows, setRows] = useState([]); // клиенты (+ bookings примешаны ниже)
+/* самая свежая дата по броням клиента (ISO string или null) */
+const calcClientUpdatedAt = (bookings) => {
+  if (!bookings?.length) return null;
+  let maxTs = 0;
+  for (const b of bookings) {
+    const t1 = Date.parse(b.end_time || "");
+    const t2 = Date.parse(b.start_time || "");
+    const t3 = Date.parse(b.created_at || "");
+    const cur = Math.max(
+      isFinite(t1) ? t1 : 0,
+      isFinite(t2) ? t2 : 0,
+      isFinite(t3) ? t3 : 0
+    );
+    if (cur > maxTs) maxTs = cur;
+  }
+  return maxTs ? new Date(maxTs).toISOString() : null;
+};
+
+const Clients = () => {
+  const [rows, setRows] = useState([]); // клиенты + bookings
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
   const [q, setQ] = useState("");
 
-  // фильтр по объектам (включая койко-места)
   const [objType, setObjType] = useState("all"); // all | hotel | room | bed
-  const [objId, setObjId] = useState(""); // конкретный объект
+  const [objId, setObjId] = useState("");
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editId, setEditId] = useState(null);
 
-  const [openId, setOpenId] = useState(null); // карточка клиента
+  const [openId, setOpenId] = useState(null);
 
-  // кэши имен/цен объектов
   const [hotelsMap, setHotelsMap] = useState({});
   const [roomsMap, setRoomsMap] = useState({});
   const [bedsMap, setBedsMap] = useState({});
 
-  /* ===== загрузка клиентов + броней ТОЛЬКО ИЗ API (без локалстор) ===== */
+  /* ===== загрузка клиентов + броней из API ===== */
   const load = async () => {
     try {
       setLoading(true);
       setErr("");
 
-      // 1) клиенты
-      const clients = await getAll(); // с бэка
+      const clients = await getAll();
 
-      // 2) параллельно загружаем справочники и все брони
       const [hotelsRes, roomsRes, bedsRes, bookingsAll] = await Promise.all([
         fetchAll("/booking/hotels/"),
         fetchAll("/booking/rooms/"),
@@ -109,12 +123,10 @@ export default function Clients() {
         fetchAll("/booking/bookings/"),
       ]);
 
-      // нормализуем справочники
       const hotels = hotelsRes.map(normalizeHotel);
       const rooms = roomsRes.map(normalizeRoom);
       const beds = bedsRes.map(normalizeBed);
 
-      // локальные карты для расчётов
       const hotelsMapLocal = Object.fromEntries(
         hotels.map((h) => [String(h.id), h])
       );
@@ -124,43 +136,43 @@ export default function Clients() {
       const bedsMapLocal = Object.fromEntries(
         beds.map((b) => [String(b.id), b])
       );
-
       setHotelsMap(hotelsMapLocal);
       setRoomsMap(roomsMapLocal);
       setBedsMap(bedsMapLocal);
 
-      // нормализуем брони (ТОЛЬКО из API)
       const incoming = bookingsAll.map(normalizeBooking);
 
-      // группируем брони по клиенту
-      const byClient = new Map(); // key = String(clientId)
+      // группировка по клиенту
+      const byClient = new Map();
       incoming.forEach((b) => {
         const key = b.client ? String(b.client) : null;
-        if (!key) return; // без клиента — не кладём в карточки
+        if (!key) return;
         if (!byClient.has(key)) byClient.set(key, []);
         byClient.get(key).push(b);
       });
-
-      // упорядочим внутри клиента по start_time DESC
       for (const [, arr] of byClient) {
         arr.sort((a, b) =>
           (b.start_time || "").localeCompare(a.start_time || "")
         );
       }
 
-      // примешиваем брони к клиентам
-      const mergedRows = clients.map((c) => ({
-        ...c,
-        bookings: (byClient.get(String(c.id)) || []).map((b) =>
-          toClientBookingRow(b, {
-            hotelsMap: hotelsMapLocal,
-            roomsMap: roomsMapLocal,
-            bedsMap: bedsMapLocal,
-          })
-        ),
-      }));
+      const merged = clients.map((c) => {
+        const bookingsForClient = byClient.get(String(c.id)) || [];
+        const updated_at = calcClientUpdatedAt(bookingsForClient); // <<< вот оно
+        return {
+          ...c,
+          updated_at, // перезаписываем пустое значение вычисленным
+          bookings: bookingsForClient.map((b) =>
+            toClientBookingRow(b, {
+              hotelsMap: hotelsMapLocal,
+              roomsMap: roomsMapLocal,
+              bedsMap: bedsMapLocal,
+            })
+          ),
+        };
+      });
 
-      setRows(mergedRows);
+      setRows(merged);
     } catch (e) {
       console.error(e);
       setErr("Не удалось загрузить клиентов или брони");
@@ -171,23 +183,82 @@ export default function Clients() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* ===== Реакция на сохранение/удаление брони из Bookings.jsx ===== */
+  useEffect(() => {
+    const onSaved = (e) => {
+      const raw = e?.detail?.booking;
+      if (!raw || raw.client == null) return;
+      const b = normalizeBooking(raw);
+      const row = toClientBookingRow(b, { hotelsMap, roomsMap, bedsMap });
+
+      setRows((prev) =>
+        prev.map((c) => {
+          if (String(c.id) !== String(b.client)) return c;
+
+          const existing = c.bookings || [];
+          const has = existing.some((x) => String(x.id) === String(b.id));
+          const next = has
+            ? existing.map((x) => (String(x.id) === String(b.id) ? row : x))
+            : [row, ...existing];
+
+          // пересчитать «Обновлён» (по броням клиента)
+          const updated_at =
+            calcClientUpdatedAt(
+              next.map((x) => ({
+                id: x.id,
+                start_time: x.from,
+                end_time: x.to,
+              }))
+            ) || new Date().toISOString();
+
+          next.sort((a, bb) => (bb.from || "").localeCompare(a.from || ""));
+          return { ...c, bookings: next, updated_at };
+        })
+      );
+    };
+
+    const onDeleted = (e) => {
+      const id = e?.detail?.id;
+      if (!id) return;
+      setRows((prev) =>
+        prev.map((c) => {
+          const next = (c.bookings || []).filter(
+            (b) => String(b.id) !== String(id)
+          );
+          const updated_at =
+            calcClientUpdatedAt(
+              next.map((x) => ({ start_time: x.from, end_time: x.to }))
+            ) ||
+            c.updated_at ||
+            null;
+          return { ...c, bookings: next, updated_at };
+        })
+      );
+    };
+
+    window.addEventListener("clients:booking-saved", onSaved);
+    window.addEventListener("clients:booking-deleted", onDeleted);
+    return () => {
+      window.removeEventListener("clients:booking-saved", onSaved);
+      window.removeEventListener("clients:booking-deleted", onDeleted);
+    };
+  }, [hotelsMap, roomsMap, bedsMap]);
 
   /* ===== индекс объектов для фильтра ===== */
   const objectIndex = useMemo(() => {
-    const hotels = new Map();
-    const rooms = new Map();
-    const beds = new Map();
+    const hotels = new Map(),
+      rooms = new Map(),
+      beds = new Map();
     (rows || []).forEach((r) => {
       (r.bookings || []).forEach((b) => {
-        if (b.obj_type === "hotel" && b.obj_id) {
+        if (b.obj_type === "hotel" && b.obj_id)
           hotels.set(String(b.obj_id), b.obj_name || `ID ${b.obj_id}`);
-        } else if (b.obj_type === "room" && b.obj_id) {
+        if (b.obj_type === "room" && b.obj_id)
           rooms.set(String(b.obj_id), b.obj_name || `ID ${b.obj_id}`);
-        } else if (b.obj_type === "bed" && b.obj_id) {
+        if (b.obj_type === "bed" && b.obj_id)
           beds.set(String(b.obj_id), b.obj_name || `ID ${b.obj_id}`);
-        }
       });
     });
     return {
@@ -200,13 +271,11 @@ export default function Clients() {
   /* ===== поиск + фильтры ===== */
   const filtered = useMemo(() => {
     const sterm = q.trim().toLowerCase();
-
     let res = !sterm
       ? rows
       : rows.filter((r) =>
           `${r.full_name} ${r.phone}`.toLowerCase().includes(sterm)
         );
-
     if (objType !== "all") {
       res = res.filter((r) =>
         (r.bookings || []).some((b) => b.obj_type === objType)
@@ -220,7 +289,6 @@ export default function Clients() {
         )
       );
     }
-
     return [...res].sort(
       (a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0)
     );
@@ -258,7 +326,6 @@ export default function Clients() {
     return "—";
   };
 
-  /* ===== Render ===== */
   return (
     <section className="clients">
       <header className="clients__header">
@@ -268,18 +335,26 @@ export default function Clients() {
             Список гостей, поиск, фильтр по объектам
           </p>
         </div>
+
         <div className="clients__actions">
           <div className="clients__search">
-            <span className="clients__searchIcon">🔎</span>
+            <span className="clients__searchIcon" aria-hidden>
+              🔎
+            </span>
             <input
               className="clients__searchInput"
               placeholder="Поиск по имени и телефону…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
+              aria-label="Поиск клиентов"
             />
           </div>
 
-          <div className="clients__filterRow">
+          <div
+            className="clients__filterRow"
+            role="group"
+            aria-label="Фильтр по объектам"
+          >
             <select
               className="clients__input"
               value={objType}
@@ -287,7 +362,6 @@ export default function Clients() {
                 setObjType(e.target.value);
                 setObjId("");
               }}
-              title="Тип объекта"
             >
               <option value="all">Все объекты</option>
               <option value="hotel">Гостиницы</option>
@@ -300,7 +374,6 @@ export default function Clients() {
                 className="clients__input"
                 value={objId}
                 onChange={(e) => setObjId(e.target.value)}
-                title="Конкретный объект"
               >
                 <option value="">Все</option>
                 {(objType === "hotel"
@@ -337,7 +410,7 @@ export default function Clients() {
               <th>Брони</th>
               <th>Последний объект</th>
               <th>Обновлён</th>
-              <th></th>
+              <th aria-label="Действия" />
             </tr>
           </thead>
           <tbody>
@@ -350,7 +423,7 @@ export default function Clients() {
             ) : filtered.length ? (
               filtered.map((c) => (
                 <tr key={c.id}>
-                  <td className="ellipsis" title={c.full_name}>
+                  <td className="clients__ellipsis" title={c.full_name}>
                     {c.full_name || "—"}
                   </td>
                   <td>{c.phone || "—"}</td>
@@ -402,14 +475,13 @@ export default function Clients() {
           rows={rows}
         />
       )}
-
       {openId && <ClientCard id={openId} onClose={onCloseCard} rows={rows} />}
     </section>
   );
-}
+};
 
 /* ===== форма клиента ===== */
-function ClientForm({ id, onClose, afterSave, rows }) {
+const ClientForm = ({ id, onClose, afterSave, rows }) => {
   const editing = !!id;
   const current = editing ? rows.find((c) => c.id === id) : null;
 
@@ -419,21 +491,27 @@ function ClientForm({ id, onClose, afterSave, rows }) {
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
-
     if (!full_name.trim()) {
       setErr("Введите имя");
       return;
     }
 
-    // простая проверка уникальности телефона по уже загруженному списку
-    const normalizedPhone = phoneNorm(phone);
+    const normalizedPhone = (phone || "").replace(/[^\d+]/g, "");
     const others = (rows || []).filter((c) => !editing || c.id !== id);
     if (
       normalizedPhone &&
-      others.some((c) => phoneNorm(c.phone) === normalizedPhone)
+      others.some(
+        (c) => (c.phone || "").replace(/[^\d+]/g, "") === normalizedPhone
+      )
     ) {
       setErr("Такой телефон уже есть");
       return;
@@ -444,13 +522,10 @@ function ClientForm({ id, onClose, afterSave, rows }) {
       const dto = {
         full_name: full_name.trim(),
         phone: normalizedPhone,
-        notes: notes.trim(), // идёт на бэк
+        notes: (notes || "").trim(),
       };
-      if (editing) {
-        await updateClient(id, dto);
-      } else {
-        await createClient(dto);
-      }
+      if (editing) await updateClient(id, dto);
+      else await createClient(dto);
       await afterSave?.();
       onClose();
     } catch (e2) {
@@ -463,9 +538,15 @@ function ClientForm({ id, onClose, afterSave, rows }) {
 
   return (
     <div className="clients__modalOverlay" onClick={onClose}>
-      <div className="clients__modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="clients__modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="clients-form-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="clients__modalHeader">
-          <div className="clients__modalTitle">
+          <div id="clients-form-title" className="clients__modalTitle">
             {editing ? "Редактировать клиента" : "Новый клиент"}
           </div>
           <button
@@ -494,7 +575,6 @@ function ClientForm({ id, onClose, afterSave, rows }) {
                 required
               />
             </div>
-
             <div className="clients__field">
               <label className="clients__label">Телефон</label>
               <input
@@ -504,7 +584,6 @@ function ClientForm({ id, onClose, afterSave, rows }) {
                 placeholder="+996700000000"
               />
             </div>
-
             <div className="clients__field" style={{ gridColumn: "1/-1" }}>
               <label className="clients__label">Заметки</label>
               <textarea
@@ -537,19 +616,34 @@ function ClientForm({ id, onClose, afterSave, rows }) {
       </div>
     </div>
   );
-}
+};
 
 /* ===== карточка клиента ===== */
-function ClientCard({ id, onClose, rows }) {
+const ClientCard = ({ id, onClose, rows }) => {
   const [tab, setTab] = useState("profile");
+
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const client = rows.find((c) => c.id === id);
   if (!client) return null;
 
   return (
     <div className="clients__modalOverlay" onClick={onClose}>
-      <div className="clients__modalWide" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="clients__modalWide"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="clients-card-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="clients__modalHeader">
-          <div className="clients__modalTitle">Клиент — {client.full_name}</div>
+          <div id="clients-card-title" className="clients__modalTitle">
+            Клиент — {client.full_name}
+          </div>
           <button
             className="clients__iconBtn"
             onClick={onClose}
@@ -575,11 +669,17 @@ function ClientCard({ id, onClose, rows }) {
           </div>
         </div>
 
-        <div className="clients__tabs">
+        <div
+          className="clients__tabs"
+          role="tablist"
+          aria-label="Вкладки клиента"
+        >
           <button
             className={`clients__tab ${
               tab === "profile" ? "clients__tabActive" : ""
             }`}
+            role="tab"
+            aria-selected={tab === "profile"}
             onClick={() => setTab("profile")}
           >
             Профиль
@@ -588,6 +688,8 @@ function ClientCard({ id, onClose, rows }) {
             className={`clients__tab ${
               tab === "bookings" ? "clients__tabActive" : ""
             }`}
+            role="tab"
+            aria-selected={tab === "bookings"}
             onClick={() => setTab("bookings")}
           >
             Брони
@@ -666,16 +768,13 @@ function ClientCard({ id, onClose, rows }) {
       </div>
     </div>
   );
-}
+};
 
-/* ===== утилиты для Clients.jsx ===== */
-
-// DRF pagination fetch-all
+/* ===== утилиты ===== */
 async function fetchAll(firstUrl) {
   let url = firstUrl;
   const acc = [];
   let guard = 0;
-
   while (url && guard < 40) {
     const { data } = await api.get(url);
     const arr = asArray(data);
@@ -686,36 +785,27 @@ async function fetchAll(firstUrl) {
   return acc;
 }
 
-// Преобразование брони в вид для карточки клиента
 function toClientBookingRow(b, { hotelsMap, roomsMap, bedsMap }) {
   const from = toYmd(b.start_time);
   const to = toYmd(b.end_time);
 
-  // total: берём из API, если нет — считаем локально
   let total = num(b.total);
   if (!total) {
     const nights = nightsBetween(b.start_time, b.end_time);
-    if (b.bed) {
-      const price = bedsMap[String(b.bed)]?.price || 0;
-      const qty = Math.max(1, Number(b.qty || 1));
-      total = nights * price * qty;
-    } else if (b.hotel) {
-      const price = hotelsMap[String(b.hotel)]?.price || 0;
-      total = nights * price;
-    } else if (b.room) {
-      const price = roomsMap[String(b.room)]?.price || 0;
-      total = nights * price;
-    } else {
-      total = 0;
-    }
+    if (b.bed)
+      total =
+        nights *
+        (bedsMap[String(b.bed)]?.price || 0) *
+        Math.max(1, Number(b.qty || 1));
+    else if (b.hotel) total = nights * (hotelsMap[String(b.hotel)]?.price || 0);
+    else if (b.room) total = nights * (roomsMap[String(b.room)]?.price || 0);
+    else total = 0;
   }
 
-  // объект
   let obj_type = null,
     obj_id = null,
     obj_name = "",
     qty = Number(b.qty || 1) || 1;
-
   if (b.hotel) {
     obj_type = "hotel";
     obj_id = b.hotel;
@@ -742,3 +832,5 @@ function toClientBookingRow(b, { hotelsMap, roomsMap, bedsMap }) {
     qty: obj_type === "bed" ? qty : undefined,
   };
 }
+
+export default Clients;
