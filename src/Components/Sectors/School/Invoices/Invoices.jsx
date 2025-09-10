@@ -1,6 +1,13 @@
 // src/components/Education/Invoices.jsx
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FaSearch, FaSync, FaMoneyBillWave, FaClock, FaHashtag, FaSave } from "react-icons/fa";
+import {
+  FaSearch,
+  FaSync,
+  FaMoneyBillWave,
+  FaClock,
+  FaHashtag,
+  FaSave,
+} from "react-icons/fa";
 import "./Invoices.scss";
 import api from "../../../../api";
 
@@ -18,7 +25,8 @@ const asArray = (data) =>
 const dec = (v) => Number(String(v ?? "0").replace(",", "."));
 const money = (n) => `${Number(n || 0).toLocaleString("ru-RU")} сом`;
 const pad2 = (n) => String(n).padStart(2, "0");
-const endOfMonthISO = (year, month) => new Date(year, month, 0).toISOString().slice(0, 10);
+const endOfMonthISO = (year, month) =>
+  new Date(year, month, 0).toISOString().slice(0, 10);
 const sameMonth = (iso, year, month) => {
   if (!iso) return false;
   const d = new Date(iso);
@@ -34,7 +42,9 @@ const normStudent = (s = {}) => ({
   groupId: s.group ?? "",
   groupName: s.group_name ?? "",
   discount: dec(s.discount),
-  createdAtISO: s.created_at ? String(s.created_at) : new Date().toISOString().slice(0, 10),
+  createdAtISO: s.created_at
+    ? String(s.created_at)
+    : new Date().toISOString().slice(0, 10),
   createdAt: s.created_at ? new Date(s.created_at).getTime() : Date.now(),
 });
 
@@ -55,16 +65,17 @@ const isTimeStr = (s) => /^\d{2}:\d{2}$/.test(String(s || ""));
 const normLesson = (l = {}) => ({
   id: l.id,
   groupId: l.group ?? "",
-  date: l.date ?? "", // YYYY-MM-DD
+  date: l.date ?? "",
   time: isTimeStr(l.time) ? l.time : "",
-  duration: Number(l.duration ?? 0), // minutes
+  duration: Number(l.duration ?? 0),
   teacherId: l.teacher ?? "",
 });
 
 const normEmployeeAsTeacher = (e = {}) => {
   const first = e.first_name ?? "";
   const last = e.last_name ?? "";
-  const display = [last, first].filter(Boolean).join(" ").trim() || e.email || "—";
+  const display =
+    [last, first].filter(Boolean).join(" ").trim() || e.email || "—";
   return { id: e.id, name: display };
 };
 
@@ -72,17 +83,22 @@ const normEmployeeAsTeacher = (e = {}) => {
 const LS_RATE_MODE = "inv_rate_mode"; // 'lesson' | 'hour'
 const LS_RATE_PER_TEACHER = "inv_teacher_rates"; // { [id]: number }
 
-export default function SchoolInvoices() {
+const SchoolInvoices = () => {
   /* период: только месяц */
   const now = new Date();
   const YEARS = [2025, 2026];
   const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
-  const defaultYear = YEARS.includes(now.getFullYear()) ? now.getFullYear() : 2025;
+  const defaultYear = YEARS.includes(now.getFullYear())
+    ? now.getFullYear()
+    : 2025;
 
   const [year, setYear] = useState(defaultYear);
   const [month, setMonth] = useState(now.getMonth() + 1);
   const periodLabel = `${year}-${pad2(month)}`;
-  const periodEndISO = useMemo(() => endOfMonthISO(year, month), [year, month]);
+  const periodEndISO = useMemo(
+    () => endOfMonthISO(year, month),
+    [year, month]
+  );
 
   /* фильтры */
   const [courseId, setCourseId] = useState("");
@@ -102,7 +118,9 @@ export default function SchoolInvoices() {
   const [error, setError] = useState("");
 
   /* зарплата: режим и персональные ставки (без ставки по умолчанию) */
-  const [rateMode, setRateMode] = useState(localStorage.getItem(LS_RATE_MODE) || "hour");
+  const [rateMode, setRateMode] = useState(
+    localStorage.getItem(LS_RATE_MODE) || "hour"
+  );
   const [teacherRates, setTeacherRates] = useState(() => {
     try {
       const raw = localStorage.getItem(LS_RATE_PER_TEACHER);
@@ -175,7 +193,9 @@ export default function SchoolInvoices() {
     const out = [];
     baseStudents.forEach((st) => {
       const grp = groups.find((g) => String(g.id) === String(st.groupId));
-      const crs = grp ? courses.find((c) => String(c.id) === String(grp.courseId)) : null;
+      const crs = grp
+        ? courses.find((c) => String(c.id) === String(grp.courseId))
+        : null;
       const price = Number(crs?.price || 0);
       if (!price) return;
 
@@ -235,7 +255,12 @@ export default function SchoolInvoices() {
     filteredRows.forEach((r) => {
       const k = r.groupId || `${r.courseName}/${r.groupName}`;
       if (!map.has(k))
-        map.set(k, { name: r.groupName, amount: 0, count: 0, courseName: r.courseName });
+        map.set(k, {
+          name: r.groupName,
+          amount: 0,
+          count: 0,
+          courseName: r.courseName,
+        });
       const v = map.get(k);
       v.amount += Number(r.amount || 0);
       v.count += 1;
@@ -252,7 +277,8 @@ export default function SchoolInvoices() {
       if (!sameMonth(l.date, year, month)) return false;
 
       const grp = groups.find((g) => String(g.id) === String(l.groupId));
-      if (courseId && (!grp || String(grp.courseId) !== String(courseId))) return false;
+      if (courseId && (!grp || String(grp.courseId) !== String(courseId)))
+        return false;
       if (groupId && String(l.groupId) !== String(groupId)) return false;
       if (teacherId && String(l.teacherId) !== String(teacherId)) return false;
 
@@ -273,7 +299,8 @@ export default function SchoolInvoices() {
       if (!l.teacherId) return;
       const tId = l.teacherId;
       if (!byTeacher.has(tId)) {
-        const teacherName = teachers.find((t) => String(t.id) === String(tId))?.name || "—";
+        const teacherName =
+          teachers.find((t) => String(t.id) === String(tId))?.name || "—";
         byTeacher.set(tId, {
           id: tId,
           name: teacherName,
@@ -331,22 +358,21 @@ export default function SchoolInvoices() {
   }, [teacherRates, rateMode, saveRatesToLS]);
 
   return (
-    <div className="inv">
+    <div className="school-invoices">
       {/* Header */}
-      <div className="inv__header">
+      <div className="school-invoices__header">
         <div>
-          <h2 className="inv__title">Счета · Аналитика</h2>
-          <p className="inv__subtitle">
+          <h2 className="school-invoices__title">Счета · Аналитика</h2>
+          <p className="school-invoices__subtitle">
             Период: <b>{periodLabel}</b>
           </p>
         </div>
 
         {/* Toolbar */}
-        <div className="inv__toolbar">
-          <div className="inv__filters">
-            {/* Только месяц */}
+        <div className="school-invoices__toolbar">
+          <div className="school-invoices__filters">
             <select
-              className="inv__input"
+              className="school-invoices__input"
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
               title="Год"
@@ -360,7 +386,7 @@ export default function SchoolInvoices() {
             </select>
 
             <select
-              className="inv__input"
+              className="school-invoices__input"
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
               title="Месяц"
@@ -373,9 +399,8 @@ export default function SchoolInvoices() {
               ))}
             </select>
 
-            {/* Фильтры курс/группа */}
             <select
-              className="inv__input"
+              className="school-invoices__input"
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
               title="Курс"
@@ -390,7 +415,7 @@ export default function SchoolInvoices() {
             </select>
 
             <select
-              className="inv__input"
+              className="school-invoices__input"
               value={groupId}
               onChange={(e) => setGroupId(e.target.value)}
               title="Группа"
@@ -407,9 +432,8 @@ export default function SchoolInvoices() {
                 ))}
             </select>
 
-            {/* Преподаватель */}
             <select
-              className="inv__input"
+              className="school-invoices__input"
               value={teacherId}
               onChange={(e) => setTeacherId(e.target.value)}
               title="Преподаватель"
@@ -427,11 +451,11 @@ export default function SchoolInvoices() {
             </select>
           </div>
 
-          <div className="inv__right">
-            <div className="inv__search">
-              <FaSearch className="inv__search-icon" aria-hidden />
+          <div className="school-invoices__right">
+            <div className="school-invoices__search">
+              <FaSearch className="school-invoices__search-icon" aria-hidden />
               <input
-                className="inv__search-input"
+                className="school-invoices__search-input"
                 placeholder="Поиск: ученик / телефон / курс / группа"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -440,74 +464,78 @@ export default function SchoolInvoices() {
             </div>
 
             <button
-              className="inv__btn inv__btn--secondary"
+              className="school-invoices__btn school-invoices__btn--secondary"
               onClick={loadAll}
               title="Обновить"
               aria-label="Обновить"
             >
-              <FaSync /> <span className="inv__btnText">Обновить</span>
+              <FaSync /> <span className="school-invoices__btnText">Обновить</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* States */}
-      {loading && <div className="inv__alert">Загрузка…</div>}
-      {!!error && !loading && <div className="inv__alert">{error}</div>}
+      {loading && <div className="school-invoices__alert">Загрузка…</div>}
+      {!!error && !loading && <div className="school-invoices__alert">{error}</div>}
 
       {/* Content */}
       {!loading && !error && (
         <>
-          {/* KPIs по ученикам / выручке */}
-          <div className="inv__kpis">
-            <div className="inv__kpiCard">
-              <div className="inv__kpiIcon">₮</div>
-              <div className="inv__kpiBody">
-                <div className="inv__kpiLabel">Начислено за период</div>
-                <div className="inv__kpiValue">{money(totals.amount)}</div>
+          {/* KPIs */}
+          <div className="school-invoices__kpis">
+            <div className="school-invoices__kpiCard">
+              <div className="school-invoices__kpiIcon">₮</div>
+              <div className="school-invoices__kpiBody">
+                <div className="school-invoices__kpiLabel">Начислено за период</div>
+                <div className="school-invoices__kpiValue">
+                  {money(totals.amount)}
+                </div>
               </div>
             </div>
 
-            <div className="inv__kpiCard">
-              <div className="inv__kpiIcon">👥</div>
-              <div className="inv__kpiBody">
-                <div className="inv__kpiLabel">Активных учащихся</div>
-                <div className="inv__kpiValue">{totals.students}</div>
+            <div className="school-invoices__kpiCard">
+              <div className="school-invoices__kpiIcon">👥</div>
+              <div className="school-invoices__kpiBody">
+                <div className="school-invoices__kpiLabel">Активных учащихся</div>
+                <div className="school-invoices__kpiValue">{totals.students}</div>
               </div>
             </div>
 
-            <div className="inv__kpiCard">
-              <div className="inv__kpiIcon">Ø</div>
-              <div className="inv__kpiBody">
-                <div className="inv__kpiLabel">Средний чек</div>
-                <div className="inv__kpiValue">{money(totals.avg)}</div>
+            <div className="school-invoices__kpiCard">
+              <div className="school-invoices__kpiIcon">Ø</div>
+              <div className="school-invoices__kpiBody">
+                <div className="school-invoices__kpiLabel">Средний чек</div>
+                <div className="school-invoices__kpiValue">{money(totals.avg)}</div>
               </div>
             </div>
           </div>
 
           {/* По курсам */}
-          <h3 className="inv__sectionTitle">Курсы · сумма и ученики</h3>
-          <div className="inv__list">
+          <h3 className="school-invoices__sectionTitle">Курсы · сумма и ученики</h3>
+          <div className="school-invoices__list">
             {byCourse.map((c, idx) => (
-              <div key={`${c.name}-${idx}`} className="inv__card">
-                <div className="inv__card-left">
-                  <div className="inv__avatar" aria-hidden>
+              <div key={`${c.name}-${idx}`} className="school-invoices__card">
+                <div className="school-invoices__card-left">
+                  <div className="school-invoices__avatar" aria-hidden>
                     {(c.name || "•").charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div className="inv__name-row">
-                      <p className="inv__name">{c.name || "—"}</p>
-                      <span className="inv__chip">{c.count} уч.</span>
+                    <div className="school-invoices__name-row">
+                      <p className="school-invoices__name">{c.name || "—"}</p>
+                      <span className="school-invoices__chip">{c.count} уч.</span>
                     </div>
-                    <div className="inv__meta">
+                    <div className="school-invoices__meta">
                       <span>
                         Сумма: <b>{money(c.amount)}</b>
                       </span>
                     </div>
-                    <div className="inv__bar">
+                    <div className="school-invoices__bar">
                       <div
-                        className="inv__barFill"
-                        style={{ width: `${(c.amount / maxCourseAmount) * 100}%` }}
+                        className="school-invoices__barFill"
+                        style={{
+                          width: `${(c.amount / maxCourseAmount) * 100}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -515,35 +543,40 @@ export default function SchoolInvoices() {
               </div>
             ))}
             {byCourse.length === 0 && (
-              <div className="inv__empty">Нет данных по курсам за выбранный период.</div>
+              <div className="school-invoices__empty">
+                Нет данных по курсам за выбранный период.
+              </div>
             )}
           </div>
 
           {/* По группам */}
-          <h3 className="inv__sectionTitle">Группы · сумма и ученики</h3>
-          <div className="inv__list">
+          <h3 className="school-invoices__sectionTitle">Группы · сумма и ученики</h3>
+          <div className="school-invoices__list">
             {byGroup.map((g, idx) => (
-              <div key={`${g.name}-${idx}`} className="inv__card">
-                <div className="inv__card-left">
-                  <div className="inv__avatar" aria-hidden>
+              <div key={`${g.name}-${idx}`} className="school-invoices__card">
+                <div className="school-invoices__card-left">
+                  <div className="school-invoices__avatar" aria-hidden>
                     {(g.name || "•").charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div className="inv__name-row">
-                      <p className="inv__name">
-                        {g.name || "—"} <span className="inv__muted">· {g.courseName || "—"}</span>
+                    <div className="school-invoices__name-row">
+                      <p className="school-invoices__name">
+                        {g.name || "—"}{" "}
+                        <span className="school-invoices__muted">· {g.courseName || "—"}</span>
                       </p>
-                      <span className="inv__chip">{g.count} уч.</span>
+                      <span className="school-invoices__chip">{g.count} уч.</span>
                     </div>
-                    <div className="inv__meta">
+                    <div className="school-invoices__meta">
                       <span>
                         Сумма: <b>{money(g.amount)}</b>
                       </span>
                     </div>
-                    <div className="inv__bar">
+                    <div className="school-invoices__bar">
                       <div
-                        className="inv__barFill"
-                        style={{ width: `${(g.amount / maxGroupAmount) * 100}%` }}
+                        className="school-invoices__barFill"
+                        style={{
+                          width: `${(g.amount / maxGroupAmount) * 100}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -551,17 +584,18 @@ export default function SchoolInvoices() {
               </div>
             ))}
             {byGroup.length === 0 && (
-              <div className="inv__empty">Нет данных по группам за выбранный период.</div>
+              <div className="school-invoices__empty">
+                Нет данных по группам за выбранный период.
+              </div>
             )}
           </div>
 
-          {/* ===== ЗАРПЛАТА ПРЕПОДАВАТЕЛЕЙ ===== */}
-          <h3 className="inv__sectionTitle">Зарплата преподавателей</h3>
+          {/* ===== ЗАРПЛАТА ===== */}
+          <h3 className="school-invoices__sectionTitle">Зарплата преподавателей</h3>
 
-          {/* Панель настроек: только режим + сохранить */}
-          <div className="inv__filters" style={{ marginBottom: 12 }}>
+          <div className="school-invoices__filters" style={{ marginBottom: 12 }}>
             <select
-              className="inv__input"
+              className="school-invoices__input"
               value={rateMode}
               onChange={(e) => setRateMode(e.target.value)}
               title="Режим начисления"
@@ -572,69 +606,85 @@ export default function SchoolInvoices() {
             </select>
 
             <button
-              className="inv__btn inv__btn--secondary"
+              className="school-invoices__btn school-invoices__btn--secondary"
               onClick={persistRates}
               title="Сохранить персональные ставки"
             >
-              <FaSave /> <span className="inv__btnText">Сохранить ставки</span>
+              <FaSave />{" "}
+              <span className="school-invoices__btnText">Сохранить ставки</span>
             </button>
           </div>
 
-          <div className="inv__kpis" style={{ marginTop: 8 }}>
-            <div className="inv__kpiCard">
-              <div className="inv__kpiIcon">
+          <div className="school-invoices__kpis" style={{ marginTop: 8 }}>
+            <div className="school-invoices__kpiCard">
+              <div className="school-invoices__kpiIcon">
                 <FaMoneyBillWave />
               </div>
-              <div className="inv__kpiBody">
-                <div className="inv__kpiLabel">Итого фонд ЗП</div>
-                <div className="inv__kpiValue">{money(payrollTotals.amount)}</div>
+              <div className="school-invoices__kpiBody">
+                <div className="school-invoices__kpiLabel">Итого фонд ЗП</div>
+                <div className="school-invoices__kpiValue">
+                  {money(payrollTotals.amount)}
+                </div>
               </div>
             </div>
-            <div className="inv__kpiCard">
-              <div className="inv__kpiIcon">
+            <div className="school-invoices__kpiCard">
+              <div className="school-invoices__kpiIcon">
                 <FaHashtag />
               </div>
-              <div className="inv__kpiBody">
-                <div className="inv__kpiLabel">Уроков за период</div>
-                <div className="inv__kpiValue">{payrollTotals.lessonsCnt}</div>
+              <div className="school-invoices__kpiBody">
+                <div className="school-invoices__kpiLabel">Уроков за период</div>
+                <div className="school-invoices__kpiValue">
+                  {payrollTotals.lessonsCnt}
+                </div>
               </div>
             </div>
-            <div className="inv__kpiCard">
-              <div className="inv__kpiIcon">
+            <div className="school-invoices__kpiCard">
+              <div className="school-invoices__kpiIcon">
                 <FaClock />
               </div>
-              <div className="inv__kpiBody">
-                <div className="inv__kpiLabel">Часов за период</div>
-                <div className="inv__kpiValue">{payrollTotals.hoursCnt.toFixed(1)}</div>
+              <div className="school-invoices__kpiBody">
+                <div className="school-invoices__kpiLabel">Часов за период</div>
+                <div className="school-invoices__kpiValue">
+                  {payrollTotals.hoursCnt.toFixed(1)}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="inv__list">
+          <div className="school-invoices__list">
             {teacherStats.map((t) => (
-              <div key={t.id} className="inv__card">
-                <div className="inv__card-left">
-                  <div className="inv__avatar" aria-hidden>
+              <div key={t.id} className="school-invoices__card">
+                <div className="school-invoices__card-left">
+                  <div className="school-invoices__avatar" aria-hidden>
                     {(t.name || "•").charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div className="inv__name-row">
-                      <p className="inv__name">{t.name || "—"}</p>
-                      <span className="inv__chip">
-                        {rateMode === "hour" ? "часовая" : "за урок"}: {t.rate ? money(t.rate) : "—"}
+                    <div className="school-invoices__name-row">
+                      <p className="school-invoices__name">{t.name || "—"}</p>
+                      <span className="school-invoices__chip">
+                        {rateMode === "hour" ? "часовая" : "за урок"}:{" "}
+                        {t.rate ? money(t.rate) : "—"}
                       </span>
                     </div>
 
-                    <div className="inv__meta" style={{ gap: 12 }}>
-                      <span>Уроков: <b>{t.lessons}</b></span>
-                      <span>Часы: <b>{t.hours.toFixed(1)}</b></span>
-                      <span>Групп: <b>{t.groupsCount}</b></span>
-                      <span>Ученики: <b>{t.studentsCount}</b></span>
+                    <div className="school-invoices__meta" style={{ gap: 12 }}>
+                      <span>
+                        Уроков: <b>{t.lessons}</b>
+                      </span>
+                      <span>
+                        Часы: <b>{t.hours.toFixed(1)}</b>
+                      </span>
+                      <span>
+                        Групп: <b>{t.groupsCount}</b>
+                      </span>
+                      <span>
+                        Ученики: <b>{t.studentsCount}</b>
+                      </span>
                     </div>
 
-                    <div className="inv__bar">
+                    <div className="school-invoices__bar">
                       <div
-                        className="inv__barFill"
+                        className="school-invoices__barFill"
                         style={{
                           width: `${
                             teacherStats[0]?.amount
@@ -648,17 +698,22 @@ export default function SchoolInvoices() {
                 </div>
 
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <div className="inv__kpiValue" style={{ fontSize: 18 }}>
+                  <div
+                    className="school-invoices__kpiValue"
+                    style={{ fontSize: 18 }}
+                  >
                     {money(t.amount)}
                   </div>
                   <input
-                    className="inv__input"
+                    className="school-invoices__input"
                     type="number"
                     min="0"
                     step="50"
                     value={teacherRates[t.id] ?? ""}
                     onChange={(e) => updateTeacherRate(t.id, e.target.value)}
-                    placeholder={rateMode === "hour" ? "ставка, сом/час" : "ставка, сом/урок"}
+                    placeholder={
+                      rateMode === "hour" ? "ставка, сом/час" : "ставка, сом/урок"
+                    }
                     title="Персональная ставка"
                     style={{ width: 140 }}
                   />
@@ -667,11 +722,15 @@ export default function SchoolInvoices() {
             ))}
 
             {teacherStats.length === 0 && (
-              <div className="inv__empty">Нет уроков/преподавателей за выбранный месяц и фильтры.</div>
+              <div className="school-invoices__empty">
+                Нет уроков/преподавателей за выбранный месяц и фильтры.
+              </div>
             )}
           </div>
         </>
       )}
     </div>
   );
-}
+};
+
+export default SchoolInvoices;

@@ -17,6 +17,30 @@
   box-sizing: border-box;
 }
 
+.schedule__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.schedule__table th,
+.schedule__table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #eee;
+}
+.schedule__table thead th {
+  border-bottom: 1px solid #ddd;
+}
+.schedule__hint {
+  margin-top: 6px;
+  color: #666;
+  font-size: 12px;
+}
+
+.clientModal {
+  height: 600px;
+  overflow-y: auto;
+  width: auto !important;
+}
+
 /* ===== Global utilities (string classNames in JSX) ===== */
 
 .btn {

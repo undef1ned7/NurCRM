@@ -11,6 +11,7 @@ import {
   productCheckout,
   sendBarCode,
   startSale,
+  updateProductInCart,
   updateSale,
 } from "../creators/saleThunk";
 
@@ -76,6 +77,17 @@ const saleSlice = createSlice({
         state.loading = false;
       })
       .addCase(deleteProductInCart.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.loading = false;
+      })
+      .addCase(updateProductInCart.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateProductInCart.fulfilled, (state) => {
+        // state.cart = payload;
+        state.loading = false;
+      })
+      .addCase(updateProductInCart.rejected, (state, { payload }) => {
         state.error = payload;
         state.loading = false;
       })

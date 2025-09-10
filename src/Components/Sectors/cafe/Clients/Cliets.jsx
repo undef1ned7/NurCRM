@@ -5,7 +5,8 @@ import {
   createClient,
   updateClient,
   removeClient,
-  getOrdersByClient, // ← детальные заказы клиента для карточки
+  getOrdersByClient,
+  getOrdersStatsByClient, // ← ДОБАВЛЕНО: лёгкая статистика для таблицы
 } from "./clientStore";
 import "./clients.scss";
 
@@ -18,12 +19,11 @@ const phoneNorm = (p) => (p || "").replace(/[^\d+]/g, "");
 const asArray = (data) =>
   Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 
-/* ===== DRF fetch-all утилита ===== */
-async function fetchAll(firstUrl) {
-  let url = firstUrl;
+/* DRF fetch-all (для столов) */
+async function fetchAll(url0) {
+  let url = url0;
   const acc = [];
   let guard = 0;
-
   while (url && guard < 80) {
     const { data } = await api.get(url);
     const arr = asArray(data);
@@ -34,8 +34,55 @@ async function fetchAll(firstUrl) {
   return acc;
 }
 
+/* Блокировка скролла без «прыжков» при открытии модалок */
+function useBodyScrollLock(active) {
+  useEffect(() => {
+    if (!active) return;
+
+    const scrollY =
+      window.scrollY ||
+      window.pageYOffset ||
+      document.documentElement.scrollTop ||
+      0;
+
+    const original = {
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+      overflowY: document.body.style.overflowY,
+      paddingRight: document.body.style.paddingRight,
+    };
+
+    const scrollbarW = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+    document.body.style.overflowY = "scroll";
+    if (scrollbarW > 0) {
+      document.body.style.paddingRight = `${scrollbarW}px`;
+    }
+    document.body.classList.add("modal-open");
+
+    return () => {
+      const y = Math.abs(parseInt(document.body.style.top || "0", 10)) || 0;
+
+      document.body.style.position = original.position;
+      document.body.style.top = original.top;
+      document.body.style.width = original.width;
+      document.body.style.overflowY = original.overflowY;
+      document.body.style.paddingRight = original.paddingRight;
+      document.body.classList.remove("modal-open");
+
+      window.scrollTo(0, y);
+    };
+  }, [active]);
+}
+
 /* ===== основной компонент ===== */
-const Clients = () => {
+const CafeClients = () => {
   const [rows, setRows] = useState([]);        // клиенты + {orders_count, updated_at_derived}
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -49,6 +96,45 @@ const Clients = () => {
 
   const [tablesMap, setTablesMap] = useState(new Map()); // id -> {number, places}
 
+  // Блокировка скролла, когда открыта любая модалка
+  const anyModalOpen = isFormOpen || !!openId;
+  useBodyScrollLock(anyModalOpen);
+
+  // прогрессивная подгрузка «Заказы/Обновлён» для таблицы (concurrency 4)
+  const hydrateStats = async (clientsList) => {
+    const ids = clientsList.map((c) => c.id);
+    let idx = 0;
+    const POOL = 4;
+
+    const worker = async () => {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const i = idx++;
+        if (i >= ids.length) break;
+        const id = ids[i];
+        try {
+          const stats = await getOrdersStatsByClient(id);
+          setRows((prev) => {
+            const next = prev.map((c) =>
+              String(c.id) === String(id)
+                ? { ...c, orders_count: stats.orders_count, updated_at_derived: stats.updated_at_derived }
+                : c
+            );
+            return next.sort(
+              (a, b) =>
+                new Date(b.updated_at_derived || b.updated_at || 0) -
+                new Date(a.updated_at_derived || a.updated_at || 0)
+            );
+          });
+        } catch (_) {
+          /* глушим, чтобы не ломать поток */
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(POOL, ids.length) }, worker));
+  };
+
   /* ===== загрузка: клиенты + столы ===== */
   const load = async () => {
     try {
@@ -57,7 +143,7 @@ const Clients = () => {
 
       const [clients, tables] = await Promise.all([
         getAll(),                   // /cafe/clients/
-        fetchAll("/cafe/tables/"),  // для отображения номера стола
+        fetchAll("/cafe/tables/"),  // для номера стола
       ]);
 
       const tablesM = new Map(
@@ -65,7 +151,7 @@ const Clients = () => {
       );
       setTablesMap(tablesM);
 
-      // orders_count и "обновлён" берём из кратких orders, которые сервер возвращает вместе с клиентом
+      // первичное заполнение (если сервер вернёт embedded orders)
       const augmented = clients.map((c) => {
         const arr = Array.isArray(c.orders) ? c.orders : [];
         const updated_at_derived = arr.length
@@ -78,7 +164,7 @@ const Clients = () => {
 
         return {
           ...c,
-          orders_count: arr.length,
+          orders_count: arr.length || 0,
           updated_at_derived,
         };
       });
@@ -90,6 +176,10 @@ const Clients = () => {
             new Date(a.updated_at_derived || a.updated_at || 0)
         )
       );
+
+      // ДОГРУЗКА статистики по каждому клиенту для таблицы
+      // (если embedded нет — колонки «Заказы/Обновлён» наполнятся по мере получения)
+      hydrateStats(augmented);
     } catch (e) {
       console.error(e);
       setErr("Не удалось загрузить клиентов");
@@ -109,7 +199,11 @@ const Clients = () => {
       if (!c) return;
       setRows((prev) => {
         const exists = prev.some((x) => String(x.id) === String(c.id));
-        const row = { ...c, orders_count: 0, updated_at_derived: c.updated_at || null };
+        const row = {
+          ...c,
+          orders_count: 0,
+          updated_at_derived: c.updated_at || null,
+        };
         const next = exists
           ? prev.map((x) => (String(x.id) === String(c.id) ? row : x))
           : [row, ...prev];
@@ -119,12 +213,24 @@ const Clients = () => {
             new Date(a.updated_at_derived || a.updated_at || 0)
         );
       });
+      // подгрузим stats для нового клиента
+      getOrdersStatsByClient(c.id)
+        .then((stats) =>
+          setRows((prev) =>
+            prev.map((x) =>
+              String(x.id) === String(c.id)
+                ? { ...x, orders_count: stats.orders_count, updated_at_derived: stats.updated_at_derived }
+                : x
+            )
+          )
+        )
+        .catch(() => {});
     };
     window.addEventListener("clients:refresh", onClientsRefresh);
     return () => window.removeEventListener("clients:refresh", onClientsRefresh);
   }, []);
 
-  // заказ создан -> увеличим счётчик и время обновления в таблице
+  // заказ создан -> немедленно увеличим счётчик и время обновления
   useEffect(() => {
     const onOrderCreated = (e) => {
       const o = e?.detail?.order;
@@ -214,7 +320,7 @@ const Clients = () => {
               </tr>
             ) : filtered.length ? (
               filtered.map((c) => {
-                const updated = c.updated_at || c.updated_at_derived;
+                const updated = c.updated_at_derived || c.updated_at;
                 return (
                   <tr key={c.id}>
                     <td className="clients__ellipsis" title={c.full_name}>
@@ -304,7 +410,6 @@ const ClientForm = ({ id, onClose, afterSave, rows }) => {
         await updateClient(id, dto);
       } else {
         const created = await createClient(dto);
-        // обновим таблицу мгновенно
         window.dispatchEvent(new CustomEvent("clients:refresh", { detail: { client: created } }));
       }
       await afterSave?.();
@@ -318,7 +423,7 @@ const ClientForm = ({ id, onClose, afterSave, rows }) => {
   };
 
   return (
-    <div className="clients__modalOverlay" onClick={onClose}>
+    <div className="clients__modalOverlay" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="clients__modal" onClick={(e) => e.stopPropagation()}>
         <div className="clients__modalHeader">
           <div className="clients__modalTitle">
@@ -378,26 +483,23 @@ const ClientForm = ({ id, onClose, afterSave, rows }) => {
   );
 };
 
-/* ===== карточка клиента: Профиль + Заказы (без колонки №) ===== */
+/* ===== карточка клиента ===== */
 const ClientCard = ({ id, onClose, tablesMap }) => {
   const [tab, setTab] = useState("profile");
   const [client, setClient] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // грузим клиента и его заказы (детальные)
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setLoading(true);
-        // сам клиент (один)
-        const all = await getAll();
-        const c = all.find((x) => String(x.id) === String(id));
-        // заказы клиента
-        const ords = await getOrdersByClient(id);
+        const all = await getAll();                          // клиенты
+        const c = all.find((x) => String(x.id) === String(id)) || null;
+        const ords = await getOrdersByClient(id);            // активные + история
         if (mounted) {
-          setClient(c || null);
+          setClient(c);
           setOrders(ords);
         }
       } finally {
@@ -407,40 +509,79 @@ const ClientCard = ({ id, onClose, tablesMap }) => {
     return () => { mounted = false; };
   }, [id]);
 
-  if (!client) {
-    if (loading) return null;
-    return null;
-  }
+  // live-обновления
+  useEffect(() => {
+    const onOrderCreated = (e) => {
+      const o = e?.detail?.order;
+      if (!o || String(o.client) !== String(id)) return;
+      setOrders((prev) => {
+        const exists = prev.some((x) => String(x.id) === String(o.id));
+        if (exists) return prev;
+        const basic = {
+          id: o.id,
+          table: o.table ?? null,
+          table_name: o.table_name ?? o.table_label ?? o.table_number ?? "",
+          guests: o.guests ?? 0,
+          status: o.status ?? "",
+          created_at: o.created_at || new Date().toISOString(),
+          items: Array.isArray(o.items) ? o.items : [],
+          total: Number(o.total) || 0,
+        };
+        return [basic, ...prev];
+      });
+    };
+
+    const onClientsRefresh = (e) => {
+      const c = e?.detail?.client;
+      if (!c || String(c.id) !== String(id)) return;
+      setClient((prev) => ({ ...(prev || {}), ...c }));
+    };
+
+    window.addEventListener("clients:order-created", onOrderCreated);
+    window.addEventListener("clients:refresh", onClientsRefresh);
+    return () => {
+      window.removeEventListener("clients:order-created", onOrderCreated);
+      window.removeEventListener("clients:refresh", onClientsRefresh);
+    };
+  }, [id]);
+
+  if (!client) return loading ? null : null;
+
+  const lastUpdated =
+    orders.map((o) => o.created_at).filter(Boolean).sort().slice(-1)[0] ||
+    client.updated_at ||
+    client.updated_at_derived ||
+    null;
 
   const tableLabel = (order) => {
-    // сначала явное название стола из заказа
     if (order.table_name) return String(order.table_name);
-    // иначе — из справочника по id
     const t = tablesMap.get(String(order.table));
     if (t?.number != null) return `Стол ${t.number}`;
     return "Стол —";
   };
 
   return (
-    <div className="clients__modalOverlay" onClick={onClose}>
+    <div className="clients__modalOverlay" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="clients__modalWide" onClick={(e) => e.stopPropagation()}>
         <div className="clients__modalHeader">
           <div className="clients__modalTitle">Клиент — {client.full_name}</div>
-          <button className="clients__iconBtn" onClick={onClose} aria-label="Закрыть">
-            ×
-          </button>
+          <button className="clients__iconBtn" onClick={onClose} aria-label="Закрыть">×</button>
         </div>
 
         <div className="clients__cardHeader">
           <div className="clients__profile">
-            <div>
-              <strong>Телефон:</strong> {client.phone || "—"}
-            </div>
+            <div><strong>Телефон:</strong> {client.phone || "—"}</div>
           </div>
           <div className="clients__stats">
             <div className="clients__statBox">
               <div className="clients__statVal">{orders.length}</div>
               <div className="clients__statLabel">Заказы</div>
+            </div>
+            <div className="clients__statBox">
+              <div className="clients__statVal">
+                {lastUpdated ? new Date(lastUpdated).toLocaleString() : "—"}
+              </div>
+              <div className="clients__statLabel">Обновлён</div>
             </div>
           </div>
         </div>
@@ -474,7 +615,6 @@ const ClientCard = ({ id, onClose, tablesMap }) => {
             <table className="clients__table">
               <thead>
                 <tr>
-                  {/* колонку № (uuid) убрали по просьбе */}
                   <th>Стол</th>
                   <th>Гостей</th>
                   <th>Статус</th>
@@ -499,9 +639,7 @@ const ClientCard = ({ id, onClose, tablesMap }) => {
                       </tr>
                     ))
                 ) : (
-                  <tr>
-                    <td className="clients__empty" colSpan={5}>Заказов нет</td>
-                  </tr>
+                  <tr><td className="clients__empty" colSpan={5}>Заказов нет</td></tr>
                 )}
               </tbody>
             </table>
@@ -516,4 +654,4 @@ const ClientCard = ({ id, onClose, tablesMap }) => {
   );
 };
 
-export default Clients;
+export default CafeClients;

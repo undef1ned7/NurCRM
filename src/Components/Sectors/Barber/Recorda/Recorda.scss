@@ -1,6 +1,4 @@
-/* src/components/Recorda/Recorda.scss */
 :root {
-  /* только цвета */
   --primary: #f7d74f;
   --primary-dark: #d4b800;
   --text: #0f172a;
@@ -9,16 +7,16 @@
   --surface: #ffffff;
 }
 
-/* локальные SCSS-переменные */
 $radius: 12px;
 $shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 $tap: 44px;
 
-/* скоуп строго внутри .recorda */
-.recorda,
-.recorda * { box-sizing: border-box; }
+.Barberrocarda,
+.Barberrocarda * {
+  box-sizing: border-box;
+}
 
-.recorda {
+.Barberrocarda {
   background: var(--surface);
   border-radius: $radius;
   padding: 24px;
@@ -27,13 +25,18 @@ $tap: 44px;
   flex-direction: column;
   gap: 20px;
 
-  /* Header */
+  /* HEADER GRID: [title | search | add] */
   &__header {
+    display: grid;
+    grid-template-columns: 1fr minmax(260px, 520px) auto;
+    align-items: center;
+    gap: 14px;
+  }
+  &__titlebox {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    gap: 12px;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
   }
   &__title {
     font-size: 20px;
@@ -41,25 +44,39 @@ $tap: 44px;
     color: var(--text);
     margin: 0;
   }
-  &__subtitle { font-size: 13px; color: var(--muted); }
-  &__actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  &__subtitle {
+    font-size: 13px;
+    color: var(--muted);
+  }
 
   /* Search */
-  &__search { position: relative; }
+  &__search {
+    position: relative;
+    width: 100%;
+  }
   &__search-input {
-    width: 240px;
+    width: 100%;
     padding: 10px 12px 10px 32px;
     border-radius: 10px;
     border: 1px solid var(--border);
     font-size: 14px;
     min-height: 40px;
-    &:focus { outline: none; border-color: var(--primary); }
+    &:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
   }
   &__search-icon {
-    position: absolute; left: 10px; top: 50%;
+    position: absolute;
+    left: 10px;
+    top: 50%;
     transform: translateY(-50%);
-    font-size: 14px; color: var(--muted);
+    font-size: 14px;
+    color: var(--muted);
   }
+  &__addBtn {
+    justify-self: start;
+  } /* на десктопе прижмём к началу ячейки */
 
   /* Buttons */
   &__btn {
@@ -75,29 +92,35 @@ $tap: 44px;
     border: 1px solid transparent;
     min-height: $tap;
     line-height: 1;
-
-    &:active { transform: translateY(1px); }
-
+    &:active {
+      transform: translateY(1px);
+    }
     &--primary {
       background: var(--primary);
       color: #111;
-      &:hover { background: var(--primary-dark); }
+      &:hover {
+        background: var(--primary-dark);
+      }
     }
     &--secondary {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--text);
-      &:hover { background: #f9fafb; }
+      &:hover {
+        background: #f9fafb;
+      }
     }
     &--danger {
       background: transparent;
       border: 1px solid #ef4444;
       color: #ef4444;
-      &:hover { background: rgba(239, 68, 68, 0.06); }
+      &:hover {
+        background: rgba(239, 68, 68, 0.06);
+      }
     }
   }
 
-  /* Alert */
+  /* Alerts */
   &__alert {
     padding: 10px 12px;
     border-radius: 10px;
@@ -108,22 +131,27 @@ $tap: 44px;
     word-wrap: break-word;
   }
 
-  /* Table + внутренний скролл */
+  /* Table container */
   &__table-wrap {
     overflow: auto;
     max-height: clamp(320px, 60vh, 720px);
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-
-    &::-webkit-scrollbar { width: 8px; height: 8px; }
-    &::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 8px; }
+    scrollbar-gutter: stable both-edges;
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 8px;
+    }
   }
 
   &__table {
     width: 100%;
     border-collapse: collapse;
     min-width: 640px;
-
     thead th {
       text-align: left;
       padding: 12px;
@@ -135,15 +163,15 @@ $tap: 44px;
       top: 0;
       z-index: 1;
     }
-
     tbody td {
       padding: 12px;
       font-size: 14px;
       border-bottom: 1px solid var(--border);
       vertical-align: top;
     }
-
-    tbody tr:hover td { background: #f1f5f9; }
+    tbody tr:hover td {
+      background: #f1f5f9;
+    }
   }
 
   &__loading {
@@ -163,66 +191,120 @@ $tap: 44px;
     border: 1px solid transparent;
     white-space: nowrap;
   }
-  &__badge--booked     { background: rgba(59,130,246,.15);  color:#3b82f6; border-color: rgba(59,130,246,.35); }
-  &__badge--confirmed  { background: rgba(99,102,241,.15);  color:#6366f1; border-color: rgba(99,102,241,.35); }
-  &__badge--completed  { background: rgba(16,185,129,.15);  color:#10b981; border-color: rgba(16,185,129,.35); }
-  &__badge--canceled   { background: rgba(239,68,68,.15);   color:#ef4444; border-color: rgba(239,68,68,.35); }
-  &__badge--no_show    { background: rgba(234,179,8,.15);   color:#eab308; border-color: rgba(234,179,8,.35); }
+  &__badge--booked {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.35);
+  }
+  &__badge--confirmed {
+    background: rgba(99, 102, 241, 0.15);
+    color: #6366f1;
+    border-color: rgba(99, 102, 241, 0.35);
+  }
+  &__badge--completed {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.35);
+  }
+  &__badge--canceled {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.35);
+  }
+  &__badge--no_show {
+    background: rgba(234, 179, 8, 0.15);
+    color: #eab308;
+    border-color: rgba(234, 179, 8, 0.35);
+  }
 
-  /* Modal (центр + sticky footer) */
+  /* Modal */
   &__modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,.5);
-    display: flex; align-items: center; justify-content: center;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     z-index: 100;
   }
   &__modal {
-    background: var(--surface);
+    background: #fff;
     border-radius: $radius;
     width: min(96vw, 720px) !important;
     max-height: 92dvh;
     overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0,0,0,.18);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
     padding: 0;
-    animation: recorda-fade .18s ease;
+    animation: brr-fade 0.18s ease;
     display: grid;
     grid-template-rows: auto 1fr;
   }
-  @keyframes recorda-fade {
-    from { opacity: 0; transform: translateY(-8px); }
-    to   { opacity: 1; transform: translateY(0); }
+  @keyframes brr-fade {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   &__modal-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px; border-bottom: 1px solid var(--border); background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    background: #fff;
   }
-  &__modal-title { font-size: 18px; font-weight: 700; margin: 0; }
-  &__icon-btn { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--muted); }
-  &__icon-btn:hover { color: var(--text); }
+  &__modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+  }
+  &__icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--muted);
+    &:hover {
+      color: var(--text);
+    }
+  }
 
-  /* Form (в модалке) — скролл контента + липкий футер */
+  /* Form in modal */
   &__form {
     display: grid;
     grid-template-rows: 1fr auto;
-    gap: 0;
     min-height: 0;
   }
   &__form-grid {
     padding: 16px;
     overflow: auto;
     min-height: 0;
+    scrollbar-gutter: stable;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
   }
-
-  &__field { display: flex; flex-direction: column; gap: 6px; }
-  &__field--full { grid-column: 1 / -1; }
-
-  &__label { font-size: 14px; font-weight: 600; color: var(--muted); }
-  &__req { color: #ef4444; }
-
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  &__field--full {
+    grid-column: 1 / -1;
+  }
+  &__label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  &__req {
+    color: #ef4444;
+  }
   &__input,
   &__textarea {
     padding: 10px;
@@ -230,10 +312,19 @@ $tap: 44px;
     border-radius: 8px;
     font-size: 14px;
     min-height: 40px;
-    &:focus { outline: none; border-color: var(--primary); }
-    &::placeholder { color: var(--muted); opacity: .8; }
+    &:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    &::placeholder {
+      color: var(--muted);
+      opacity: 0.8;
+    }
   }
-  &__textarea { min-height: 100px; resize: vertical; }
+  &__textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
 
   &__form-actions {
     position: sticky;
@@ -245,10 +336,15 @@ $tap: 44px;
     gap: 10px;
     align-items: center;
   }
-  &__form-actions-spacer { flex: 1 1 auto; }
-  &__form-actions-right { display: flex; gap: 10px; }
+  &__form-actions-spacer {
+    flex: 1 1 auto;
+  }
+  &__form-actions-right {
+    display: flex;
+    gap: 10px;
+  }
 
-  /* Notification */
+  /* Toast */
   &__notification {
     position: fixed;
     right: 20px;
@@ -258,49 +354,94 @@ $tap: 44px;
     padding: 16px;
     max-width: 320px;
     z-index: 90;
-    animation: recorda-slide-in .3s ease;
+    animation: brr-slide 0.3s ease;
   }
-  &__notification-content { display: flex; flex-direction: column; gap: 12px; }
-  &__notification-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 0; }
-  &__notification p { font-size: 14px; color: var(--text); margin: 0; line-height: 1.5; }
-
-  @keyframes recorda-slide-in {
-    from { opacity: 0; transform: translateX(20px); }
-    to   { opacity: 1; transform: translateX(0); }
+  &__notification-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  &__notification-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+  &__notification p {
+    font-size: 14px;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.5;
+  }
+  @keyframes brr-slide {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 }
 
-/* =================== RESPONSIVE =================== */
+/* Breakpoints */
 @media (max-width: 1024px) {
-  .recorda {
-    &__form-grid { grid-template-columns: 1fr 1fr; }
+  .Barberrocarda {
+    &__header {
+      grid-template-columns: 1fr minmax(240px, 1fr) auto;
+    }
   }
 }
 
 @media (max-width: 760px) {
-  .recorda {
-    &__form-grid { grid-template-columns: 1fr; }
-    &__modal { width: 96vw; max-height: 94dvh; }
-    &__notification { max-width: 92%; right: 4%; }
+  .Barberrocarda {
+    /* шапка в столбик: ровно и симметрично */
+    &__header {
+      grid-template-columns: 1fr;
+    }
+    &__addBtn {
+      justify-self: stretch;
+    }
+    &__btn {
+      width: 100%;
+      justify-content: center;
+    }
+    &__form-grid {
+      grid-template-columns: 1fr;
+    }
+    &__modal {
+      width: 96vw;
+      max-height: 94dvh;
+    }
+    &__notification {
+      max-width: 92%;
+      right: 4%;
+    }
   }
 }
 
-/* ≤ 560px: таблица → карточки */
+/* ≤ 560px: таблица -> карточки */
 @media (max-width: 560px) {
-  .recorda {
-    padding: 16px; border-radius: 10px; gap: 16px;
+  .Barberrocarda {
+    padding: 16px;
+    border-radius: 10px;
+    gap: 16px;
 
-    &__header { gap: 8px; align-items: center; }
-    &__title { font-size: 18px; }
-    &__subtitle { order: 3; width: 100%; }
-
-    &__actions { flex-direction: column; align-items: stretch; }
-    &__btn { width: 100%; justify-content: center; font-size: 13.5px; padding: 10px 12px; }
-
-    &__table { min-width: 0 !important; width: 100%; }
-    &__table thead { display: none; }
-    &__table, &__table tbody, &__table tr, &__table td { display: block; width: 100%; }
-
+    &__table {
+      min-width: 0 !important;
+      width: 100%;
+    }
+    &__table thead {
+      display: none;
+    }
+    &__table,
+    &__table tbody,
+    &__table tr,
+    &__table td {
+      display: block;
+      width: 100%;
+    }
     &__table tr {
       background: #fff;
       border: 1px solid var(--border);
@@ -309,7 +450,6 @@ $tap: 44px;
       margin-bottom: 10px;
       box-shadow: $shadow;
     }
-
     &__table tbody td {
       border: 0;
       padding: 8px 0;
@@ -320,60 +460,128 @@ $tap: 44px;
       align-items: start;
       white-space: normal;
     }
+    &__table tbody td:nth-child(1)::before {
+      content: "Клиент";
+      color: var(--muted);
+      font-weight: 600;
+    }
+    &__table tbody td:nth-child(2)::before {
+      content: "Мастер";
+      color: var(--muted);
+      font-weight: 600;
+    }
+    &__table tbody td:nth-child(3)::before {
+      content: "Услуга";
+      color: var(--muted);
+      font-weight: 600;
+    }
+    &__table tbody td:nth-child(4)::before {
+      content: "Статус";
+      color: var(--muted);
+      font-weight: 600;
+    }
+    &__table tbody td:nth-child(5)::before {
+      content: "Действия";
+      color: var(--muted);
+      font-weight: 600;
+    }
 
-    &__table tbody td:nth-child(1)::before { content: "Клиент";  color: var(--muted); font-weight: 600; }
-    &__table tbody td:nth-child(2)::before { content: "Мастер";  color: var(--muted); font-weight: 600; }
-    &__table tbody td:nth-child(3)::before { content: "Услуга";  color: var(--muted); font-weight: 600; }
-    &__table tbody td:nth-child(4)::before { content: "Статус";  color: var(--muted); font-weight: 600; }
-    &__table tbody td:nth-child(5)::before { content: "Действия"; color: var(--muted); font-weight: 600; }
-
-    &__table tbody td:last-child > .recorda__btn { width: 100%; justify-content: center; }
+    /* кнопка действий — компактная, не на всю ширину */
+    &__table tbody td:last-child > .Barberrocarda__btn {
+      width: auto;
+      justify-content: flex-start;
+    }
   }
 }
 
-/* ≤ 420px */
 @media (max-width: 420px) {
-  .recorda {
+  .Barberrocarda {
     padding: 14px;
-    &__title { font-size: 17px; }
-    &__btn { font-size: 13px; min-height: 40px; }
-    &__table tbody td { grid-template-columns: 108px 1fr; font-size: 13.5px; }
-    &__badge { font-size: 11.8px; padding: 4px 7px; }
-    &__modal-title { font-size: 17px; }
+    &__title {
+      font-size: 17px;
+    }
+    &__btn {
+      font-size: 13px;
+      min-height: 40px;
+    }
+    &__table tbody td {
+      grid-template-columns: 108px 1fr;
+      font-size: 13.5px;
+    }
+    &__badge {
+      font-size: 11.8px;
+      padding: 4px 7px;
+    }
+    &__modal-title {
+      font-size: 17px;
+    }
   }
 }
 
-/* ≤ 360px */
 @media (max-width: 360px) {
-  .recorda { &__table tbody td { grid-template-columns: 96px 1fr; } }
+  .Barberrocarda {
+    &__table tbody td {
+      grid-template-columns: 96px 1fr;
+    }
+  }
 }
 
-/* ≤ 320px — плотное, но аккуратное сжатие */
 @media (max-width: 320px) {
-  .recorda {
-    padding: 12px; border-radius: 10px; gap: 14px;
-    &__title { font-size: 16px; }
-    &__btn { font-size: 12.8px; padding: 9px 10px; min-height: 40px; }
-    &__search-input { font-size: 13px; padding: 9px 10px 9px 30px; }
-    &__label { font-size: 13px; }
-    &__input, &__textarea { font-size: 13px; padding: 8px 9px; min-height: 38px; }
-    &__table tr { padding: 10px; }
-    &__table tbody td { grid-template-columns: 88px 1fr; padding: 7px 0; font-size: 12.8px; }
+  .Barberrocarda {
+    padding: 12px;
+    border-radius: 10px;
+    gap: 14px;
+    &__title {
+      font-size: 16px;
+    }
+    &__btn {
+      font-size: 12.8px;
+      padding: 9px 10px;
+      min-height: 40px;
+    }
+    &__search-input {
+      font-size: 13px;
+      padding: 9px 10px 9px 30px;
+    }
+    &__label {
+      font-size: 13px;
+    }
+    &__input,
+    &__textarea {
+      font-size: 13px;
+      padding: 8px 9px;
+      min-height: 38px;
+    }
+    &__table tr {
+      padding: 10px;
+    }
+    &__table tbody td {
+      grid-template-columns: 88px 1fr;
+      padding: 7px 0;
+      font-size: 12.8px;
+    }
   }
 }
 
-/* SAFE-AREA */
+/* safe-area / motion */
 @supports (padding: max(0px)) {
-  .recorda {
-    &__modal { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
-    &__notification { margin-bottom: max(0px, env(safe-area-inset-bottom)); }
+  .Barberrocarda {
+    &__modal {
+      padding-bottom: max(0px, env(safe-area-inset-bottom));
+    }
+    &__notification {
+      margin-bottom: max(0px, env(safe-area-inset-bottom));
+    }
   }
 }
-
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .recorda {
-    &__btn { transition: none !important; }
-    &__modal, &__notification { animation: none !important; }
+  .Barberrocarda {
+    &__btn {
+      transition: none !important;
+    }
+    &__modal,
+    &__notification {
+      animation: none !important;
+    }
   }
 }

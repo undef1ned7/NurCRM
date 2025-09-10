@@ -9,13 +9,11 @@ const toNum = (v) => {
 // клиент из /cafe/clients/
 const normalizeClient = (c) => ({
   id: c.id,
-  // API поле: name; внутри интерфейса используем full_name
   full_name: c.name ?? c.full_name ?? "",
   phone: c.phone ?? "",
   notes: c.notes ?? "",
   created_at: c.created_at || null,
   updated_at: c.updated_at || null,
-  // сервер может вернуть краткие заказы клиента (readOnly)
   orders: Array.isArray(c.orders) ? c.orders : [],
 });
 
@@ -26,7 +24,11 @@ async function fetchAll(url0) {
   let guard = 0;
   while (url && guard < 60) {
     const { data } = await api.get(url);
-    const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+    const list = Array.isArray(data?.results)
+      ? data.results
+      : Array.isArray(data)
+      ? data
+      : [];
     acc.push(...list);
     url = data?.next || null;
     guard += 1;
@@ -34,7 +36,7 @@ async function fetchAll(url0) {
   return acc;
 }
 
-/* ===== public: clients CRUD (через /cafe/clients/) ===== */
+/* ===== public: clients CRUD ===== */
 export async function getAll() {
   const raw = await fetchAll("/cafe/clients/");
   return raw.map(normalizeClient);
@@ -42,7 +44,6 @@ export async function getAll() {
 
 export async function createClient(dto) {
   const payload = {
-    // сервер ждёт name/phone/notes
     name: (dto.full_name || dto.name || "").trim(),
     phone: (dto.phone || "").trim(),
     notes: (dto.notes || "").trim(),
@@ -66,7 +67,7 @@ export async function removeClient(id) {
   return true;
 }
 
-/* ===== orders for client (активные) ===== */
+/* ===== orders for client (активные + история) ===== */
 
 const normalizeOrderLite = (o) => ({
   id: o.id,
@@ -88,21 +89,28 @@ const calcOrderTotal = (ord) => {
   }, 0);
 };
 
-// добираем детали по id, если не хватает статуса/позиций/суммы
 async function enrichOrdersDetails(list) {
   const needIds = list
-    .filter((o) => !o.status || !o.total || !Array.isArray(o.items) || o.items.length === 0)
+    .filter(
+      (o) =>
+        !o.status || !o.total || !Array.isArray(o.items) || o.items.length === 0
+    )
     .map((o) => o.id);
 
   if (!needIds.length) return list;
 
   const details = await Promise.all(
     needIds.map((id) =>
-      api.get(`/cafe/orders/${id}/`).then((r) => ({ id, data: r.data })).catch(() => null)
+      api
+        .get(`/cafe/orders/${id}/`)
+        .then((r) => ({ id, data: r.data }))
+        .catch(() => null)
     )
   );
 
-  const byId = new Map(details.filter(Boolean).map((x) => [String(x.id), x.data]));
+  const byId = new Map(
+    details.filter(Boolean).map((x) => [String(x.id), x.data])
+  );
   return list.map((o) => {
     const d = byId.get(String(o.id));
     if (!d) return { ...o, total: o.total || calcOrderTotal(o) };
@@ -111,19 +119,17 @@ async function enrichOrdersDetails(list) {
   });
 }
 
-/* ===== orders history for client (архив/удалённые) ===== */
-
 const normalizeHistoryLite = (h) => ({
-  id: h.id,                                  // id записи истории
-  original_id: h.original_order_id || null,  // исходный заказ
-  table: h.table ?? null,                    // ref может отсутствовать
-  table_name: h.table_number != null ? `Стол ${h.table_number}` : "", // снапшот
+  id: h.id,
+  original_id: h.original_order_id || null,
+  table: h.table ?? null,
+  table_name: h.table_number != null ? `Стол ${h.table_number}` : "",
   guests: h.guests ?? 0,
-  status: "архив",                           // пометка в UI
-  created_at: h.created_at || h.archived_at || null, // показываем дату создания заказа
+  status: "архив",
+  created_at: h.created_at || h.archived_at || null,
   archived_at: h.archived_at || null,
   items: Array.isArray(h.items) ? h.items : [],
-  total: 0,                                  // посчитаем ниже
+  total: 0,
 });
 
 function calcHistoryTotal(items) {
@@ -143,27 +149,55 @@ async function getOrdersHistoryByClient(clientId) {
   });
 }
 
-/**
- * Список заказов клиента: активные + история (удалённые/архивные).
- * Сортировка по created_at (новые сверху).
- */
 export async function getOrdersByClient(clientId) {
   if (!clientId) return [];
 
-  // 1) активные/обычные
   let raw = await fetchAll(`/cafe/orders/?client=${clientId}`);
-  if (!raw.length) {
-    raw = await fetchAll(`/cafe/clients/${clientId}/orders/`);
-  }
+  if (!raw.length) raw = await fetchAll(`/cafe/clients/${clientId}/orders/`);
   const base = raw.map(normalizeOrderLite);
   const fullActive = await enrichOrdersDetails(base);
-  const withTotals = fullActive.map((o) => ({ ...o, total: o.total || calcOrderTotal(o) }));
+  const withTotals = fullActive.map((o) => ({
+    ...o,
+    total: o.total || calcOrderTotal(o),
+  }));
 
-  // 2) история (удалённые/архивные)
   const history = await getOrdersHistoryByClient(clientId);
 
-  // 3) объединяем
   return [...withTotals, ...history].sort(
     (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
   );
+}
+
+/* ===== ЛЁГКАЯ СТАТИСТИКА ДЛЯ ТАБЛИЦЫ (кол-во заказов + последнее время) ===== */
+export async function getOrdersStatsByClient(clientId) {
+  if (!clientId) return { orders_count: 0, updated_at_derived: null };
+
+  // активные
+  let active = await fetchAll(`/cafe/orders/?client=${clientId}`);
+  if (!Array.isArray(active)) active = [];
+
+  // история
+  let history = await fetchAll(`/cafe/clients/${clientId}/orders/history/`);
+  if (!Array.isArray(history)) history = [];
+
+  const count = active.length + history.length;
+
+  const lastActive =
+    active
+      .map((o) => o.created_at)
+      .filter(Boolean)
+      .sort()
+      .slice(-1)[0] || null;
+
+  const lastHist =
+    history
+      .map((h) => h.created_at || h.archived_at)
+      .filter(Boolean)
+      .sort()
+      .slice(-1)[0] || null;
+
+  const updated_at_derived =
+    [lastActive, lastHist].filter(Boolean).sort().slice(-1)[0] || null;
+
+  return { orders_count: count, updated_at_derived };
 }

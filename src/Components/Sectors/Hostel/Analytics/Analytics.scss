@@ -1,4 +1,4 @@
-/* === ГЛОБАЛЬНО: только цвета === */
+/* === ГЛОБАЛЬНО: только цвета и стабильный скролл === */
 :root {
   --primary: #f7d74f;
   --primary-dark: #d4b800;
@@ -7,6 +7,7 @@
   --border: #e5e7eb;
   --surface: #ffffff;
 }
+html { scrollbar-gutter: stable both-edges; }
 
 /* === БЛОК: analytics (все прочие переменные — локально) === */
 .analytics {
@@ -223,7 +224,7 @@
   &__empty { padding: 12px; text-align: center; color: var(--muted); }
   &__sticky { position: sticky; top: 0; z-index: 2; }
 
-  /* Scroll helpers (локально к блоку) */
+  /* Scroll helpers */
   &__scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable; }
   &__scroll-y { overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable; }
   &__scroll-both { overflow: auto; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable both-edges; }
@@ -234,7 +235,7 @@
   & *::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
   & *::-webkit-scrollbar-track { background: transparent; }
 
-  /* Микро-адаптация до 320px */
+  /* Микро-адаптация до 360px (осталась как было) */
   @media (max-width: 360px) {
     padding: 12px;
     &__input { min-width: 140px; }
@@ -243,39 +244,96 @@
     &__tabs { gap: 4px; }
     &__chip { padding: 6px 8px; }
   }
+
+  /* НОВОЕ: лучшая адаптация до 320px */
+  @media (max-width: 320px) {
+    /* компактные токены */
+    --fs-base: 12px;
+    --fs-title: 16px;
+    --pad-x: 10px;
+    --pad-y: 6px;
+
+    padding: 10px;
+    gap: 10px;
+
+    &__actions { gap: 6px; }
+    &__input { min-width: 120px; padding: 7px 9px; }
+    &__btn { padding: 7px 10px; }
+    &__chip { padding: 5px 8px; font-size: 11px; }
+    &__tabs { gap: 4px; }
+    &__kpi-value { font-size: 16px; }
+
+    /* чуть меньше минимальные ширины таблиц (скролл всё равно останется, но короче) */
+    &__table--min-narrow { min-width: 360px; }
+    &__table--min { min-width: 520px; }
+    &__table--min-wide { min-width: 680px; }
+  }
 }
 
-/* === БЛОК: analytics-modal === */
+/* === БЛОК: analytics-modal — центрированная модалка === */
 .analytics-modal__overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.45);
   display: flex; align-items: center; justify-content: center;
-  z-index: 999; /* поверх остального */
+  padding: 12px;                 /* «воздух» у краёв на мобильных */
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  animation: am-overlay-in .18s ease-out both;
+  overscroll-behavior: contain;  /* не тянуть страницу при прокрутке */
+  z-index: 999;
 }
 .analytics-modal {
-  background: #fff; border-radius: 10px;
-  width: 760px; max-width: 96%;
-  max-height: 90vh;
+  background: #fff; border-radius: 16px;
+  width: min(720px, calc(100vw - 24px));
+  max-height: min(90vh, 760px);
   display: flex; flex-direction: column;
-  box-shadow: 0 8px 28px rgba(0,0,0,.12);
+  box-shadow: 0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08);
   overflow: hidden;
+  animation: am-pop-in .22s cubic-bezier(.2,.8,.2,1) .04s both;
 
   &__header {
     display: flex; justify-content: space-between; align-items: center;
     padding: 12px 16px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 1; background: #fff;
   }
-  &__title { font-size: 16px; font-weight: 600; color: var(--text); }
-  &__icon-btn { background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; }
+  &__title { font-size: 16px; font-weight: 700; color: var(--text); }
+  &__icon-btn {
+    background: #fff; border: 1px solid var(--border); width: 32px; height: 32px;
+    line-height: 1; border-radius: 10px; font-size: 18px; color: #475569; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; transition: .15s;
+    &:hover { background: #f3f4f6; border-color: #cbd5e1; color: #0f172a; }
+  }
 
   &__body {
-    padding: 12px 16px;
+    padding: 14px 16px;
     overflow: auto;
     display: grid; gap: 10px;
     flex: 1 1 auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   &__footer {
+    position: sticky; bottom: 0;
     padding: 10px 16px;
     border-top: 1px solid var(--border);
     display: flex; justify-content: flex-end; gap: 8px;
+    background: linear-gradient(180deg, rgba(255,255,255,.35), #fff 60%);
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
+  /* точечная адаптация модалки для <=320px */
+  @media (max-width: 320px) {
+    width: calc(100vw - 16px);
+    max-height: 88vh;
+    &__header, &__footer { padding: 10px 12px; }
+    &__body { padding: 10px 12px; }
+    /* оставим кнопки в одну строку, но дадим им растягиваться; при совсем длинных переводятся на вторую строку */
+    &__footer .analytics__btn { flex: 1 1 auto; }
   }
 }
+
+/* блокируем прокрутку фона при открытой модалке */
+body.modal-open { overflow: hidden; }
+
+/* анимации */
+@keyframes am-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes am-pop-in { from { transform: translateY(-6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

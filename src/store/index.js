@@ -11,6 +11,8 @@ import clientReducer from "./slices/ClientSlice"; // Импортируем ре
 import saleReducer from "./slices/saleSlice";
 import instagramReducer from "./slices/InstagramSlice";
 import cashReducer from "./slices/cashSlice";
+import jobsReducer from "./slices/jobsSlice";
+import uiReducer from "./slices/uiSlice";
 const store = configureStore({
   reducer: {
     user: userReducer,
@@ -25,7 +27,11 @@ const store = configureStore({
     sale: saleReducer,
     instagram: instagramReducer,
     cash: cashReducer,
+    jobs: jobsReducer,
+    ui: uiReducer,
   },
 });
 
+export * from "./slices/uiSlice";
+export * from "./slices/jobsSlice";
 export default store;

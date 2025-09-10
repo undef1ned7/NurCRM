@@ -8,490 +8,422 @@
   --surface: #ffffff;
 }
 
-/* локальные токены — внутри блока */
-.masters {
-  --radius: 12px;
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  --tap: 44px;
+.barbermasters,
+.barbermasters * {
+  box-sizing: border-box;
+}
 
+/* wrapper */
+.barbermasters {
+  --radius: 14px;
+  --shadow: 0 10px 30px rgba(2, 6, 23, 0.12);
+  --padX: 20px;
   background: var(--surface);
   border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   padding: 24px;
-  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
+}
 
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
+/* header */
 
-  &__title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0;
-  }
+.barbermasters__content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 20px;
+}
 
-  &__subtitle {
-    font-size: 13px;
-    color: var(--muted);
-  }
+.barbermasters__header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+.barbermasters__titleWrap {
+  display: grid;
+  gap: 4px;
+}
+.barbermasters__title {
+  margin: 0;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 20px;
+}
+.barbermasters__subtitle {
+  color: var(--muted);
+  font-size: 13px;
+}
 
-  &__actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
+/* === ACTIONS на одной линии: табы | поиск(резиновый) | кнопка === */
+.barbermasters__actions {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
 
-  /* Search */
-  &__search {
-    position: relative;
-  }
-  &__searchInput {
-    width: 240px;
-    padding: 10px 12px 10px 32px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    font-size: 14px;
-  }
-  &__searchInput:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
-  &__searchIcon {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 14px;
-    color: var(--muted);
-  }
+.barbermasters__copyBtn {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+.barbermasters__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-  /* Buttons */
-  &__btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
-    border: 1px solid transparent;
-    min-height: var(--tap);
-    line-height: 1;
+.barbermasters__tabs {
+  display: flex;
+  gap: 8px;
+}
 
-    &:active {
-      transform: translateY(1px);
-    }
+.barbermasters__search {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.barbermasters__searchInput {
+  width: 100%;
+  padding: 10px 12px 10px 34px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  background: #fff;
+}
+.barbermasters__searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.barbermasters__searchInput::placeholder {
+  color: var(--muted);
+  opacity: 0.9;
+}
+.barbermasters__searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 14px;
+}
 
-    &--primary {
-      background: var(--primary);
-      color: #111;
-    }
-    &--primary:hover {
-      background: var(--primary-dark);
-    }
+/* buttons */
+.barbermasters__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: #fff;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.18s;
+  line-height: 1;
+}
+.barbermasters__btn svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+.barbermasters__btn:active {
+  transform: translateY(1px);
+}
+.barbermasters__btn--primary {
+  background: var(--primary);
+  color: #111;
+}
+.barbermasters__btn--primary:hover {
+  background: var(--primary-dark);
+}
+.barbermasters__btn--secondary {
+  border: 1px solid var(--border);
+}
+.barbermasters__btn--secondary:hover {
+  background: #f9fafb;
+}
+.barbermasters__btn--danger {
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  background: #fff;
+}
+.barbermasters__btn--danger:hover {
+  background: rgba(239, 68, 68, 0.06);
+}
+.barbermasters__btn.is-active {
+  background: #f9fafb;
+  border-color: var(--border);
+}
+.barbermasters__btnText {
+  display: inline;
+}
 
-    &--secondary {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-    &--secondary:hover {
-      background: #f9fafb;
-    }
+/* alerts */
+.barbermasters__alert {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(231, 76, 60, 0.35);
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+}
+.barbermasters__alert--inModal {
+  margin: 12px var(--padX) 0;
+}
 
-    &--danger {
-      background: transparent;
-      border: 1px solid #ef4444;
-      color: #ef4444;
-    }
-    &--danger:hover {
-      background: rgba(239, 68, 68, 0.06);
-    }
-  }
+/* list / card */
+.barbermasters__list {
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  max-height: clamp(320px, 60vh, 700px);
+  padding-right: 6px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+.barbermasters__list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.barbermasters__list::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 8px;
+}
 
-  /* Alert */
-  &__alert {
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-size: 14px;
-    background: rgba(231, 76, 60, 0.12);
-    color: #e74c3c;
-    border: 1px solid rgba(231, 76, 60, 0.35);
-  }
+.barbermasters__card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fafafa;
+  transition: background 0.18s;
+}
+.barbermasters__card:hover {
+  background: #f1f5f9;
+}
+.barbermasters__cardLeft {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+}
+.barbermasters__avatar {
+  min-width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow);
+}
+.barbermasters__nameRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.barbermasters__name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+.barbermasters__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.barbermasters__meta .bm-item {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.barbermasters__meta .bm-item + .bm-item::before {
+  content: "•";
+  margin: 0 8px;
+  color: var(--muted);
+}
+.barbermasters__cardActions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  min-width: fit-content;
+}
 
-  /* Scroll area — список не тянет страницу */
-  &__scroll {
-    overflow: auto;
-    max-height: clamp(320px, 60vh, 720px);
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+/* overlay & modal */
+.barbermasters__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: saturate(140%) blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 70;
+}
+.barbermasters__modal {
+  width: min(640px, 96vw);
+  max-height: min(92vh, 760px);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
 
-    &::-webkit-scrollbar {
-      height: 8px;
-      width: 8px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: #e2e8f0;
-      border-radius: 8px;
-    }
-  }
+/* modal header */
+.barbermasters__modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px var(--padX);
+  border-bottom: 1px solid var(--border);
+}
+.barbermasters__modalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+}
+.barbermasters__iconBtn {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+.barbermasters__iconBtn:hover {
+  color: var(--text);
+}
 
-  /* Skeleton */
-  &__skeletonList {
-    display: grid;
-    gap: 10px;
-  }
-  &__skeletonCard {
-    height: 84px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.06) 25%,
-      rgba(255, 255, 255, 0.12) 37%,
-      rgba(255, 255, 255, 0.06) 63%
-    );
-    background-size: 400% 100%;
-    animation: masters-skeleton 1.1s infinite linear;
-  }
-  @keyframes masters-skeleton {
-    0% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
+/* modal form */
+.barbermasters__form {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 0;
+}
+.barbermasters__grid {
+  padding: 16px var(--padX);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+.barbermasters__field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.barbermasters__field--full {
+  grid-column: 1/-1;
+}
+.barbermasters__label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.barbermasters__req {
+  color: #ef4444;
+}
+.barbermasters__input {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 14px;
+  background: #fff;
+  width: 100%;
+  min-width: 0;
+}
+.barbermasters__input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.barbermasters__input::placeholder {
+  color: var(--muted);
+  opacity: 0.85;
+}
 
-  /* List & Card */
-  &__list {
-    display: grid;
-    gap: 10px;
-  }
+/* modal footer */
+.barbermasters__footer {
+  border-top: 1px solid var(--border);
+  padding: 12px var(--padX);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  background: #fff;
+}
+.barbermasters__spacer {
+  flex: 1 1 auto;
+}
+.barbermasters__footerRight {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
-  &__empty {
-    padding: 14px;
-    text-align: center;
-    color: var(--muted);
-    border: 1px dashed var(--border);
-    border-radius: var(--radius);
-    background: #fafafa;
+/* responsive */
+@media (max-width: 720px) {
+  .barbermasters__header {
+    grid-template-columns: 1fr;
   }
-  &__cardActions {
-    display: flex;
-    align-items: center;
-    column-gap: 20px;
+  .barbermasters__actions {
+    grid-template-columns: 1fr;
   }
-
-  &__card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: #fafafa;
-    transition: background 0.2s;
-
-    &:hover {
-      background: #f1f5f9;
-    }
-  }
-
-  &__cardLeft {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  &__avatar {
-    min-width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: #fff;
-    font-weight: 700;
-    font-size: 14px;
-    display: grid;
-    place-items: center;
-    box-shadow: var(--shadow);
-  }
-
-  &__nameRow {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  &__name {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  &__meta {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  &__meta span {
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  /* Badges */
-  &__badge {
-    padding: 4px 8px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-    border: 1px solid transparent;
-
-    &--active {
-      background: rgba(39, 174, 96, 0.15);
-      color: #27ae60;
-      border-color: rgba(39, 174, 96, 0.35);
-    }
-    &--inactive {
-      background: rgba(149, 165, 166, 0.15);
-      color: #7f8c8d;
-      border-color: rgba(149, 165, 166, 0.35);
-    }
-  }
-
-  /* Modal */
-  &__modalOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-  }
-
-  &__modal {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 20px;
-    width: 100%;
-    max-width: 640px;
-    animation: masters-fade 0.18s ease;
-  }
-  @keyframes masters-fade {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  &__modalHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-  &__modalTitle {
-    font-size: 18px;
-    font-weight: 700;
-    margin: 0;
-  }
-  &__iconBtn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    color: var(--muted);
-    &:hover {
-      color: var(--text);
-    }
-  }
-
-  /* Form */
-  &__form {
-    margin-top: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  &__formGrid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-
-  &__field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  &__fieldSwitch {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  &__label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--muted);
-  }
-  &__req {
-    color: red;
-  }
-
-  &__input {
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
-    &:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-    &::placeholder {
-      color: var(--muted);
-      opacity: 0.8;
-    }
-  }
-
-  /* Switch */
-  &__switch {
-    position: relative;
-    display: inline-block;
-    width: 40px;
-    height: 20px;
-  }
-  &__switch input {
+  .barbermasters__btnText {
     display: none;
   }
-  &__slider {
-    position: absolute;
-    inset: 0;
-    background: #ccc;
-    border-radius: 20px;
-    transition: 0.3s;
-    &::before {
-      content: "";
-      position: absolute;
-      left: 4px;
-      top: 4px;
-      width: 12px;
-      height: 12px;
-      background: #fff;
-      border-radius: 50%;
-      transition: 0.3s;
-    }
+  .barbermasters__modal {
+    width: 96vw;
+    max-height: 94vh;
   }
-  &__switch input:checked + &__slider {
-    background: var(--primary);
+  .barbermasters__grid {
+    grid-template-columns: 1fr;
   }
-  &__switch input:checked + &__slider::before {
-    transform: translateX(20px);
-  }
-
-  /* Form actions */
-  &__formActions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    justify-content: flex-end;
-  }
-  &__actionsSpacer {
-    flex: 1 1 auto;
-  }
-  &__actionsRight {
-    display: flex;
-    gap: 10px;
-  }
-
-  /* Responsive */
-  @media (max-width: 720px) {
-    &__formGrid {
-      grid-template-columns: 1fr;
-    }
-    &__searchInput {
-      width: 100%;
-      max-width: none;
-    }
-    &__modal {
-      width: 96vw;
-    }
-    &__formActions {
-      flex-wrap: wrap;
-    }
-    &__actionsRight,
-    &__btn--danger {
-      width: 100%;
-    }
-    &__actionsRight > .masters__btn,
-    &__btn--danger {
-      justify-content: center;
-    }
-  }
-
-  @media (max-width: 560px) {
-    padding: 16px;
-    border-radius: 10px;
-    gap: 16px;
-    &__title {
-      font-size: 18px;
-    }
-    &__btn {
-      width: 100%;
-      justify-content: center;
-      font-size: 13.5px;
-      padding: 10px 12px;
-    }
-  }
-
-  @media (max-width: 380px) {
+}
+@media (max-width: 380px) {
+  .barbermasters {
     padding: 14px;
-    &__title {
-      font-size: 17px;
-    }
-    &__btn {
-      font-size: 13px;
-      min-height: 40px;
-    }
   }
-
-  @media (max-width: 320px) {
+}
+@media (max-width: 320px) {
+  .barbermasters {
     padding: 12px;
     gap: 14px;
-    &__title {
-      font-size: 16px;
-    }
-    &__btn {
-      font-size: 12.8px;
-      padding: 9px 10px;
-      min-height: 40px;
-    }
-    &__input {
-      font-size: 13px;
-      padding: 8px 9px;
-      min-height: 38px;
-    }
+  }
+  .barbermasters__input {
+    font-size: 13px;
+    padding: 9px 10px;
+  }
+  .barbermasters__footer .barbermasters__btn {
+    flex: 1 1 100%;
   }
 }
 
-/* уважение системных настроек анимаций */
+/* reduce motion */
 @media (prefers-reduced-motion: reduce) {
-  .masters__btn {
+  .barbermasters__btn {
     transition: none !important;
   }
 }

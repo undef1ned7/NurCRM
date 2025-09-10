@@ -11,6 +11,9 @@ import api from "../../../../api";
 import Reports from "../Reports/Reports";
 import "./kassa.scss";
 
+/* Base path */
+const BASE = "/crm/cafe/kassa";
+
 /* helpers */
 const asArray = (d) =>
   Array.isArray(d?.results) ? d.results : Array.isArray(d) ? d : [];
@@ -39,7 +42,7 @@ const isUnpaidStatus = (s) => {
 };
 
 /* ───────────────────────────────────────────────── */
-const Kassa = () => (
+const CafeKassa = () => (
   <Routes>
     <Route index element={<CashboxList />} />
     <Route path="pay" element={<CashboxPayment />} />
@@ -60,19 +63,19 @@ const HeaderTabs = () => {
       <div className="kassa__tabs">
         <Link
           className={`kassa__tab ${isList ? "kassa__tab--active" : ""}`}
-          to="/dashboard/kassa"
+          to={BASE}
         >
           Кассы
         </Link>
         <Link
           className={`kassa__tab ${isPay ? "kassa__tab--active" : ""}`}
-          to="/dashboard/kassa/pay"
+          to={`${BASE}/pay`}
         >
           Оплата
         </Link>
         <Link
           className={`kassa__tab ${isReports ? "kassa__tab--active" : ""}`}
-          to="/dashboard/kassa/reports"
+          to={`${BASE}/reports`}
         >
           Отчёты
         </Link>
@@ -186,7 +189,7 @@ const CashboxList = () => {
                 <tr
                   key={r.id}
                   className="kassa__rowClickable"
-                  onClick={() => navigate(`/dashboard/kassa/${r.id}`)}
+                  onClick={() => navigate(`${BASE}/${r.id}`)}
                 >
                   <td>{i + 1}</td>
                   <td>
@@ -199,7 +202,7 @@ const CashboxList = () => {
                       className="kassa__btn kassa__btn--secondary"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/dashboard/kassa/${r.id}`);
+                        navigate(`${BASE}/${r.id}`);
                       }}
                     >
                       Открыть
@@ -458,7 +461,7 @@ const CashboxPayment = () => {
         }
       }
 
-      // 6) Сообщить вкладке Orders, чтобы она тоже убрала заказы (если она открыта)
+      // 6) Сообщить вкладке Orders
       try {
         window.dispatchEvent(
           new CustomEvent("orders:refresh", {
@@ -467,7 +470,7 @@ const CashboxPayment = () => {
         );
       } catch {}
 
-      // 7) Финальная синхронизация с сервером
+      // 7) Финальная синхронизация
       await loadAll();
     } catch (e) {
       console.error(e);
@@ -667,16 +670,16 @@ const CashboxDetail = () => {
     <div className="kassa">
       <div className="kassa__header">
         <div className="kassa__tabs">
-          <Link className="kassa__tab" to="/dashboard/kassa">
+          <Link className="kassa__tab" to={BASE}>
             ← Назад
           </Link>
           <span className="kassa__tab kassa__tab--active">
             {box?.department_name || box?.name || "Касса"}
           </span>
-          <Link className="kassa__tab" to="/dashboard/kassa/pay">
+          <Link className="kassa__tab" to={`${BASE}/pay`}>
             Оплата
           </Link>
-          <Link className="kassa__tab" to="/dashboard/kassa/reports">
+          <Link className="kassa__tab" to={`${BASE}/reports`}>
             Отчёты
           </Link>
         </div>
@@ -762,4 +765,4 @@ const CashboxDetail = () => {
   );
 };
 
-export default Kassa;
+export default CafeKassa;

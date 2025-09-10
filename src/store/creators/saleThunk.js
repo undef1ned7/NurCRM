@@ -50,6 +50,19 @@ export const deleteProductInCart = createAsyncThunk(
     }
   }
 );
+export const updateProductInCart = createAsyncThunk(
+  "sale/updateProductInCart",
+  async ({ id, productId, data }, { rejectWithValue }) => {
+    try {
+      await api.patch(`/main/pos/carts/${id}/items/${productId}/`, data);
+      // return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+// export const updateProductInCart = createAsyncThunk('sale/updateProductInCart', ({id, }))
 
 export const sendBarCode = createAsyncThunk(
   "products/sendBarcode",

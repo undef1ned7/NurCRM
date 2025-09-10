@@ -411,6 +411,7 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
     price: "",
     quantity: "",
     client: "",
+    purchase_price: "",
   });
 
   const { 0: state, 1: setState } = useState({
@@ -451,6 +452,7 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
       price,
       quantity,
       client,
+      purchase_price,
     } = newItemData;
 
     if (
@@ -460,7 +462,7 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
       quantity === "" ||
       brand_name === "" ||
       category_name === "" ||
-      client === ""
+      purchase_price === ""
     ) {
       alert("Пожалуйста, заполните все обязательные поля.");
       return;
@@ -474,11 +476,17 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
       price: price.toString(),
       quantity: Number(quantity),
       client,
+      purchase_price,
     };
 
     try {
-      await dispatch(createProductAsync(payload)).unwrap();
-      await dispatch(addCashFlows(cashData)).unwrap();
+      const product = await dispatch(createProductAsync(payload)).unwrap();
+      await dispatch(
+        addCashFlows({
+          ...cashData,
+          amount: product?.purchase_price * product?.quantity,
+        })
+      ).unwrap();
       onClose();
       onSaveSuccess();
     } catch (err) {
@@ -631,13 +639,28 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
           </div>
 
           <div className="add-modal__section">
-            <label>Цена *</label>
+            <label>Розничная цена *</label>
             <input
               type="number"
               name="price"
               placeholder="999.99"
               className="add-modal__input"
               value={newItemData.price}
+              onChange={handleChange}
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <div className="add-modal__section">
+            <label>Закупочная цена *</label>
+            <input
+              type="number"
+              name="purchase_price"
+              placeholder="999.99"
+              className="add-modal__input"
+              value={newItemData.purchase_price}
               onChange={handleChange}
               min="0"
               step="0.01"
@@ -868,13 +891,27 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
             </div>
 
             <div className="add-modal__section">
-              <label>Цена *</label>
+              <label>Розничная цена *</label>
               <input
                 type="number"
                 name="price"
                 placeholder="999.99"
                 className="add-modal__input"
                 value={newItemData.price}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+            <div className="add-modal__section">
+              <label>Закупочная цена *</label>
+              <input
+                type="number"
+                name="purchase_price"
+                placeholder="999.99"
+                className="add-modal__input"
+                value={newItemData.purchase_price}
                 onChange={handleChange}
                 min="0"
                 step="0.01"
@@ -1164,12 +1201,6 @@ export default function () {
 
   console.log(cashBoxes);
 
-  useEffect(() => {
-    if (cashBoxes.length > 0) {
-      setSelectCashBox(cashBoxes[0].id);
-    }
-  }, [cashBoxes]);
-
   return (
     <div className="sklad">
       {/* <div className="vitrina__header" style={{ margin: "15px 0" }}>
@@ -1240,11 +1271,30 @@ export default function () {
               onChange={(e) => setSelectCashBox(e.target.value)}
               className="employee__search-wrapper"
             >
+              <option value="" disabled>
+                Выберите кассу
+              </option>
               {cashBoxes?.map((cash) => (
-                <option value={cash.id}>{cash.name}</option>
+                <option key={cash.id} value={cash.id}>
+                  {cash.name ?? cash.department_name}
+                </option>
               ))}
             </select>
-            <button className="sklad__add" onClick={handleAdd}>
+
+            {/* <button
+              className="sklad__add"
+              onClick={handleAdd}
+              disabled={!selectCashBox}
+              title={!selectCashBox ? "Сначала выберите кассу" : undefined}
+            >
+              <Plus size={16} style={{ marginRight: "4px" }} /> 
+            </button> */}
+            <button
+              className="sklad__add"
+              onClick={handleAdd}
+              disabled={!selectCashBox}
+              title={!selectCashBox ? "Сначала выберите кассу" : undefined}
+            >
               <Plus size={16} style={{ marginRight: "4px" }} /> Добавить товар
             </button>
           </div>

@@ -1,3 +1,4 @@
+// src/components/Education/Login.jsx
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUserAsync } from "../../../store/creators/userCreators";
@@ -37,18 +38,21 @@ const Login = () => {
 
   return (
     <div className="login">
-      {/* СЛЕВА: только слоган поверх единого фона */}
       <section className="login__left" aria-hidden="true">
         <h1 className="login__slogan">Сила управления в ваших руках</h1>
       </section>
 
-      {/* СПРАВА: форма входа */}
       <aside className="login__right">
         <div className="login__card" role="dialog" aria-labelledby="loginTitle">
-          <h2 id="loginTitle" className="login__title">Вход в NurCRM</h2>
+          <h2 id="loginTitle" className="login__title">
+            Вход в NurCRM
+          </h2>
 
           {isAuthenticated && currentUser && (
-            <div className="login__message login__message--success" role="status">
+            <div
+              className="login__message login__message--success"
+              role="status"
+            >
               Добро пожаловать,&nbsp;
               <strong>
                 {currentUser.email ||
@@ -69,13 +73,15 @@ const Login = () => {
 
           {!!errText && (
             <div className="login__message login__message--error" role="alert">
-              Ошибка входа: {errText}
+              Ошибка входа
             </div>
           )}
 
-          <form className="login__form" onSubmit={handleSubmit} noValidate>
+          <form className="login__form" onSubmit={handleSubmit}>
             <div className="login__field">
-              <label className="login__label" htmlFor="email">Email</label>
+              <label className="login__label" htmlFor="email">
+                Email
+              </label>
               <input
                 className="login__input"
                 type="email"
@@ -90,7 +96,9 @@ const Login = () => {
             </div>
 
             <div className="login__field">
-              <label className="login__label" htmlFor="password">Пароль</label>
+              <label className="login__label" htmlFor="password">
+                Пароль
+              </label>
               <div className="login__password">
                 <input
                   className="login__input login__input--password"
@@ -114,7 +122,7 @@ const Login = () => {
               </div>
             </div>
 
-            <button className="login__button" type="submit" disabled={loading}>
+            <button className="login__button" disabled={loading}>
               {loading ? "Вход..." : "Войти"}
             </button>
           </form>

@@ -29,8 +29,23 @@ export const updateEmployees = createAsyncThunk(
   "update/employee",
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const { data: response } = api.patch(`/users/employees/${id}/`, data);
+      const { data: response } = await api.patch(
+        `/users/employees/${id}/`,
+        data
+      );
       return response;
+    } catch (e) {
+      return rejectWithValue(e);
+    }
+  }
+);
+
+export const getDepartments = createAsyncThunk(
+  "get/departments",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data: response } = await api.get(`/construction/departments/`);
+      return response.results;
     } catch (e) {
       return rejectWithValue(e);
     }

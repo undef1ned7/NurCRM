@@ -1,3 +1,5 @@
+
+
 // src/components/Education/Teachers.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { FaPlus, FaSearch, FaTimes, FaEdit, FaTrash } from "react-icons/fa";
@@ -5,11 +7,11 @@ import "./Teachers.scss";
 import api from "../../../../api";
 
 /* ===== API ===== */
-const EMPLOYEES_LIST_URL = "/users/employees/"; // GET
-const EMPLOYEES_CREATE_URL = "/users/employees/create/"; // POST
+const EMPLOYEES_LIST_URL = "/users/employees/";           // GET
+const EMPLOYEES_CREATE_URL = "/users/employees/create/";  // POST
 const EMPLOYEE_ITEM_URL = (id) => `/users/employees/${id}/`; // PUT / DELETE
-const ROLES_LIST_URL = "/users/roles/"; // GET (кастомные роли)
-const ROLE_CREATE_URL = "/users/roles/custom/"; // POST
+const ROLES_LIST_URL = "/users/roles/";                   // GET (кастомные роли)
+const ROLE_CREATE_URL = "/users/roles/custom/";           // POST
 const ROLE_ITEM_URL = (id) => `/users/roles/custom/${id}/`; // PUT / DELETE
 
 /* ===== Системные роли из swagger enum ===== */
@@ -24,7 +26,7 @@ const normalizeEmployee = (e = {}) => ({
   email: e.email ?? "",
   first_name: e.first_name ?? "",
   last_name: e.last_name ?? "",
-  role: e.role ?? null, // 'admin' | 'owner' | null
+  role: e.role ?? null,             // 'admin' | 'owner' | null
   custom_role: e.custom_role ?? null, // uuid | null
   role_display: e.role_display ?? "",
 });
@@ -179,7 +181,7 @@ function SchoolTeachers() {
     // 1) берём только кастомные, исключая названия системных
     const base = roles.filter((r) => !sysCodeFromName(r.name));
 
-    // 2) устраняем повторы по названию (на всякий случай)
+    // 2) устраняем повторы по названию
     const seen = new Set();
     const dedup = [];
     for (const r of base) {
@@ -314,7 +316,6 @@ function SchoolTeachers() {
     if (emp?.role) return `sys:${emp.role}`;
     if (emp?.custom_role) return `cus:${emp.custom_role}`;
     return "";
-    // если у сотрудника нет роли — оставим пустым (заставим выбрать)
   };
 
   const openEmpEdit = (u) => {
@@ -390,35 +391,35 @@ function SchoolTeachers() {
 
   /* ===== RENDER ===== */
   return (
-    <div className="teachers">
-      <div className="teachers__header">
-        <div>
-          <h2 className="teachers__title">Преподаватели</h2>
-          <p className="teachers__subtitle">Роли и сотрудники</p>
+    <div className="Schoolteachers">
+      <div className="Schoolteachers__header">
+        <div className="Schoolteachers__titleWrap">
+          <h2 className="Schoolteachers__title">Преподаватели</h2>
+          <p className="Schoolteachers__subtitle">Роли и сотрудники</p>
         </div>
 
-        <div className="teachers__actions">
-          <button
-            type="button"
-            className="teachers__btn teachers__btn--secondary"
-            onClick={() => setTab("roles")}
-            style={{ opacity: tab === "roles" ? 1 : 0.85 }}
-          >
-            Роли
-          </button>
-          <button
-            type="button"
-            className="teachers__btn teachers__btn--secondary"
-            onClick={() => setTab("employees")}
-            style={{ opacity: tab === "employees" ? 1 : 0.85 }}
-          >
-            Сотрудники
-          </button>
+        <div className="Schoolteachers__toolbar">
+          <div className="Schoolteachers__tabs">
+            <button
+              type="button"
+              className={`Schoolteachers__tab ${tab === "roles" ? "is-active" : ""}`}
+              onClick={() => setTab("roles")}
+            >
+              Роли
+            </button>
+            <button
+              type="button"
+              className={`Schoolteachers__tab ${tab === "employees" ? "is-active" : ""}`}
+              onClick={() => setTab("employees")}
+            >
+              Сотрудники
+            </button>
+          </div>
 
-          <div className="teachers__search">
-            <FaSearch className="teachers__search-icon" aria-hidden />
+          <div className="Schoolteachers__search">
+            <FaSearch className="Schoolteachers__searchIcon" aria-hidden />
             <input
-              className="teachers__search-input"
+              className="Schoolteachers__searchInput"
               placeholder={tab === "roles" ? "Поиск ролей…" : "Поиск по сотрудникам…"}
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -429,7 +430,7 @@ function SchoolTeachers() {
           {tab === "roles" ? (
             <button
               type="button"
-              className="teachers__btn teachers__btn--primary"
+              className="Schoolteachers__btn Schoolteachers__btn--primary"
               onClick={() => setRoleCreateOpen(true)}
             >
               <FaPlus /> Создать роль
@@ -437,7 +438,7 @@ function SchoolTeachers() {
           ) : (
             <button
               type="button"
-              className="teachers__btn teachers__btn--primary"
+              className="Schoolteachers__btn Schoolteachers__btn--primary"
               onClick={() => setEmpCreateOpen(true)}
             >
               <FaPlus /> Создать сотрудника
@@ -446,30 +447,29 @@ function SchoolTeachers() {
         </div>
       </div>
 
-      {loading && <div className="teachers__alert">Загрузка…</div>}
-      {!!error && <div className="teachers__alert">{error}</div>}
+      {loading && <div className="Schoolteachers__alert">Загрузка…</div>}
+      {!!error && <div className="Schoolteachers__alert">{error}</div>}
 
       {/* ===== ROLES TAB ===== */}
       {!loading && tab === "roles" && (
-        <div className="teachers__list">
-          {/* системные роли (read-only) */}
+        <div className="Schoolteachers__list">
           {SYSTEM_ROLES.map((code) => (
-            <div className="teachers__card" key={`sys:${code}`}>
-              <div className="teachers__card-left">
-                <div className="teachers__avatar" aria-hidden>
+            <div className="Schoolteachers__card" key={`sys:${code}`}>
+              <div className="Schoolteachers__cardLeft">
+                <div className="Schoolteachers__avatar" aria-hidden>
                   {ruLabelSys(code).charAt(0)}
                 </div>
                 <div>
-                  <p className="teachers__name">{ruLabelSys(code)}</p>
-                  <div className="teachers__meta">
+                  <p className="Schoolteachers__name">{ruLabelSys(code)}</p>
+                  <div className="Schoolteachers__meta">
                     <span>Системная роль</span>
                   </div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="Schoolteachers__rowActions">
                 <button
                   type="button"
-                  className="teachers__btn teachers__btn--secondary"
+                  className="Schoolteachers__btn Schoolteachers__btn--secondary"
                   disabled
                   title="Системные роли нельзя изменять"
                 >
@@ -477,7 +477,7 @@ function SchoolTeachers() {
                 </button>
                 <button
                   type="button"
-                  className="teachers__btn teachers__btn--danger"
+                  className="Schoolteachers__btn Schoolteachers__btn--danger"
                   disabled
                   title="Системные роли нельзя удалять"
                 >
@@ -487,25 +487,24 @@ function SchoolTeachers() {
             </div>
           ))}
 
-          {/* кастомные роли — без дублей admin/owner */}
           {filteredRoles.map((r) => (
-            <div className="teachers__card" key={r.id}>
-              <div className="teachers__card-left">
-                <div className="teachers__avatar" aria-hidden>
+            <div className="Schoolteachers__card" key={r.id}>
+              <div className="Schoolteachers__cardLeft">
+                <div className="Schoolteachers__avatar" aria-hidden>
                   {(r.name || "•").trim().charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="teachers__name">{r.name || "Без названия"}</p>
-                  <div className="teachers__meta">
+                  <p className="Schoolteachers__name">{r.name || "Без названия"}</p>
+                  <div className="Schoolteachers__meta">
                     <span>Пользовательская роль</span>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="Schoolteachers__rowActions">
                 <button
                   type="button"
-                  className="teachers__btn teachers__btn--secondary"
+                  className="Schoolteachers__btn Schoolteachers__btn--secondary"
                   onClick={() => openRoleEdit(r)}
                   title="Изменить"
                 >
@@ -513,7 +512,7 @@ function SchoolTeachers() {
                 </button>
                 <button
                   type="button"
-                  className="teachers__btn teachers__btn--danger"
+                  className="Schoolteachers__btn Schoolteachers__btn--danger"
                   onClick={() => removeRole(r)}
                   disabled={roleDeletingIds.has(r.id)}
                   title="Удалить"
@@ -525,22 +524,22 @@ function SchoolTeachers() {
           ))}
 
           {filteredRoles.length === 0 && roles.length > 0 && (
-            <div className="teachers__alert">Роли по запросу не найдены.</div>
+            <div className="Schoolteachers__alert">Роли по запросу не найдены.</div>
           )}
           {!loading && roles.length === 0 && (
-            <div className="teachers__alert">Пока нет пользовательских ролей.</div>
+            <div className="Schoolteachers__alert">Пока нет пользовательских ролей.</div>
           )}
         </div>
       )}
 
       {/* ===== EMPLOYEES TAB ===== */}
       {!loading && tab === "employees" && (
-        <div className="teachers__list">
+        <div className="Schoolteachers__list">
           {filteredEmployees.map((u) => {
             const initial =
               (fullName(u) || u.email || "•").trim().charAt(0).toUpperCase() || "•";
             const roleLabel = u.role
-              ? ruLabelSys(u.role) // системная
+              ? ruLabelSys(u.role)
               : roles.length
               ? roleById.get(u.custom_role)?.name || u.role_display || "—"
               : u.role_display || "—";
@@ -548,14 +547,14 @@ function SchoolTeachers() {
             const deleting = empDeletingIds.has(u.id);
 
             return (
-              <div key={u.id} className="teachers__card">
-                <div className="teachers__card-left">
-                  <div className="teachers__avatar" aria-hidden>
+              <div key={u.id} className="Schoolteachers__card">
+                <div className="Schoolteachers__cardLeft">
+                  <div className="Schoolteachers__avatar" aria-hidden>
                     {initial}
                   </div>
                   <div>
-                    <p className="teachers__name">{fullName(u) || "Без имени"}</p>
-                    <div className="teachers__meta">
+                    <p className="Schoolteachers__name">{fullName(u) || "Без имени"}</p>
+                    <div className="Schoolteachers__meta">
                       <span>{u.email || "—"}</span>
                       <span>•</span>
                       <span>{roleLabel}</span>
@@ -563,10 +562,10 @@ function SchoolTeachers() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
+                <div className="Schoolteachers__rowActions">
                   <button
                     type="button"
-                    className="teachers__btn teachers__btn--secondary"
+                    className="Schoolteachers__btn Schoolteachers__btn--secondary"
                     onClick={() => openEmpEdit(u)}
                     title="Изменить сотрудника"
                   >
@@ -574,7 +573,7 @@ function SchoolTeachers() {
                   </button>
                   <button
                     type="button"
-                    className="teachers__btn teachers__btn--danger"
+                    className="Schoolteachers__btn Schoolteachers__btn--danger"
                     onClick={() => removeEmployee(u)}
                     disabled={deleting}
                     title="Удалить сотрудника"
@@ -587,10 +586,10 @@ function SchoolTeachers() {
           })}
 
           {filteredEmployees.length === 0 && employees.length > 0 && (
-            <div className="teachers__alert">Сотрудники по запросу не найдены.</div>
+            <div className="Schoolteachers__alert">Сотрудники по запросу не найдены.</div>
           )}
           {!loading && employees.length === 0 && (
-            <div className="teachers__alert">Пока нет сотрудников.</div>
+            <div className="Schoolteachers__alert">Пока нет сотрудников.</div>
           )}
         </div>
       )}
@@ -600,17 +599,20 @@ function SchoolTeachers() {
       {/* Role: Create */}
       {roleCreateOpen && (
         <div
-          className="teachers__modal-overlay"
+          className="Schoolteachers__modalOverlay"
           role="dialog"
           aria-modal="true"
           onClick={() => !roleCreateSaving && setRoleCreateOpen(false)}
         >
-          <div className="teachers__modal" onClick={(e) => e.stopPropagation()}>
-            <div className="teachers__modal-header">
-              <h3 className="teachers__modal-title">Новая роль</h3>
+          <div
+            className="Schoolteachers__modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="Schoolteachers__modalHeader">
+              <h3 className="Schoolteachers__modalTitle">Новая роль</h3>
               <button
                 type="button"
-                className="teachers__icon-btn"
+                className="Schoolteachers__iconBtn"
                 onClick={() => !roleCreateSaving && setRoleCreateOpen(false)}
                 aria-label="Закрыть"
               >
@@ -618,14 +620,14 @@ function SchoolTeachers() {
               </button>
             </div>
 
-            <form className="teachers__form" onSubmit={submitRoleCreate}>
-              <div className="teachers__form-grid">
-                <div className="teachers__field teachers__field--full">
-                  <label className="teachers__label">
-                    Название роли <span className="teachers__req">*</span>
+            <form className="Schoolteachers__form" onSubmit={submitRoleCreate}>
+              <div className="Schoolteachers__formGrid">
+                <div className="Schoolteachers__field Schoolteachers__field--full">
+                  <label className="Schoolteachers__label">
+                    Название роли <span className="Schoolteachers__req">*</span>
                   </label>
                   <input
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     placeholder="Например: Контент-менеджер"
                     value={roleCreateName}
                     onChange={(e) => setRoleCreateName(e.target.value)}
@@ -634,14 +636,14 @@ function SchoolTeachers() {
                 </div>
               </div>
 
-              {!!roleCreateErr && <div className="teachers__alert">{roleCreateErr}</div>}
+              {!!roleCreateErr && <div className="Schoolteachers__alert">{roleCreateErr}</div>}
 
-              <div className="teachers__form-actions">
-                <span className="teachers__actions-spacer" />
-                <div className="teachers__actions-right">
+              <div className="Schoolteachers__formActions">
+                <span className="Schoolteachers__actionsSpacer" />
+                <div className="Schoolteachers__actionsRight">
                   <button
                     type="button"
-                    className="teachers__btn teachers__btn--secondary"
+                    className="Schoolteachers__btn Schoolteachers__btn--secondary"
                     onClick={() => setRoleCreateOpen(false)}
                     disabled={roleCreateSaving}
                   >
@@ -649,7 +651,7 @@ function SchoolTeachers() {
                   </button>
                   <button
                     type="submit"
-                    className="teachers__btn teachers__btn--primary"
+                    className="Schoolteachers__btn Schoolteachers__btn--primary"
                     disabled={roleCreateSaving}
                   >
                     {roleCreateSaving ? "Сохранение…" : "Создать роль"}
@@ -664,17 +666,20 @@ function SchoolTeachers() {
       {/* Role: Edit */}
       {roleEditOpen && (
         <div
-          className="teachers__modal-overlay"
+          className="Schoolteachers__modalOverlay"
           role="dialog"
           aria-modal="true"
           onClick={() => !roleEditSaving && setRoleEditOpen(false)}
         >
-          <div className="teachers__modal" onClick={(e) => e.stopPropagation()}>
-            <div className="teachers__modal-header">
-              <h3 className="teachers__modal-title">Изменить роль</h3>
+          <div
+            className="Schoolteachers__modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="Schoolteachers__modalHeader">
+              <h3 className="Schoolteachers__modalTitle">Изменить роль</h3>
               <button
                 type="button"
-                className="teachers__icon-btn"
+                className="Schoolteachers__iconBtn"
                 onClick={() => !roleEditSaving && setRoleEditOpen(false)}
                 aria-label="Закрыть"
               >
@@ -682,14 +687,14 @@ function SchoolTeachers() {
               </button>
             </div>
 
-            <form className="teachers__form" onSubmit={submitRoleEdit}>
-              <div className="teachers__form-grid">
-                <div className="teachers__field teachers__field--full">
-                  <label className="teachers__label">
-                    Название роли <span className="teachers__req">*</span>
+            <form className="Schoolteachers__form" onSubmit={submitRoleEdit}>
+              <div className="Schoolteachers__formGrid">
+                <div className="Schoolteachers__field Schoolteachers__field--full">
+                  <label className="Schoolteachers__label">
+                    Название роли <span className="Schoolteachers__req">*</span>
                   </label>
                   <input
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     placeholder="Название роли"
                     value={roleEditName}
                     onChange={(e) => setRoleEditName(e.target.value)}
@@ -698,12 +703,12 @@ function SchoolTeachers() {
                 </div>
               </div>
 
-              <div className="teachers__form-actions">
-                <span className="teachers__actions-spacer" />
-                <div className="teachers__actions-right">
+              <div className="Schoolteachers__formActions">
+                <span className="Schoolteachers__actionsSpacer" />
+                <div className="Schoolteachers__actionsRight">
                   <button
                     type="button"
-                    className="teachers__btn teachers__btn--secondary"
+                    className="Schoolteachers__btn Schoolteachers__btn--secondary"
                     onClick={() => setRoleEditOpen(false)}
                     disabled={roleEditSaving}
                   >
@@ -711,7 +716,7 @@ function SchoolTeachers() {
                   </button>
                   <button
                     type="submit"
-                    className="teachers__btn teachers__btn--primary"
+                    className="Schoolteachers__btn Schoolteachers__btn--primary"
                     disabled={roleEditSaving}
                   >
                     {roleEditSaving ? "Сохранение…" : "Сохранить изменения"}
@@ -726,17 +731,20 @@ function SchoolTeachers() {
       {/* Employee: Create */}
       {empCreateOpen && (
         <div
-          className="teachers__modal-overlay"
+          className="Schoolteachers__modalOverlay"
           role="dialog"
           aria-modal="true"
           onClick={() => !empSaving && setEmpCreateOpen(false)}
         >
-          <div className="teachers__modal" onClick={(e) => e.stopPropagation()}>
-            <div className="teachers__modal-header">
-              <h3 className="teachers__modal-title">Новый сотрудник</h3>
+          <div
+            className="Schoolteachers__modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="Schoolteachers__modalHeader">
+              <h3 className="Schoolteachers__modalTitle">Новый сотрудник</h3>
               <button
                 type="button"
-                className="teachers__icon-btn"
+                className="Schoolteachers__iconBtn"
                 onClick={() => !empSaving && setEmpCreateOpen(false)}
                 aria-label="Закрыть"
               >
@@ -744,15 +752,15 @@ function SchoolTeachers() {
               </button>
             </div>
 
-            <form className="teachers__form" onSubmit={submitEmployeeCreate}>
-              <div className="teachers__form-grid">
-                <div className="teachers__field">
-                  <label className="teachers__label">
-                    Email <span className="teachers__req">*</span>
+            <form className="Schoolteachers__form" onSubmit={submitEmployeeCreate}>
+              <div className="Schoolteachers__formGrid">
+                <div className="Schoolteachers__field">
+                  <label className="Schoolteachers__label">
+                    Email <span className="Schoolteachers__req">*</span>
                   </label>
                   <input
                     type="email"
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     placeholder="user@mail.com"
                     value={empForm.email}
                     onChange={(e) => setEmpForm((p) => ({ ...p, email: e.target.value }))}
@@ -760,12 +768,12 @@ function SchoolTeachers() {
                   />
                 </div>
 
-                <div className="teachers__field">
-                  <label className="teachers__label">
-                    Имя <span className="teachers__req">*</span>
+                <div className="Schoolteachers__field">
+                  <label className="Schoolteachers__label">
+                    Имя <span className="Schoolteachers__req">*</span>
                   </label>
                   <input
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     placeholder="Алия"
                     value={empForm.first_name}
                     onChange={(e) => setEmpForm((p) => ({ ...p, first_name: e.target.value }))}
@@ -773,12 +781,12 @@ function SchoolTeachers() {
                   />
                 </div>
 
-                <div className="teachers__field">
-                  <label className="teachers__label">
-                    Фамилия <span className="teachers__req">*</span>
+                <div className="Schoolteachers__field">
+                  <label className="Schoolteachers__label">
+                    Фамилия <span className="Schoolteachers__req">*</span>
                   </label>
                   <input
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     placeholder="Жумалиева"
                     value={empForm.last_name}
                     onChange={(e) => setEmpForm((p) => ({ ...p, last_name: e.target.value }))}
@@ -786,12 +794,12 @@ function SchoolTeachers() {
                   />
                 </div>
 
-                <div className="teachers__field teachers__field--full">
-                  <label className="teachers__label">
-                    Роль <span className="teachers__req">*</span>
+                <div className="Schoolteachers__field Schoolteachers__field--full">
+                  <label className="Schoolteachers__label">
+                    Роль <span className="Schoolteachers__req">*</span>
                   </label>
                   <select
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     value={empForm.roleChoice}
                     onChange={(e) => setEmpForm((p) => ({ ...p, roleChoice: e.target.value }))}
                     required
@@ -806,14 +814,14 @@ function SchoolTeachers() {
                 </div>
               </div>
 
-              {!!empErr && <div className="teachers__alert">{empErr}</div>}
+              {!!empErr && <div className="Schoolteachers__alert">{empErr}</div>}
 
-              <div className="teachers__form-actions">
-                <span className="teachers__actions-spacer" />
-                <div className="teachers__actions-right">
+              <div className="Schoolteachers__formActions">
+                <span className="Schoolteachers__actionsSpacer" />
+                <div className="Schoolteachers__actionsRight">
                   <button
                     type="button"
-                    className="teachers__btn teachers__btn--secondary"
+                    className="Schoolteachers__btn Schoolteachers__btn--secondary"
                     onClick={() => setEmpCreateOpen(false)}
                     disabled={empSaving}
                   >
@@ -821,7 +829,7 @@ function SchoolTeachers() {
                   </button>
                   <button
                     type="submit"
-                    className="teachers__btn teachers__btn--primary"
+                    className="Schoolteachers__btn Schoolteachers__btn--primary"
                     disabled={empSaving}
                   >
                     {empSaving ? "Сохранение…" : "Создать сотрудника"}
@@ -836,17 +844,20 @@ function SchoolTeachers() {
       {/* Employee: Edit */}
       {empEditOpen && (
         <div
-          className="teachers__modal-overlay"
+          className="Schoolteachers__modalOverlay"
           role="dialog"
           aria-modal="true"
           onClick={() => !empEditSaving && setEmpEditOpen(false)}
         >
-          <div className="teachers__modal" onClick={(e) => e.stopPropagation()}>
-            <div className="teachers__modal-header">
-              <h3 className="teachers__modal-title">Изменить сотрудника</h3>
+          <div
+            className="Schoolteachers__modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="Schoolteachers__modalHeader">
+              <h3 className="Schoolteachers__modalTitle">Изменить сотрудника</h3>
               <button
                 type="button"
-                className="teachers__icon-btn"
+                className="Schoolteachers__iconBtn"
                 onClick={() => !empEditSaving && setEmpEditOpen(false)}
                 aria-label="Закрыть"
               >
@@ -854,15 +865,15 @@ function SchoolTeachers() {
               </button>
             </div>
 
-            <form className="teachers__form" onSubmit={submitEmployeeEdit}>
-              <div className="teachers__form-grid">
-                <div className="teachers__field">
-                  <label className="teachers__label">
-                    Email <span className="teachers__req">*</span>
+            <form className="Schoolteachers__form" onSubmit={submitEmployeeEdit}>
+              <div className="Schoolteachers__formGrid">
+                <div className="Schoolteachers__field">
+                  <label className="Schoolteachers__label">
+                    Email <span className="Schoolteachers__req">*</span>
                   </label>
                   <input
                     type="email"
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     placeholder="user@mail.com"
                     value={empEditForm.email}
                     onChange={(e) =>
@@ -872,12 +883,12 @@ function SchoolTeachers() {
                   />
                 </div>
 
-                <div className="teachers__field">
-                  <label className="teachers__label">
-                    Имя <span className="teachers__req">*</span>
+                <div className="Schoolteachers__field">
+                  <label className="Schoolteachers__label">
+                    Имя <span className="Schoolteachers__req">*</span>
                   </label>
                   <input
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     placeholder="Имя"
                     value={empEditForm.first_name}
                     onChange={(e) =>
@@ -887,12 +898,12 @@ function SchoolTeachers() {
                   />
                 </div>
 
-                <div className="teachers__field">
-                  <label className="teachers__label">
-                    Фамилия <span className="teachers__req">*</span>
+                <div className="Schoolteachers__field">
+                  <label className="Schoolteachers__label">
+                    Фамилия <span className="Schoolteachers__req">*</span>
                   </label>
                   <input
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     placeholder="Фамилия"
                     value={empEditForm.last_name}
                     onChange={(e) =>
@@ -902,12 +913,12 @@ function SchoolTeachers() {
                   />
                 </div>
 
-                <div className="teachers__field teachers__field--full">
-                  <label className="teachers__label">
-                    Роль <span className="teachers__req">*</span>
+                <div className="Schoolteachers__field Schoolteachers__field--full">
+                  <label className="Schoolteachers__label">
+                    Роль <span className="Schoolteachers__req">*</span>
                   </label>
                   <select
-                    className="teachers__input"
+                    className="Schoolteachers__input"
                     value={empEditForm.roleChoice}
                     onChange={(e) =>
                       setEmpEditForm((p) => ({ ...p, roleChoice: e.target.value }))
@@ -924,14 +935,14 @@ function SchoolTeachers() {
                 </div>
               </div>
 
-              {!!empEditErr && <div className="teachers__alert">{empEditErr}</div>}
+              {!!empEditErr && <div className="Schoolteachers__alert">{empEditErr}</div>}
 
-              <div className="teachers__form-actions">
-                <span className="teachers__actions-spacer" />
-                <div className="teachers__actions-right">
+              <div className="Schoolteachers__formActions">
+                <span className="Schoolteachers__actionsSpacer" />
+                <div className="Schoolteachers__actionsRight">
                   <button
                     type="button"
-                    className="teachers__btn teachers__btn--secondary"
+                    className="Schoolteachers__btn Schoolteachers__btn--secondary"
                     onClick={() => setEmpEditOpen(false)}
                     disabled={empEditSaving}
                   >
@@ -939,7 +950,7 @@ function SchoolTeachers() {
                   </button>
                   <button
                     type="submit"
-                    className="teachers__btn teachers__btn--primary"
+                    className="Schoolteachers__btn Schoolteachers__btn--primary"
                     disabled={empEditSaving}
                   >
                     {empEditSaving ? "Сохранение…" : "Сохранить изменения"}

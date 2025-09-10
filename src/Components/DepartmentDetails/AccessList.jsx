@@ -2,9 +2,8 @@
 import { useEffect, useState } from "react";
 import { FaCheckCircle, FaRegCircle } from "react-icons/fa";
 
-// Обновленный список всех типов доступов с соответствующими ключами для бэкенда
-export const ALL_ACCESS_TYPES = [
-  { value: "Обзор", label: "Обзор", backendKey: "can_view_dashboard" },
+// Базовые permissions (общие для всех секторов)
+const BASIC_ACCESS_TYPES = [
   { value: "Касса", label: "Касса", backendKey: "can_view_cashbox" },
   { value: "Отделы", label: "Отделы", backendKey: "can_view_departments" },
   { value: "Заказы", label: "Заказы", backendKey: "can_view_orders" },
@@ -35,29 +34,152 @@ export const ALL_ACCESS_TYPES = [
   { value: "Настройки", label: "Настройки", backendKey: "can_view_settings" },
 ];
 
+// Секторные permissions
+const SECTOR_ACCESS_TYPES = {
+  Барбершоп: [
+    {
+      value: "Клиенты Барбершопа",
+      label: "Клиенты Барбершопа",
+      backendKey: "can_view_barber_clients",
+    },
+    {
+      value: "Услуги",
+      label: "Услуги",
+      backendKey: "can_view_barber_services",
+    },
+    {
+      value: "История",
+      label: "История",
+      backendKey: "can_view_barber_history",
+    },
+    { value: "Записи", label: "Записи", backendKey: "can_view_barber_records" },
+  ],
+  Гостиница: [
+    { value: "Комнаты", label: "Комнаты", backendKey: "can_view_hostel_rooms" },
+    {
+      value: "Бронирования",
+      label: "Бронирования",
+      backendKey: "can_view_hostel_booking",
+    },
+    {
+      value: "Клиенты Гостиницы",
+      label: "Клиенты Гостиницы",
+      backendKey: "can_view_hostel_clients",
+    },
+    {
+      value: "Аналитика Гостиницы",
+      label: "Аналитика Гостиницы",
+      backendKey: "can_view_hostel_analytics",
+    },
+  ],
+  Школа: [
+    {
+      value: "Ученики",
+      label: "Ученики",
+      backendKey: "can_view_school_students",
+    },
+    { value: "Группы", label: "Группы", backendKey: "can_view_school_groups" },
+    { value: "Уроки", label: "Уроки", backendKey: "can_view_school_lessons" },
+    {
+      value: "Учителя",
+      label: "Учителя",
+      backendKey: "can_view_school_teachers",
+    },
+    { value: "Лиды", label: "Лиды", backendKey: "can_view_school_leads" },
+    { value: "Счета", label: "Счета", backendKey: "can_view_school_invoices" },
+  ],
+  Кафе: [
+    { value: "Меню", label: "Меню", backendKey: "can_view_cafe_menu" },
+    {
+      value: "Заказы Кафе",
+      label: "Заказы Кафе",
+      backendKey: "can_view_cafe_orders",
+    },
+    {
+      value: "Закупки",
+      label: "Закупки",
+      backendKey: "can_view_cafe_purchasing",
+    },
+    { value: "Бронь", label: "Бронь", backendKey: "can_view_cafe_booking" },
+    {
+      value: "Клиенты Кафе",
+      label: "Клиенты Кафе",
+      backendKey: "can_view_cafe_clients",
+    },
+    { value: "Столы", label: "Столы", backendKey: "can_view_cafe_tables" },
+  ],
+  "Строительная компания": [
+    {
+      value: "Процесс работы",
+      label: "Процесс работы",
+      backendKey: "can_view_building_work_process",
+    },
+  ],
+  "Ремонтные и отделочные работы": [
+    {
+      value: "Процесс работы",
+      label: "Процесс работы",
+      backendKey: "can_view_building_work_process",
+    },
+  ],
+  "Архитектура и дизайн": [
+    {
+      value: "Процесс работы",
+      label: "Процесс работы",
+      backendKey: "can_view_building_work_process",
+    },
+  ],
+};
+
+// Функция для получения всех доступных permissions на основе сектора
+const getAllAccessTypes = (sectorName) => {
+  const basicAccess = [...BASIC_ACCESS_TYPES];
+  const sectorAccess = SECTOR_ACCESS_TYPES[sectorName] || [];
+  return [...basicAccess, ...sectorAccess];
+};
+
+// Для обратной совместимости
+export const ALL_ACCESS_TYPES = BASIC_ACCESS_TYPES;
+
 // const LOCAL_STORAGE_KEY = "userSelectedAccesses";
 
-const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
+const AccessList = ({
+  employeeAccesses,
+  onSaveAccesses,
+  role,
+  sectorName,
+  profile,
+  tariff,
+}) => {
   // console.log(employeeAccesses, "employeeAccesses in AccessList");
+  console.log("AccessList - Tariff:", tariff);
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAccess, setSelectedAccess] = useState(() => {
-    // try {
-    //   const storedAccesses = localStorage.getItem(LOCAL_STORAGE_KEY);
-    //   if (storedAccesses) {
-    //     return JSON.parse(storedAccesses);
-    //   }
-    // } catch (error) {
-    //   console.error("Failed to parse stored accesses from localStorage:", error);
-    // }
+    const availableAccessTypes = (() => {
+      if (!sectorName) return ALL_ACCESS_TYPES;
+
+      // Для тарифа "Старт" всегда показываем только базовые permissions
+      if (tariff === "Старт") {
+        return getAllAccessTypes(sectorName, tariff);
+      }
+
+      const allTypes = getAllAccessTypes(sectorName, tariff);
+
+      // Если пользователь не владелец, показываем только базовые permissions
+      if (profile?.role_display !== "Владелец") {
+        return ALL_ACCESS_TYPES;
+      }
+
+      return allTypes;
+    })();
 
     const initialAccess = {};
-    ALL_ACCESS_TYPES.forEach((accessType) => {
+    availableAccessTypes.forEach((accessType) => {
       initialAccess[accessType.backendKey] = employeeAccesses?.includes(
         accessType.value
       );
     });
-    // console.log(initialAccess);
 
     return initialAccess;
   });
@@ -67,17 +189,32 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
   }, [selectedAccess]);
 
   useEffect(() => {
-    const newAccessState = {};
-    ALL_ACCESS_TYPES.forEach((accessType) => {
-      // console.log(accessType, "das");
-      // console.log(employeeAccesses.includes(accessType.value));
+    const availableAccessTypes = (() => {
+      if (!sectorName) return ALL_ACCESS_TYPES;
 
+      // Для тарифа "Старт" всегда показываем только базовые permissions
+      if (tariff === "Старт") {
+        return getAllAccessTypes(sectorName, tariff);
+      }
+
+      const allTypes = getAllAccessTypes(sectorName, tariff);
+
+      // Если пользователь не владелец, показываем только базовые permissions
+      if (profile?.role_display !== "Владелец") {
+        return ALL_ACCESS_TYPES;
+      }
+
+      return allTypes;
+    })();
+
+    const newAccessState = {};
+    availableAccessTypes.forEach((accessType) => {
       newAccessState[accessType.backendKey] = employeeAccesses?.includes(
         accessType.value
       );
     });
     setSelectedAccess(newAccessState);
-  }, [employeeAccesses]);
+  }, [employeeAccesses, sectorName, profile?.role_display, tariff]);
 
   const toggleAccess = (backendKey) => {
     setSelectedAccess((prev) => ({
@@ -87,12 +224,29 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
   };
 
   const handleSave = () => {
+    const availableAccessTypes = (() => {
+      if (!sectorName) return ALL_ACCESS_TYPES;
+
+      // Для тарифа "Старт" всегда показываем только базовые permissions
+      if (tariff === "Старт") {
+        return getAllAccessTypes(sectorName, tariff);
+      }
+
+      const allTypes = getAllAccessTypes(sectorName, tariff);
+
+      // Если пользователь не владелец, показываем только базовые permissions
+      if (profile?.role_display !== "Владелец") {
+        return ALL_ACCESS_TYPES;
+      }
+
+      return allTypes;
+    })();
+
     const payloadForBackend = {};
-    ALL_ACCESS_TYPES.forEach((accessType) => {
+    availableAccessTypes.forEach((accessType) => {
       payloadForBackend[accessType.backendKey] =
         !!selectedAccess[accessType.backendKey];
     });
-    // console.log(payloadForBackend);
 
     onSaveAccesses(payloadForBackend);
     setIsOpen(false);
@@ -102,6 +256,7 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
     <div className={"accessList"} style={{ position: "relative" }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        disabled={role === "owner"}
         className={"accessButton"}
         style={{
           width: "100%",
@@ -131,26 +286,28 @@ const AccessList = ({ employeeAccesses, onSaveAccesses }) => {
             overflow: "auto",
           }}
         >
-          {ALL_ACCESS_TYPES.map((accessType) => (
-            <div
-              key={accessType.backendKey}
-              onClick={() => toggleAccess(accessType.backendKey)}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "6px 0",
-                cursor: "pointer",
-              }}
-            >
-              <span>{accessType.label}</span>
-              {selectedAccess[accessType.backendKey] ? (
-                <FaCheckCircle color="#2ecc71" />
-              ) : (
-                <FaRegCircle color="#ccc" />
-              )}
-            </div>
-          ))}
+          {(sectorName ? getAllAccessTypes(sectorName) : ALL_ACCESS_TYPES).map(
+            (accessType) => (
+              <div
+                key={accessType.backendKey}
+                onClick={() => toggleAccess(accessType.backendKey)}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "6px 0",
+                  cursor: "pointer",
+                }}
+              >
+                <span>{accessType.label}</span>
+                {selectedAccess[accessType.backendKey] ? (
+                  <FaCheckCircle color="#2ecc71" />
+                ) : (
+                  <FaRegCircle color="#ccc" />
+                )}
+              </div>
+            )
+          )}
 
           <button
             onClick={handleSave}

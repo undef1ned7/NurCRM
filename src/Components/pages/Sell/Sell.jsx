@@ -21,6 +21,7 @@ import {
   productCheckout,
   sendBarCode,
   startSale,
+  updateProductInCart,
 } from "../../../store/creators/saleThunk";
 import { clearProducts, useProducts } from "../../../store/slices/productSlice";
 import { useSale } from "../../../store/slices/saleSlice";
@@ -36,6 +37,7 @@ import {
   getCashBoxes,
   useCash,
 } from "../../../store/slices/cashSlice";
+import { historySellProductDetail } from "../../../store/creators/saleThunk";
 
 const SellModal = ({ onClose, id, selectCashBox }) => {
   const { list: cashBoxes } = useCash();
@@ -152,6 +154,7 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
   useEffect(() => {
     dispatch(fetchClientsAsync());
   }, []);
+  const navigate = useNavigate();
 
   // console.log(clientId);
 
@@ -170,6 +173,8 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
         ).unwrap();
 
         dispatch(historySellProduct());
+        
+        navigate(`/crm/clients/${clientId}`);
 
         // Создаём ссылку и скачиваем файл
         const url = window.URL.createObjectURL(pdfBlob);
@@ -296,6 +301,7 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
                   </option>
                 ))}
               </select>
+
               <button
                 className="create-client"
                 onClick={() => setShowInputs(!showInputs)}
@@ -335,6 +341,22 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
                   <button className="create-client">Создать</button>
                 </form>
               )}
+              {company.sector?.name === "Строительная компания" && (
+                <select
+                  name="clientId"
+                  className="add-modal__input"
+                  // value={clientId}
+                  // onChange={(e) => setClientId(e.target.value)}
+                  required
+                >
+                  <option>-- Выберите тип платежа --</option>
+                  {/* {filterClient.map((client, idx) => ( */}
+                  <option value={""}>Аванс</option>
+                  <option value={""}>Кредит</option>
+                  <option value={""}>Полная оплата</option>
+                  {/* ))} */}
+                </select>
+              )}
             </div>
             {start?.items.map((product, idx) => (
               <div className="receipt__item" key={idx}>
@@ -350,16 +372,27 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
                   <button
                     onClick={async () => {
                       try {
-                        await dispatch(
-                          deleteProductInCart({
-                            id,
-                            productId: product.id,
-                          })
-                        ).unwrap();
+                        if ((product?.quantity ?? 0) > 1) {
+                          await dispatch(
+                            updateProductInCart({
+                              id,
+                              productId: product.id,
+                              data: { quantity: product.quantity - 1 },
+                            })
+                          ).unwrap();
+                        } else {
+                          await dispatch(
+                            deleteProductInCart({
+                              id,
+                              productId: product.id,
+                            })
+                          ).unwrap();
+                        }
+
                         await dispatch(startSale()).unwrap();
                       } catch (err) {
                         console.error(
-                          "deleteProductInCart/startSale error:",
+                          "updateProductInCart/deleteProductInCart error:",
                           err
                         );
                       }
@@ -396,6 +429,127 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
   );
 };
 
+const SellDetail = ({ onClose, id }) => {
+  const dispatch = useDispatch();
+  const { historyDetail: item } = useSale();
+  // console.log(1, item);
+
+  const kindTranslate = {
+    new: "Новый",
+    paid: "Оплаченный",
+    canceled: "Отмененный",
+  };
+
+  useEffect(() => {
+    dispatch(historySellProductDetail(id));
+  }, [id, dispatch]);
+  console.log(item);
+  return (
+    <div className="sellDetail add-modal">
+      <div className="add-modal__overlay" onClick={onClose} />
+      <div className="add-modal__content">
+        <div className="add-modal__header">
+          <h3>Детали продажи</h3>
+          <X className="add-modal__close-icon" size={20} onClick={onClose} />
+        </div>
+        <div className="sellDetail__content">
+          <div className="sell__box">
+            <p className="receipt__title">Клиент: {item?.client_name}</p>
+            <p className="receipt__title">
+              Статус: {kindTranslate[item?.status] || item?.status}
+            </p>
+            <p className="receipt__title">
+              Дата: {new Date(item?.created_at).toLocaleString()}
+            </p>
+          </div>
+          <div className="receipt">
+            {/* <div className="add-modal__section">
+              <label>Клиенты *</label>
+              <select
+                name="clientId"
+                className="add-modal__input"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                required
+              >
+                <option>-- Выберите клиента --</option>
+                {filterClient.map((client, idx) => (
+                  <option key={idx} value={String(client.id)}>
+                    {client.full_name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="create-client"
+                onClick={() => setShowInputs(!showInputs)}
+              >
+                {showInputs ? "Отменить" : "Создать клиента"}
+              </button>
+              {showInputs && (
+                <form
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    rowGap: "10px",
+                  }}
+                  onSubmit={onSubmit}
+                >
+                  <input
+                    className="add-modal__input"
+                    onChange={handleChange}
+                    type="text"
+                    placeholder="ФИО"
+                    name="full_name"
+                  />
+                  <input
+                    className="add-modal__input"
+                    onChange={handleChange}
+                    type="text"
+                    name="phone"
+                    placeholder="Телефон"
+                  />
+                  <input
+                    className="add-modal__input"
+                    onChange={handleChange}
+                    type="email"
+                    name="email"
+                    placeholder="Почта"
+                  />
+                  <button className="create-client">Создать</button>
+                </form>
+              )}
+            </div> */}
+            {item?.items?.map((product, idx) => (
+              <div className="receipt__item" key={idx}>
+                <p className="receipt__item-name">
+                  {idx + 1}. {product.product_name}
+                </p>
+                <div>
+                  <p>{product.tax_total}</p>
+                  <p className="receipt__item-price">
+                    {product.quantity} x {product.unit_price} ≡{" "}
+                    {product.quantity * product.unit_price}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div className="receipt__total">
+              <b>ИТОГО</b>
+              <div
+                style={{ gap: "10px", display: "flex", alignItems: "center" }}
+              >
+                <p>Общая скидка {item?.discount_total} </p>
+                <p>Налог {item?.tax_total}</p>
+                <b>≡ {item?.total}</b>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Sell = () => {
   const dispatch = useDispatch();
 
@@ -419,7 +573,7 @@ const Sell = () => {
   const { list: cashBoxes } = useCash();
 
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showDetailSell, setShowDetailSell] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showSellModal, setShowSellModal] = useState(false);
@@ -437,6 +591,7 @@ const Sell = () => {
   const [scannerVisible, setScannerVisible] = useState(false);
   const [selectValue, setSelectValue] = useState("all");
   const [activeTab, setActiveTab] = useState(1);
+  const [sellId, setSellId] = useState("");
 
   useEffect(() => {
     const params = {
@@ -534,6 +689,25 @@ const Sell = () => {
     }
   }, [showSellModal, dispatch]);
 
+  useEffect(() => {
+    const handleEsc = (event) => {
+      if (event.keyCode === 27) {
+        setShowAddModal(false);
+        setShowSellModal(false);
+        setShowEditModal(false);
+        setShowDetailSell(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
+
+  const handleSellModal = (id) => {
+    setSellId(id);
+    setShowDetailSell(true);
+  };
+
   const kindTranslate = {
     new: "Новый",
     paid: "Оплаченный",
@@ -542,12 +716,6 @@ const Sell = () => {
   useEffect(() => {
     dispatch(getCashBoxes());
   }, []);
-
-  useEffect(() => {
-    if (cashBoxes.length > 0) {
-      setSelectCashBox(cashBoxes[0].id);
-    }
-  }, [cashBoxes]);
 
   return (
     <div>
@@ -603,11 +771,22 @@ const Sell = () => {
             onChange={(e) => setSelectCashBox(e.target.value)}
             className="employee__search-wrapper"
           >
+            <option value="" disabled>
+              Выберите кассу
+            </option>
             {cashBoxes?.map((cash) => (
-              <option value={cash.id}>{cash.name}</option>
+              <option key={cash.id} value={cash.id}>
+                {cash.name ?? cash.department_name}
+              </option>
             ))}
           </select>
-          <button className="sklad__add" onClick={() => setShowSellModal(true)}>
+
+          <button
+            className="sklad__add"
+            onClick={() => setShowSellModal(true)}
+            disabled={!selectCashBox}
+            title={!selectCashBox ? "Сначала выберите кассу" : undefined}
+          >
             <Plus size={16} style={{ marginRight: "4px" }} /> Продать товар
           </button>
         </div>
@@ -642,11 +821,15 @@ const Sell = () => {
             <tbody>
               {history?.map((item, index) => (
                 <tr
-                  // onClick={() => navigate(`/crm/sell/${item.id}`)}
+                  onClick={() => handleSellModal(item.id)}
                   key={item.id}
+                  style={{ cursor: "pointer" }}
                 >
                   <td>
-                    <input type="checkbox" />
+                    <input
+                      onClick={(e) => e.stopPropagation()}
+                      type="checkbox"
+                    />
                   </td>
                   <td>
                     <MoreVertical
@@ -690,6 +873,9 @@ const Sell = () => {
           selectCashBox={selectCashBox}
           onClose={() => setShowSellModal(false)}
         />
+      )}
+      {showDetailSell && (
+        <SellDetail onClose={() => setShowDetailSell(false)} id={sellId} />
       )}
     </div>
   );

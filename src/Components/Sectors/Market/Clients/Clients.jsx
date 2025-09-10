@@ -278,6 +278,10 @@ export default function MarketClients() {
         email: addEmail,
         date: addDate,
       });
+
+      if (created?.id) {
+        navigate(`${created.id}`);
+      }
       setRows((prev) => [created, ...(Array.isArray(prev) ? prev : [])]);
       setIsAddOpen(false);
       resetAddForm();

@@ -99,17 +99,32 @@
     background:rgba(231,76,60,.12); color:#e74c3c; border:1px solid rgba(231,76,60,.35);
   }
 
-  /* Modal */
+  /* Modal (центр по экрану + комфорт внутри) */
   &__modal-overlay{
     position:fixed; inset:0; background:rgba(0,0,0,.5);
-    display:flex; align-items:center; justify-content:center; z-index:50;
+    /* надёжная центровка */
+    display:grid; place-items:center; z-index:50;
+    padding:12px; /* «воздух» по краям на мобильных */
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
   }
   &__modal{
-    background:#fff; border-radius:var(--radius); padding:20px; width:100%; max-width:720px;
-    animation:staff-fade .18s ease; box-shadow:var(--shadow);
+    background:#fff; border-radius:16px; padding:20px;
+    width:min(720px, calc(100vw - 24px));
+    max-height:min(90vh, 760px);
+    overflow:auto; box-shadow:0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08);
+    -webkit-overflow-scrolling:touch;
+    animation:staff-fade .18s ease;
   }
   @keyframes staff-fade{ from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);} }
-  &__modal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+
+  &__modal-header{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;
+    position:sticky; top:0; background:#fff; padding-bottom:8px; margin-top:-8px;
+    /* визуальное отделение шапки, когда много контента */
+    box-shadow:0 1px 0 0 var(--border);
+    z-index:1;
+  }
   &__modal-title{ font-size:18px; font-weight:700; margin:0; color:var(--text); }
   &__icon-btn{
     background:none; border:none; cursor:pointer; font-size:18px; color:var(--muted);
@@ -118,7 +133,12 @@
   }
 
   /* Form */
-  &__form{ margin-top:16px; display:flex; flex-direction:column; gap:16px; }
+  &__form{
+    margin-top:12px;
+    display:flex; flex-direction:column; gap:16px;
+    /* внутренние отступы + безопасная зона снизу на iOS */
+    padding-bottom:calc(4px + env(safe-area-inset-bottom));
+  }
   &__form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   &__field{ display:flex; flex-direction:column; gap:6px; }
   &__field--full{ grid-column:1 / -1; }
@@ -137,17 +157,29 @@
     &__search-input{ width:100%; }
     &__card{ flex-direction:column; }
   }
+
+  /* удобочитаемый стек элементов панели действий */
+  @media (max-width:560px){
+    &__actions{ width:100%; flex-direction:column; align-items:stretch; }
+    &__btn{ width:100%; justify-content:center; }
+    &__form-actions > .staff__btn{ width:100%; justify-content:center; }
+  }
+
   @media (max-width:400px){
     padding:18px;
     &__title{ font-size:18px; }
     &__btn{ padding:9px 12px; }
     &__input{ padding:9px 10px; }
   }
+
   /* Уверенная работа до 320px */
   @media (max-width:320px){
     padding:16px;
     &__actions{ gap:8px; }
     &__card{ padding:12px; }
     &__avatar{ min-width:36px; width:36px; height:36px; }
+    &__search-input{ padding:9px 10px 9px 30px; }
+    &__modal{ padding:16px; border-radius:14px; }
+    &__modal-title{ font-size:17px; }
   }
 }

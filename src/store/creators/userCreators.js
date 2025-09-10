@@ -4,6 +4,7 @@ import {
   loginUser,
   getIndustries,
   getSubscriptionPlans,
+  migrateUserPermissions,
 } from "../../api/auth";
 import api from "../../api";
 import axios from "axios";
@@ -32,6 +33,15 @@ export const loginUserAsync = createAsyncThunk(
       const response = await loginUser(props.formData);
       if (response.access) {
         localStorage.setItem("accessToken", response.access);
+
+        // Запускаем миграцию permissions для существующих пользователей
+        try {
+          await migrateUserPermissions();
+        } catch (migrationError) {
+          console.error("Migration failed:", migrationError);
+          // Не прерываем логин из-за ошибки миграции
+        }
+
         props.navigate("/crm/");
       }
       return response;

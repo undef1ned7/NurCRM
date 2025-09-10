@@ -114,6 +114,17 @@
     max-height: max-content;
     height: 100%;
     flex-grow: 1;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #f7d74f;
+      border-radius: 8px;
+    }
   }
 
   &__menu-item {

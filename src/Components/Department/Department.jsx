@@ -391,7 +391,7 @@ const Department = () => {
             }
             options={employees.map((emp) => ({
               value: emp.id,
-              label: emp.email,
+              label: `${emp.first_name} ${emp.last_name}`,
             }))}
             multiple
           />

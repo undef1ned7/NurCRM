@@ -81,6 +81,9 @@ import BarberClients from "./Components/Sectors/Barber/Clients/Clients";
 import { AnalyticsPage } from "./Components/Sectors/Hostel/Analytics/AnalyticsPage";
 import HostelClients from "./Components/Sectors/Hostel/Clients/Clients";
 import BarberSklad from "./Components/Sectors/Barber/Sklad/BarberSklad";
+import CafeKassa from "./Components/Sectors/cafe/kassaCafe/kassa";
+import CafeClients from "./Components/Sectors/cafe/Clients/Cliets";
+import BuildingWork from "./Components/Sectors/Building/BuildingWork/BuildingWork";
 // import ClientDebtDetail from "./Components/Sectors/Building/ClientDebtDetail";
 
 function App() {
@@ -277,7 +280,7 @@ function App() {
             {profile?.role === "owner" ? (
               <>
                 <Route
-                  path="kassa"
+                  path="kassa*"
                   element={
                     <ProtectedRoute>
                       <Kassa />
@@ -295,7 +298,7 @@ function App() {
               </>
             ) : (
               <Route
-                path="kassa"
+                path="kassa*"
                 element={
                   <ProtectedRoute>
                     <KassWorker />
@@ -679,6 +682,22 @@ function App() {
               }
             />
             <Route
+              path="cafe/kassa*"
+              element={
+                <ProtectedRoute>
+                  <CafeKassa />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="cafe/clients"
+              element={
+                <ProtectedRoute>
+                  <CafeClients />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="cafe/tables"
               element={
                 <ProtectedRoute>
@@ -687,6 +706,14 @@ function App() {
               }
             />
             {/* building */}
+            <Route
+              path="building/work"
+              element={
+                <ProtectedRoute>
+                  <BuildingWork />
+                </ProtectedRoute>
+              }
+            />
             {/* instagram */}
             <Route
               path="instagram"

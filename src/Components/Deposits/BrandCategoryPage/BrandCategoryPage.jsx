@@ -239,7 +239,7 @@ export default function BrandCategoryPage() {
   const [activeFlowType, setActiveFlowType] = useState("all"); // 'all', 'income', 'expense'
 
   return (
-    <div className="employee grid-two-cols">
+    <div className="employee grid-two-cols brandSection">
       <div className="vitrina__header" style={{ marginBottom: "15px" }}>
         <div className="vitrina__tabs">
           {tabs.map((tab, index) => {

@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { FaSearch, FaPlus, FaTimes, FaUtensils, FaTag, FaTrash, FaEdit } from "react-icons/fa";
+import {
+  FaSearch,
+  FaPlus,
+  FaTimes,
+  FaUtensils,
+  FaTag,
+  FaTrash,
+  FaEdit,
+} from "react-icons/fa";
 import api from "../../../../api";
 import "./menu.scss";
 
@@ -11,17 +19,18 @@ const toNum = (x) => {
   return Number.isFinite(n) ? n : 0;
 };
 const fmtMoney = (n) =>
-  new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-    toNum(n)
-  );
+  new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(toNum(n));
 
 const Menu = () => {
   // tabs
   const [activeTab, setActiveTab] = useState("items"); // items | categories
 
   // справочники
-  const [categories, setCategories] = useState([]);   // {id,title}
-  const [warehouse, setWarehouse] = useState([]);     // {id,title,unit,...}
+  const [categories, setCategories] = useState([]); // {id,title}
+  const [warehouse, setWarehouse] = useState([]); // {id,title,unit,...}
 
   // список
   const [items, setItems] = useState([]);
@@ -43,6 +52,10 @@ const Menu = () => {
     ingredients: [], // { product: uuid, amount: number }
   });
 
+  // фото (загрузка + превью)
+  const [imageFile, setImageFile] = useState(null); // File | null
+  const [imagePreview, setImagePreview] = useState(""); // string (blob url или image_url)
+
   // модалка категории
   const [catModalOpen, setCatModalOpen] = useState(false);
   const [catEditId, setCatEditId] = useState(null);
@@ -63,7 +76,7 @@ const Menu = () => {
 
   const categoryTitle = (id) => categoriesMap.get(id) || "Без категории";
   const productTitle = (id) => warehouseMap.get(id)?.title || id || "";
-  const productUnit  = (id) => warehouseMap.get(id)?.unit  || "";
+  const productUnit = (id) => warehouseMap.get(id)?.unit || "";
 
   /* ===== загрузка ===== */
   useEffect(() => {
@@ -105,6 +118,15 @@ const Menu = () => {
     })();
   }, []);
 
+  // cleanup blob preview
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
   /* ===== фильтры ===== */
   const filteredItems = useMemo(() => {
     const q = queryItems.trim().toLowerCase();
@@ -132,6 +154,8 @@ const Menu = () => {
       is_active: true,
       ingredients: [],
     });
+    setImageFile(null);
+    setImagePreview("");
     setModalOpen(true);
   };
 
@@ -149,7 +173,21 @@ const Menu = () => {
           }))
         : [],
     });
+    // текущая картинка из API
+    setImageFile(null);
+    setImagePreview(item.image_url || "");
     setModalOpen(true);
+  };
+
+  const onPickImage = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // сбрасываем старый blob-url, если был
+    if (imagePreview && imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
   };
 
   const saveItem = async (e) => {
@@ -161,19 +199,45 @@ const Menu = () => {
       is_active: !!form.is_active,
       ingredients: (form.ingredients || [])
         .filter((r) => r && r.product && (Number(r.amount) || 0) > 0)
-        .map((r) => ({ product: r.product, amount: String(Math.max(0, Number(r.amount) || 0)) })),
+        .map((r) => ({
+          product: r.product,
+          amount: String(Math.max(0, Number(r.amount) || 0)),
+        })),
     };
     if (!payload.title || !payload.category) return;
 
+    // отправляем как multipart/form-data (для image)
+    const fd = new FormData();
+    fd.append("title", payload.title);
+    fd.append("category", payload.category);
+    fd.append("price", payload.price);
+    fd.append("is_active", payload.is_active ? "true" : "false");
+    fd.append("ingredients", JSON.stringify(payload.ingredients));
+    if (imageFile) {
+      fd.append("image", imageFile); // бек вернет readOnly image_url
+    }
+
     try {
       if (editingId == null) {
-        const res = await api.post("/cafe/menu-items/", payload);
+        const res = await api.post("/cafe/menu-items/", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         setItems((prev) => [...prev, res.data]);
       } else {
-        const res = await api.put(`/cafe/menu-items/${editingId}/`, payload);
-        setItems((prev) => prev.map((m) => (m.id === editingId ? res.data : m)));
+        const res = await api.put(`/cafe/menu-items/${editingId}/`, fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setItems((prev) =>
+          prev.map((m) => (m.id === editingId ? res.data : m))
+        );
       }
       setModalOpen(false);
+      // очистка превью
+      if (imagePreview && imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+      setImageFile(null);
+      setImagePreview("");
     } catch (err) {
       console.error("Ошибка сохранения блюда:", err);
     }
@@ -191,7 +255,10 @@ const Menu = () => {
 
   // ингредиенты (форма)
   const addIngredientRow = () =>
-    setForm((f) => ({ ...f, ingredients: [...(f.ingredients || []), { product: "", amount: 1 }] }));
+    setForm((f) => ({
+      ...f,
+      ingredients: [...(f.ingredients || []), { product: "", amount: 1 }],
+    }));
 
   const changeIngredientRow = (idx, field, value) => {
     setForm((f) => {
@@ -205,7 +272,10 @@ const Menu = () => {
   };
 
   const removeIngredientRow = (idx) =>
-    setForm((f) => ({ ...f, ingredients: (f.ingredients || []).filter((_, i) => i !== idx) }));
+    setForm((f) => ({
+      ...f,
+      ingredients: (f.ingredients || []).filter((_, i) => i !== idx),
+    }));
 
   /* ===== CRUD: категория ===== */
   const openCreateCat = () => {
@@ -227,7 +297,9 @@ const Menu = () => {
     try {
       if (catEditId) {
         const res = await api.put(`/cafe/categories/${catEditId}/`, payload);
-        setCategories((prev) => prev.map((c) => (c.id === catEditId ? res.data : c)));
+        setCategories((prev) =>
+          prev.map((c) => (c.id === catEditId ? res.data : c))
+        );
       } else {
         const res = await api.post("/cafe/categories/", payload);
         setCategories((prev) => [...prev, res.data]);
@@ -260,13 +332,21 @@ const Menu = () => {
 
         <div className="menu__actions">
           <button
-            className={`menu__btn ${activeTab === "items" ? "menu__btn--primary" : "menu__btn--secondary"}`}
+            className={`menu__btn ${
+              activeTab === "items"
+                ? "menu__btn--primary"
+                : "menu__btn--secondary"
+            }`}
             onClick={() => setActiveTab("items")}
           >
             <FaUtensils /> Позиции
           </button>
           <button
-            className={`menu__btn ${activeTab === "categories" ? "menu__btn--primary" : "menu__btn--secondary"}`}
+            className={`menu__btn ${
+              activeTab === "categories"
+                ? "menu__btn--primary"
+                : "menu__btn--secondary"
+            }`}
             onClick={() => setActiveTab("categories")}
           >
             <FaTag /> Категории
@@ -306,7 +386,11 @@ const Menu = () => {
                 <article key={m.id} className="menu__card">
                   <div className="menu__cardLeft">
                     <div className="menu__avatar" aria-hidden>
-                      <FaUtensils />
+                      {m.image_url ? (
+                        <img src={m.image_url} alt={m.title || "Фото блюда"} />
+                      ) : (
+                        <FaUtensils />
+                      )}
                     </div>
                     <div>
                       <h3 className="menu__name">{m.title}</h3>
@@ -314,31 +398,53 @@ const Menu = () => {
                         <span className="menu__muted">
                           <FaTag /> &nbsp;{categoryTitle(m.category)}
                         </span>
-                        <span className="menu__muted">Цена: {fmtMoney(m.price)} сом</span>
-                        <span className={`menu__status ${m.is_active ? "menu__status--on" : "menu__status--off"}`}>
+                        <span className="menu__muted">
+                          Цена: {fmtMoney(m.price)} сом
+                        </span>
+                        <span
+                          className={`menu__status ${
+                            m.is_active
+                              ? "menu__status--on"
+                              : "menu__status--off"
+                          }`}
+                        >
                           {m.is_active ? "Активно" : "Скрыто"}
                         </span>
                       </div>
 
-                      {Array.isArray(m.ingredients) && m.ingredients.length > 0 && (
-                        <ul className="menu__recipeMini">
-                          {m.ingredients.slice(0, 4).map((ing, i) => (
-                            <li key={`${ing.id || ing.product}-${i}`} className="menu__muted">
-                              • {ing.product_title || productTitle(ing.product)} — {toNum(ing.amount)}{" "}
-                              {ing.product_unit || productUnit(ing.product)}
-                            </li>
-                          ))}
-                          {m.ingredients.length > 4 && <li className="menu__muted">…</li>}
-                        </ul>
-                      )}
+                      {Array.isArray(m.ingredients) &&
+                        m.ingredients.length > 0 && (
+                          <ul className="menu__recipeMini">
+                            {m.ingredients.slice(0, 4).map((ing, i) => (
+                              <li
+                                key={`${ing.id || ing.product}-${i}`}
+                                className="menu__muted"
+                              >
+                                •{" "}
+                                {ing.product_title || productTitle(ing.product)}{" "}
+                                — {toNum(ing.amount)}{" "}
+                                {ing.product_unit || productUnit(ing.product)}
+                              </li>
+                            ))}
+                            {m.ingredients.length > 4 && (
+                              <li className="menu__muted">…</li>
+                            )}
+                          </ul>
+                        )}
                     </div>
                   </div>
 
                   <div className="menu__rowActions">
-                    <button className="menu__btn menu__btn--secondary" onClick={() => openEdit(m)}>
+                    <button
+                      className="menu__btn menu__btn--secondary"
+                      onClick={() => openEdit(m)}
+                    >
                       <FaEdit /> Изменить
                     </button>
-                    <button className="menu__btn menu__btn--danger" onClick={() => handleDelete(m.id)}>
+                    <button
+                      className="menu__btn menu__btn--danger"
+                      onClick={() => handleDelete(m.id)}
+                    >
                       <FaTrash /> Удалить
                     </button>
                   </div>
@@ -346,7 +452,9 @@ const Menu = () => {
               ))}
 
             {!loadingItems && !filteredItems.length && (
-              <div className="menu__alert">Ничего не найдено по «{queryItems}».</div>
+              <div className="menu__alert">
+                Ничего не найдено по «{queryItems}».
+              </div>
             )}
           </div>
         </>
@@ -366,7 +474,10 @@ const Menu = () => {
               />
             </div>
 
-            <button className="menu__btn menu__btn--primary" onClick={openCreateCat}>
+            <button
+              className="menu__btn menu__btn--primary"
+              onClick={openCreateCat}
+            >
               <FaPlus /> Новая категория
             </button>
           </div>
@@ -387,10 +498,16 @@ const Menu = () => {
                   </div>
 
                   <div className="menu__rowActions">
-                    <button className="menu__btn menu__btn--secondary" onClick={() => openEditCat(c)}>
+                    <button
+                      className="menu__btn menu__btn--secondary"
+                      onClick={() => openEditCat(c)}
+                    >
                       <FaEdit /> Изменить
                     </button>
-                    <button className="menu__btn menu__btn--danger" onClick={() => removeCat(c.id)}>
+                    <button
+                      className="menu__btn menu__btn--danger"
+                      onClick={() => removeCat(c.id)}
+                    >
                       <FaTrash /> Удалить
                     </button>
                   </div>
@@ -398,7 +515,9 @@ const Menu = () => {
               ))}
 
             {!loadingCats && !filteredCats.length && (
-              <div className="menu__alert">Ничего не найдено по «{queryCats}».</div>
+              <div className="menu__alert">
+                Ничего не найдено по «{queryCats}».
+              </div>
             )}
           </div>
         </>
@@ -406,23 +525,66 @@ const Menu = () => {
 
       {/* ===== МОДАЛКА: БЛЮДО ===== */}
       {modalOpen && (
-        <div className="menu-modal__overlay" onClick={() => setModalOpen(false)}>
-          <div className="menu-modal__card" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="menu-modal__overlay"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="menu-modal__card"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="menu-modal__header">
-              <h3 className="menu-modal__title">{editingId == null ? "Новая позиция" : "Изменить позицию"}</h3>
-              <button className="menu-modal__close" onClick={() => setModalOpen(false)} aria-label="Закрыть">
+              <h3 className="menu-modal__title">
+                {editingId == null ? "Новая позиция" : "Изменить позицию"}
+              </h3>
+              <button
+                className="menu-modal__close"
+                onClick={() => setModalOpen(false)}
+                aria-label="Закрыть"
+              >
                 <FaTimes />
               </button>
             </div>
 
             <form className="menu__form" onSubmit={saveItem}>
+              {/* Превью фото */}
+              {(imagePreview || imageFile) && (
+                <div
+                  className="menu__field menu__field--full"
+                  style={{ marginBottom: 8 }}
+                >
+                  <label className="menu__label">Превью</label>
+                  <div
+                    style={{
+                      width: 140,
+                      height: 140,
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      border: "1px solid var(--c-border, #e5e7eb)",
+                    }}
+                  >
+                    <img
+                      src={imagePreview}
+                      alt="Превью"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="menu__formGrid">
                 <div className="menu__field">
                   <label className="menu__label">Название</label>
                   <input
                     className="menu__input"
                     value={form.title}
-                    onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, title: e.target.value }))
+                    }
                     required
                     maxLength={255}
                   />
@@ -433,7 +595,9 @@ const Menu = () => {
                   <select
                     className="menu__input"
                     value={form.category}
-                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, category: e.target.value }))
+                    }
                     required
                   >
                     {categories.map((c) => (
@@ -451,8 +615,24 @@ const Menu = () => {
                     min={0}
                     className="menu__input"
                     value={form.price}
-                    onChange={(e) => setForm((f) => ({ ...f, price: Math.max(0, Number(e.target.value) || 0) }))}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        price: Math.max(0, Number(e.target.value) || 0),
+                      }))
+                    }
                     required
+                  />
+                </div>
+
+                {/* Поле выбора фото */}
+                <div className="menu__field">
+                  <label className="menu__label">Фото (jpg/png/webp)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="menu__input"
+                    onChange={onPickImage}
                   />
                 </div>
 
@@ -461,7 +641,9 @@ const Menu = () => {
                     <input
                       type="checkbox"
                       checked={form.is_active}
-                      onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, is_active: e.target.checked }))
+                      }
                       style={{ marginRight: 8 }}
                     />
                     Активно в продаже
@@ -479,7 +661,9 @@ const Menu = () => {
                       <select
                         className="menu__input"
                         value={row.product || ""}
-                        onChange={(e) => changeIngredientRow(idx, "product", e.target.value)}
+                        onChange={(e) =>
+                          changeIngredientRow(idx, "product", e.target.value)
+                        }
                         required
                       >
                         <option value="">— Выберите товар —</option>
@@ -492,34 +676,50 @@ const Menu = () => {
                     </div>
 
                     <div className="menu__field">
-                      <label className="menu__label">Норма (в ед. товара)</label>
+                      <label className="menu__label">
+                        Норма (в ед. товара)
+                      </label>
                       <input
                         type="number"
                         min={0}
                         step="any"
                         className="menu__input"
                         value={row.amount ?? 0}
-                        onChange={(e) => changeIngredientRow(idx, "amount", e.target.value)}
+                        onChange={(e) =>
+                          changeIngredientRow(idx, "amount", e.target.value)
+                        }
                         required
                       />
                     </div>
 
                     <div className="menu__field">
                       <label className="menu__label">&nbsp;</label>
-                      <button type="button" className="menu__btn menu__btn--danger" onClick={() => removeIngredientRow(idx)}>
+                      <button
+                        type="button"
+                        className="menu__btn menu__btn--danger"
+                        onClick={() => removeIngredientRow(idx)}
+                      >
                         <FaTrash /> Удалить ингредиент
                       </button>
                     </div>
                   </div>
                 ))}
 
-                <button type="button" className="menu__btn menu__btn--secondary" onClick={addIngredientRow}>
+                <button
+                  type="button"
+                  className="menu__btn menu__btn--secondary"
+                  onClick={addIngredientRow}
+                >
                   <FaPlus /> Добавить ингредиент
                 </button>
               </div>
 
               <div className="menu__formActions">
-                <button type="button" className="menu__btn menu__btn--secondary" onClick={() => setModalOpen(false)}>
+                <button
+                  type="button"
+                  className="menu__btn menu__btn--secondary"
+                  onClick={() => setModalOpen(false)}
+                >
                   Отмена
                 </button>
                 <button type="submit" className="menu__btn menu__btn--primary">
@@ -533,11 +733,23 @@ const Menu = () => {
 
       {/* ===== МОДАЛКА: КАТЕГОРИЯ ===== */}
       {catModalOpen && (
-        <div className="menu-modal__overlay" onClick={() => setCatModalOpen(false)}>
-          <div className="menu-modal__card" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="menu-modal__overlay"
+          onClick={() => setCatModalOpen(false)}
+        >
+          <div
+            className="menu-modal__card"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="menu-modal__header">
-              <h3 className="menu-modal__title">{catEditId ? "Редактировать категорию" : "Новая категория"}</h3>
-              <button className="menu-modal__close" onClick={() => setCatModalOpen(false)} aria-label="Закрыть">
+              <h3 className="menu-modal__title">
+                {catEditId ? "Редактировать категорию" : "Новая категория"}
+              </h3>
+              <button
+                className="menu-modal__close"
+                onClick={() => setCatModalOpen(false)}
+                aria-label="Закрыть"
+              >
                 <FaTimes />
               </button>
             </div>
@@ -556,7 +768,11 @@ const Menu = () => {
               </div>
 
               <div className="menu__formActions">
-                <button type="button" className="menu__btn menu__btn--secondary" onClick={() => setCatModalOpen(false)}>
+                <button
+                  type="button"
+                  className="menu__btn menu__btn--secondary"
+                  onClick={() => setCatModalOpen(false)}
+                >
                   Отмена
                 </button>
                 <button type="submit" className="menu__btn menu__btn--primary">

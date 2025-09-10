@@ -1,8 +1,7 @@
-// src/components/Services/Services.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import "./Services.scss";
-import { FaPlus, FaEdit, FaTimes, FaSearch, FaTrash } from "react-icons/fa";
-import api from "../../../../api";
+import { FaPlus, FaEdit, FaTimes, FaTrash, FaSearch } from "react-icons/fa";
+import api from "../../../../api"; // ваш axios-инстанс
 
 const Services = () => {
   const [services, setServices] = useState([]);
@@ -14,20 +13,25 @@ const Services = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [currentService, setCurrentService] = useState(null);
 
+  const fmtMoney = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? `${n.toLocaleString("ru-RU")} сом` : "—";
+  };
+
   const fetchServices = async () => {
-    setLoading(true);
-    setError("");
     try {
+      setLoading(true);
+      setError("");
       const { data } = await api.get("/barbershop/services/");
-      const list = (data.results || []).map((s) => ({
+      const list = (data.results || data || []).map((s) => ({
         id: s.id,
         name: s.name ?? "",
-        price: s.price != null ? String(s.price) : "",
-        active: String(s.is_active ?? "true").toLowerCase() === "true",
+        price: s.price ?? 0,
+        active: Boolean(s.is_active ?? true),
       }));
       setServices(list);
     } catch (e) {
-      setError(e.response?.data?.detail || "Не удалось загрузить услуги");
+      setError(e?.response?.data?.detail || "Не удалось загрузить услуги");
     } finally {
       setLoading(false);
     }
@@ -42,8 +46,8 @@ const Services = () => {
     if (!q) return services;
     return services.filter(
       (s) =>
-        (s.name || "").toLowerCase().includes(q) ||
-        String(s.price ?? "").toLowerCase().includes(q)
+        s.name.toLowerCase().includes(q) ||
+        String(s.price).toLowerCase().includes(q)
     );
   }, [services, search]);
 
@@ -55,17 +59,33 @@ const Services = () => {
     if (!saving && !deleting) {
       setModalOpen(false);
       setCurrentService(null);
+      setError("");
     }
   };
 
-  const saveService = async (form) => {
-    setSaving(true);
-    setError("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const name = (fd.get("name") || "").toString().trim();
+    const priceStr = (fd.get("price") || "").toString().trim();
+    const active = fd.get("active") === "on";
+
+    if (!name) {
+      setError("Введите название услуги");
+      return;
+    }
+    if (priceStr === "" || Number.isNaN(Number(priceStr)) || Number(priceStr) < 0) {
+      setError("Цена должна быть неотрицательным числом");
+      return;
+    }
+
     try {
+      setSaving(true);
+      setError("");
       const payload = {
-        name: form.name,
-        price: Number(form.price),
-        is_active: !!form.active,
+        name,
+        price: Number(priceStr),
+        is_active: active,
         company: localStorage.getItem("company"),
       };
       if (currentService?.id) {
@@ -75,104 +95,81 @@ const Services = () => {
       }
       await fetchServices();
       closeModal();
-    } catch (e) {
-      setError(e.response?.data?.detail || "Не удалось сохранить услугу");
+    } catch (e2) {
+      setError(e2?.response?.data?.detail || "Не удалось сохранить услугу");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const form = {
-      name: fd.get("name")?.toString().trim() || "",
-      price: fd.get("price")?.toString().trim() || "",
-      active: fd.get("active") === "on",
-    };
-    if (
-      !form.name ||
-      form.price === "" ||
-      isNaN(Number(form.price)) ||
-      Number(form.price) < 0
-    ) {
-      setError(
-        "Обязательные поля: Название и корректная Цена (неотрицательное число)"
-      );
-      return;
-    }
-    saveService(form);
-  };
-
   const handleDelete = async () => {
     if (!currentService?.id) return;
-    if (
-      !window.confirm(
-        `Удалить услугу «${currentService.name || "без названия"}»? Действие необратимо.`
-      )
-    )
-      return;
-
-    setDeleting(true);
-    setError("");
+    if (!window.confirm(`Удалить «${currentService.name}»? Действие необратимо.`)) return;
     try {
+      setDeleting(true);
       await api.delete(`/barbershop/services/${currentService.id}/`);
       await fetchServices();
       closeModal();
     } catch (e) {
-      setError(e.response?.data?.detail || "Не удалось удалить услугу");
+      setError(e?.response?.data?.detail || "Не удалось удалить услугу");
     } finally {
       setDeleting(false);
     }
   };
 
   return (
-    <div className="svc">
-      <div className="svc__header">
-        <div className="svc__title-group">
-          <h2 className="svc__title">Услуги</h2>
-          <span className="svc__subtitle">
+    <div className="barberservices">
+      <div className="barberservices__header">
+        <div className="barberservices__titleWrap">
+          <h2 className="barberservices__title">Услуги</h2>
+          <span className="barberservices__subtitle">
             {loading ? "Загрузка…" : `${services.length} позиций`}
           </span>
         </div>
 
-        <div className="svc__actions">
-          <div className="svc__search">
-            <FaSearch className="svc__search-icon" />
+        <div className="barberservices__actions">
+          <div className="barberservices__search">
+            <FaSearch className="barberservices__searchIcon" />
             <input
-              className="svc__search-input"
-              type="text"
+              className="barberservices__searchInput"
               placeholder="Поиск по названию или цене"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <button className="svc__btn svc__btn--primary" onClick={() => openModal()}>
-            <FaPlus /> <span>Добавить</span>
+          <button
+            className="barberservices__btn barberservices__btn--primary barberservices__btn--icon"
+            onClick={() => openModal()}
+            aria-label="Добавить услугу"
+            title="Добавить"
+          >
+            <FaPlus />
           </button>
         </div>
       </div>
 
-      {error && <div className="svc__alert">{error}</div>}
+      {error && !modalOpen && <div className="barberservices__alert">{error}</div>}
 
       {loading ? (
-        <div className="svc__skeleton-list">
+        <div className="barberservices__skeletonList">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="svc__skeleton-card" />
+            <div key={i} className="barberservices__skeletonCard" />
           ))}
         </div>
       ) : (
-        <div className="svc__list">
+        <div className="barberservices__list">
           {filtered.map((s) => (
-            <article key={s.id} className="svc__card">
-              <div className="svc__info">
-                <h4 className="svc__name">{s.name}</h4>
-                <div className="svc__meta">
-                  <span className="svc__price">{s.price}</span>
+            <article key={s.id} className="barberservices__card">
+              <div className="barberservices__info">
+                <h4 className="barberservices__name">{s.name}</h4>
+                <div className="barberservices__meta">
+                  <span className="barberservices__price">{fmtMoney(s.price)}</span>
                   <span
-                    className={`svc__badge ${
-                      s.active ? "svc__badge--active" : "svc__badge--inactive"
+                    className={`barberservices__badge ${
+                      s.active
+                        ? "barberservices__badge--active"
+                        : "barberservices__badge--inactive"
                     }`}
                   >
                     {s.active ? "Активна" : "Неактивна"}
@@ -180,12 +177,14 @@ const Services = () => {
                 </div>
               </div>
 
-              <div className="svc__card-actions">
+              <div className="barberservices__cardActions">
                 <button
-                  className="svc__btn svc__btn--secondary"
+                  className="barberservices__btn barberservices__btn--secondary"
                   onClick={() => openModal(s)}
+                  title="Редактировать"
                 >
-                  <FaEdit /> <span>Редактировать</span>
+                  <FaEdit />
+                  <span className="barberservices__btnText">Редактировать</span>
                 </button>
               </div>
             </article>
@@ -194,82 +193,99 @@ const Services = () => {
       )}
 
       {modalOpen && (
-        <div className="svc__modal-overlay" onClick={closeModal}>
-          <div className="svc__modal" onClick={(e) => e.stopPropagation()}>
-            <div className="svc__modal-header">
-              <h3 className="svc__modal-title">
+        <div className="barberservices__overlay" onClick={closeModal}>
+          <div
+            className="barberservices__modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="barberservices__modalHeader">
+              <h3 className="barberservices__modalTitle">
                 {currentService ? "Редактировать услугу" : "Новая услуга"}
               </h3>
-              <button className="svc__icon-btn" onClick={closeModal} aria-label="Закрыть">
+              <button
+                className="barberservices__iconBtn"
+                onClick={closeModal}
+                aria-label="Закрыть"
+              >
                 <FaTimes />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="svc__form">
-              <div className="svc__form-grid">
-                <div className="svc__field">
-                  <label htmlFor="name" className="svc__label">
-                    Название <span className="svc__req">*</span>
-                  </label>
+            {error && <div className="barberservices__alert barberservices__alert--inModal">{error}</div>}
+
+            <form className="barberservices__form" onSubmit={handleSubmit}>
+              <div className="barberservices__grid">
+                <label className="barberservices__field">
+                  <span className="barberservices__label">
+                    Название <b className="barberservices__req">*</b>
+                  </span>
                   <input
-                    id="name"
                     name="name"
-                    className="svc__input"
                     defaultValue={currentService?.name || ""}
+                    className="barberservices__input"
                     placeholder="Например: Стрижка"
+                    autoFocus
                     required
                   />
-                </div>
+                </label>
 
-                <div className="svc__field">
-                  <label htmlFor="price" className="svc__label">
-                    Цена <span className="svc__req">*</span>
-                  </label>
+                <label className="barberservices__field">
+                  <span className="barberservices__label">
+                    Цена <b className="barberservices__req">*</b>
+                  </span>
                   <input
-                    id="price"
                     name="price"
-                    className="svc__input"
-                    defaultValue={currentService?.price ?? ""}
+                    defaultValue={
+                      currentService?.price !== undefined
+                        ? String(currentService.price)
+                        : ""
+                    }
+                    className="barberservices__input"
                     placeholder="0"
                     type="number"
                     step="0.01"
                     min="0"
+                    inputMode="decimal"
                     required
                   />
-                </div>
+                </label>
 
-                <div className="svc__field svc__field--switch">
-                  <label className="svc__label">Активна</label>
-                  <label className="svc__switch">
+                <div className="barberservices__field barberservices__field--switch">
+                  <span className="barberservices__label">Активна</span>
+                  <label className="barberservices__switch">
                     <input
                       type="checkbox"
                       name="active"
                       defaultChecked={currentService?.active ?? true}
                     />
-                    <span className="svc__slider" />
+                    <span className="barberservices__slider" />
                   </label>
                 </div>
               </div>
 
-              <div className="svc__form-actions">
+              <div className="barberservices__footer">
                 {currentService?.id ? (
                   <button
                     type="button"
-                    className="svc__btn svc__btn--danger"
+                    className="barberservices__btn barberservices__btn--danger"
                     onClick={handleDelete}
                     disabled={deleting || saving}
-                    title="Удалить услугу"
                   >
-                    <FaTrash /> {deleting ? "Удаление…" : "Удалить"}
+                    <FaTrash />
+                    <span className="barberservices__btnText">
+                      {deleting ? "Удаление…" : "Удалить"}
+                    </span>
                   </button>
                 ) : (
-                  <span className="svc__form-actions-spacer" />
+                  <span className="barberservices__spacer" />
                 )}
 
-                <div className="svc__form-actions-right">
+                <div className="barberservices__footerRight">
                   <button
                     type="button"
-                    className="svc__btn svc__btn--secondary"
+                    className="barberservices__btn barberservices__btn--secondary"
                     onClick={closeModal}
                     disabled={saving || deleting}
                   >
@@ -277,8 +293,8 @@ const Services = () => {
                   </button>
                   <button
                     type="submit"
+                    className="barberservices__btn barberservices__btn--primary"
                     disabled={saving || deleting}
-                    className="svc__btn svc__btn--primary"
                   >
                     {saving ? "Сохранение…" : "Сохранить"}
                   </button>

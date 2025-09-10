@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch } from "react-redux";
 import {
   useLocation,
   useNavigate,
@@ -6,13 +7,14 @@ import {
   useParams,
 } from "react-router-dom";
 import api from "../../../../api";
-import "./ClientDetails.scss";
-import { useDispatch } from "react-redux";
-import { useClient } from "../../../../store/slices/ClientSlice";
 import {
   getClientDealDetail,
   updateDealDetail,
 } from "../../../../store/creators/clientCreators";
+import { useClient } from "../../../../store/slices/ClientSlice";
+import "./ClientDetails.scss";
+
+// import { useDispatch } from "react-redux";
 
 /* ===== helpers ===== */
 const listFrom = (res) => res?.data?.results || res?.data || [];
@@ -94,6 +96,68 @@ const toIsoDate10 = (v) => {
   return `${y}-${m2}-${day}`;
 };
 
+// ===== helpers =====
+const toNumber = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+// Добавляет месяцы, сохраняя "день месяца"; если его нет (напр. 31-е → февраль), берём последний день месяца
+function addMonthsKeepDOM(date, monthsToAdd) {
+  const d = new Date(date.getTime());
+  const day = d.getDate();
+  const targetMonth = d.getMonth() + monthsToAdd;
+  const y = d.getFullYear() + Math.floor(targetMonth / 12);
+  const m = ((targetMonth % 12) + 12) % 12;
+  const lastDayOfTargetMonth = new Date(y, m + 1, 0).getDate();
+  const safeDay = Math.min(day, lastDayOfTargetMonth);
+  return new Date(
+    y,
+    m,
+    safeDay,
+    d.getHours(),
+    d.getMinutes(),
+    d.getSeconds(),
+    d.getMilliseconds()
+  );
+}
+
+function formatDateDDMMYYYY(dt) {
+  const dd = String(dt.getDate()).padStart(2, "0");
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const yyyy = dt.getFullYear();
+  return `${dd}.${mm}.${yyyy}`;
+}
+
+/**
+ * Генерация графика равных платежей с учётом округления до копеек
+ * Правило: первые (months - 1) платежей равны округлённому base, последний — «добивка» до общей суммы
+ */
+function buildInstallments({ total, months, firstDueDate }) {
+  if (!Number.isFinite(total) || !Number.isFinite(months) || months <= 0)
+    return [];
+
+  const base = round2(total / months); // напр. 100 / 12 = 8.33
+  const last = round2(total - base * (months - 1)); // добиваем до общей суммы (напр. 8.37)
+
+  const rows = [];
+  let rest = round2(total);
+  for (let i = 0; i < months; i++) {
+    const dueDate = addMonthsKeepDOM(firstDueDate, i);
+    const amount = i === months - 1 ? last : base;
+    rest = round2(rest - amount);
+    rows.push({
+      idx: i + 1,
+      dueDate,
+      amount,
+      rest,
+    });
+  }
+  return rows;
+}
+
 const DebtModal = ({ id, onClose }) => {
   const dispatch = useDispatch();
   const { dealDetail } = useClient();
@@ -144,9 +208,9 @@ const DebtModal = ({ id, onClose }) => {
     }
   };
 
-  // рассчитываем ежемесячный платёж из текущего источника (форма или сервер)
-  const amountNum = Number(isEditing ? state.amount : dealDetail?.amount);
-  const monthsNum = Number(
+  // источники значений (форма/сервер)
+  const amountNum = toNumber(isEditing ? state.amount : dealDetail?.amount);
+  const monthsNum = toNumber(
     isEditing ? state.count_debt : dealDetail?.count_debt
   );
 
@@ -155,10 +219,26 @@ const DebtModal = ({ id, onClose }) => {
       ? (amountNum / monthsNum).toFixed(2)
       : "—";
 
+  // === график платежей ===
+  const installments = useMemo(() => {
+    if (!dealDetail) return [];
+    // дата первого платежа — через месяц после created_at (или сегодняшняя, если нет created_at)
+    const createdAt = dealDetail?.created_at
+      ? new Date(dealDetail.created_at)
+      : new Date();
+    const firstDueDate = addMonthsKeepDOM(createdAt, 1);
+
+    return buildInstallments({
+      total: amountNum,
+      months: monthsNum,
+      firstDueDate,
+    });
+  }, [dealDetail, amountNum, monthsNum]);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal"
+        className="modal clientModal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -229,10 +309,67 @@ const DebtModal = ({ id, onClose }) => {
           </div>
         )}
 
+        {/* ===== График платежей ===== */}
+        {installments.length > 0 && (
+          <section className="schedule">
+            <div className="row3">
+              <div className="label">График платежей</div>
+              <div className="value" aria-live="polite">
+                <table className="schedule__table" role="table">
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left" }}>№</th>
+                      <th style={{ textAlign: "left" }}>Срок оплаты</th>
+                      <th style={{ textAlign: "right" }}>Сумма</th>
+                      <th style={{ textAlign: "right" }}>Остаток</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {installments.map((p) => (
+                      <tr key={p.idx}>
+                        <td>{p.idx}</td>
+                        <td>{formatDateDDMMYYYY(p.dueDate)}</td>
+                        <td style={{ textAlign: "right" }}>
+                          {p.amount.toFixed(2)}
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          {p.rest.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={2} style={{ fontWeight: 600 }}>
+                        Итого
+                      </td>
+                      <td style={{ textAlign: "right", fontWeight: 600 }}>
+                        {amountNum.toFixed(2)}
+                      </td>
+                      <td style={{ textAlign: "right", fontWeight: 600 }}>
+                        0.00
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+                <p className="schedule__hint">
+                  Первый платёж назначен через месяц после даты оформления
+                  сделки.
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
         {!isEditing ? (
-          <button className="btn edit-btn" onClick={() => setIsEditing(true)}>
-            Редактировать
-          </button>
+          <div className="actions">
+            <button className="btn edit-btn" onClick={() => setIsEditing(true)}>
+              Редактировать
+            </button>
+            <button className="btn edit-btn" onClick={onClose}>
+              Отмена
+            </button>
+          </div>
         ) : (
           <div className="actions">
             <button className="btn edit-btn" onClick={onSubmit}>
@@ -241,7 +378,6 @@ const DebtModal = ({ id, onClose }) => {
             <button
               className="btn edit-btn"
               onClick={() => {
-                // откатить поля к данным из сделки
                 setState({
                   amount:
                     dealDetail?.amount != null ? String(dealDetail.amount) : "",
@@ -302,6 +438,7 @@ export default function MarketClientDetails() {
   const [dealsErr, setDealsErr] = useState("");
   const [clientErr, setClientErr] = useState("");
   const [selectedRowId, setSelectedRowId] = useState(null);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     setClient(initialClient);
@@ -376,6 +513,7 @@ export default function MarketClientDetails() {
     );
     setDealStatus(deal ? kindToRu(deal.kind) : "Продажа");
     setIsDealFormOpen(true);
+    loadDeals(client.id);
   };
 
   const openClientForm = () => {
@@ -563,6 +701,10 @@ export default function MarketClientDetails() {
     setShowDebtModal(true);
   };
 
+  const kindTranslate = {
+    new: "Новый",
+  };
+
   const clientName = client?.fio || client?.full_name || "—";
 
   return (
@@ -611,9 +753,9 @@ export default function MarketClientDetails() {
             </div>
 
             <div className="row">
-              <div className="label">Сумма покупки</div>
+              <div className="label">Статус</div>
               <div className="value">
-                {Number(client?.amount || 0).toFixed(2)} сом
+                {kindTranslate[client?.status] || client?.status}
               </div>
               <button className="btn edit-btn" onClick={openClientForm}>
                 Редактировать

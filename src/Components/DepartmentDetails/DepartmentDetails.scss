@@ -16,6 +16,18 @@
   z-index: 1000;
 }
 
+.inline-access-list {
+  height: 100px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  label {
+    display: flex;
+    column-gap: 15px;
+  }
+}
+
 .modalContent {
   // background-color: #fff;
   padding: 30px;

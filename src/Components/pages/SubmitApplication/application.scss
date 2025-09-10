@@ -2,8 +2,16 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
 
-/* единый фон «горы» (как на логине/регистрации) */
+/* фон «горы» */
 $mountains: url("https://moya-planeta.ru/upload/images/xl/ca/64/ca64cb328dff0ae52ee12bcec69c060120e08c3e.jpg");
+
+/* брейкпоинты */
+$bp-xl: 1280px;
+$bp-lg: 1100px;
+$bp-md: 980px;   /* уже был у тебя — ключевой */
+$bp-sm: 640px;
+$bp-xs: 400px;
+$bp-xxs: 320px;
 
 :root {
   --primary: #f7d74f;
@@ -24,16 +32,18 @@ $mountains: url("https://moya-planeta.ru/upload/images/xl/ca/64/ca64cb328dff0ae5
   grid-template-columns: minmax(0, 1fr) clamp(380px, 35vw, 520px);
   font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
 
+  /* общий фон */
   background:
     linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.35)),
     $mountains center/cover no-repeat fixed;
 
-  /* лёгкая вуаль для читаемости */
+  /* лёгкая вуаль */
   &::after {
     content: "";
     position: absolute; inset: 0;
-    background: radial-gradient(1000px 600px at 15% 40%, rgba(0,0,0,0.45), transparent 50%),
-                radial-gradient(1000px 600px at 95% 40%, rgba(255,255,255,0.18), transparent 50%);
+    background:
+      radial-gradient(1000px 600px at 15% 40%, rgba(0,0,0,0.45), transparent 50%),
+      radial-gradient(1000px 600px at 95% 40%, rgba(255,255,255,0.18), transparent 50%);
     pointer-events: none;
   }
 
@@ -46,6 +56,8 @@ $mountains: url("https://moya-planeta.ru/upload/images/xl/ca/64/ca64cb328dff0ae5
     justify-content: center;
     gap: 10px;
     padding: clamp(20px, 6vw, 64px);
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
     color: #fff;
   }
 
@@ -73,6 +85,8 @@ $mountains: url("https://moya-planeta.ru/upload/images/xl/ca/64/ca64cb328dff0ae5
     display: grid;
     place-items: center;
     padding: clamp(20px, 3vw, 40px);
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
   }
 
   &__container {
@@ -101,19 +115,11 @@ $mountains: url("https://moya-planeta.ru/upload/images/xl/ca/64/ca64cb328dff0ae5
     align-items: center;
     gap: 10px;
 
-    &--success {
-      background: #ecfdf5;
-      color: #065f46;
-      border: 1px solid #a7f3d0;
-    }
-    &--error {
-      background: #fef2f2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
-    }
+    &--success { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+    &--error   { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
   }
 
-  &__form { display: grid; gap: 14px; }
+  &__form  { display: grid; gap: 14px; }
   &__field { display: grid; gap: 8px; }
 
   &__label {
@@ -156,14 +162,26 @@ $mountains: url("https://moya-planeta.ru/upload/images/xl/ca/64/ca64cb328dff0ae5
     transition: transform 0.05s ease, box-shadow 0.2s ease, background 0.2s ease;
     box-shadow: 0 10px 20px rgba(247, 215, 79, 0.35);
 
-    &:hover { background: var(--primary-dark); }
+    &:hover  { background: var(--primary-dark); }
     &:active { transform: translateY(1px); box-shadow: 0 6px 12px rgba(247, 215, 79, 0.35); }
     &:disabled { opacity: 0.7; cursor: not-allowed; }
   }
 
-  /* адаптация */
-  @media (max-width: 980px) {
+  /* =======================================================
+     А Д А П Т А Ц И Я
+     ======================================================= */
+
+  /* Чуть просторнее на очень широких экранах */
+  @media (min-width: $bp-xl) {
+    grid-template-columns: minmax(0, 1fr) clamp(480px, 32vw, 560px);
+  }
+
+  /* Переход к одной колонке — как у тебя, оставляю */
+  @media (max-width: $bp-md) {
     grid-template-columns: 1fr;
+    align-content: center;
+    row-gap: clamp(14px, 3.5vh, 24px);
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
 
     &__left {
       min-height: 36vh;
@@ -176,9 +194,43 @@ $mountains: url("https://moya-planeta.ru/upload/images/xl/ca/64/ca64cb328dff0ae5
     &__right  { padding-top: 10px; }
     &__container { margin: 0 auto; }
   }
+
+  /* Низкая высота окна — уменьшаем «воздух», чтобы всё попадало в первый экран */
+  @media (max-height: 740px) and (min-width: $bp-md) {
+    &__left     { padding-top: 24px; padding-bottom: 24px; }
+    &__subtitle { font-size: clamp(13px, 1.4vh, 15px); }
+    &__right    { padding: 18px; }
+    &__container{ padding: 18px; }
+  }
+
+  /* Планшеты: немного плотнее тексты и поля */
+  @media (max-width: $bp-sm) {
+    &__title   { font-size: 22px; }
+    &__label   { font-size: 12.5px; }
+    &__input,
+    &__textarea { font-size: 14px; padding: 11px 12px; }
+    &__button  { font-size: 14.5px; padding: 11px 12px; }
+  }
+
+  /* Очень узкие экраны: скругления/паддинги компактнее, контейнер без «лишних» полей */
+  @media (max-width: $bp-xs) {
+    &__container { border-radius: 12px; padding: 16px; }
+    &__title     { font-size: 20px; margin-bottom: 12px; }
+    &__button    { width: 100%; }
+  }
+
+  /* Минимальная ширина 320px — всё читабельно и ничего не «ломает» */
+  @media (max-width: $bp-xxs) {
+    &__slogan    { font-size: 26px; }
+    &__subtitle  { font-size: 13px; }
+    &__input,
+    &__textarea  { font-size: 13.5px; padding: 10px 11px; }
+    &__label     { font-size: 12px; }
+    &__container { padding: 14px; border-radius: 10px; }
+  }
 }
 
-/* ===== список заявок (как раньше), оставлен BEM-нейминг .applications ===== */
+/* ===== СПИСОК ЗАЯВОК (BEM .applications) ===== */
 .applications {
   &__container {
     max-width: 1140px;
@@ -191,7 +243,8 @@ $mountains: url("https://moya-planeta.ru/upload/images/xl/ca/64/ca64cb328dff0ae5
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 0;
+    gap: 16px;
+    padding: 12px 0;
     border-bottom: 1px solid #ccc;
   }
 
@@ -246,9 +299,55 @@ $mountains: url("https://moya-planeta.ru/upload/images/xl/ca/64/ca64cb328dff0ae5
       }
     }
   }
+
+  /* ===== адаптация списка ===== */
+
+  /* планшеты — допускаем переносы и «воздух» */
+  @media (max-width: 900px) {
+    &__item {
+      flex-wrap: wrap;
+      padding: 12px 0;
+      row-gap: 10px;
+    }
+  }
+
+  /* телефоны — превращаем строку в карточку */
+  @media (max-width: 640px) {
+    &__item {
+      border: 1px solid #e8eaee;
+      border-radius: 12px;
+      padding: 14px;
+      background: #fff;
+      box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+      margin-bottom: 12px;
+    }
+
+    &__status {
+      width: 100%;
+      justify-content: space-between;
+      gap: 8px;
+
+      b { font-weight: 700; }
+      &-select { flex: 0 0 auto; }
+    }
+
+    &__button {
+      width: 100%;
+      text-align: center;
+      padding: 12px;
+      font-size: 15px;
+      border-radius: 10px;
+    }
+  }
+
+  /* очень узкие — шрифты чуть компактнее */
+  @media (max-width: 360px) {
+    &__button { font-size: 14px; padding: 11px; }
+    &__status &-select { padding: 7px 9px; }
+  }
 }
 
-/* Chrome autofill fix */
+/* Chrome autofill */
 input:-webkit-autofill,
 textarea:-webkit-autofill {
   box-shadow: 0 0 0 1000px #fff inset;

@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Modal from "./Modal";
-import Select from "./Select"; // Используется для выбора сотрудника и для выбора доступов в модалке
-import AccessList from "./AccessList"; // Используется только для отображения/редактирования доступов в таблице
-import "./DepartmentDetails.scss"; // Импортируем стили для DepartmentDetails
+import Select from "./Select"; // Используется для выбора сотрудника
+import AccessList from "./AccessList"; // Используется в таблице (редактирование с кнопкой сохранения)
+import "./DepartmentDetails.scss";
 import { useDispatch } from "react-redux";
 import { updateEmployees } from "../../store/creators/departmentCreators";
+
 // --- API Configuration ---
 const BASE_URL = "https://app.nurcrm.kg/api";
 const AUTH_TOKEN = localStorage.getItem("accessToken");
 
-export const ALL_ACCESS_TYPES_MAPPING = [
-  { value: "Обзор", label: "Обзор", backendKey: "can_view_dashboard" },
+// Базовые permissions (общие для всех секторов)
+const BASIC_ACCESS_TYPES = [
   { value: "Касса", label: "Касса", backendKey: "can_view_cashbox" },
   { value: "Отделы", label: "Отделы", backendKey: "can_view_departments" },
   { value: "Заказы", label: "Заказы", backendKey: "can_view_orders" },
@@ -21,8 +22,8 @@ export const ALL_ACCESS_TYPES_MAPPING = [
     label: "Аналитика Отделов",
     backendKey: "can_view_department_analytics",
   },
-  { value: "Склад", label: "Склад", backendKey: "can_view_products" },
   { value: "Продажа", label: "Продажа", backendKey: "can_view_sale" },
+  { value: "Склад", label: "Склад", backendKey: "can_view_products" },
   {
     value: "Бронирование",
     label: "Бронирование",
@@ -42,6 +43,200 @@ export const ALL_ACCESS_TYPES_MAPPING = [
   { value: "Настройки", label: "Настройки", backendKey: "can_view_settings" },
 ];
 
+// Секторные permissions
+const SECTOR_ACCESS_TYPES = {
+  Барбершоп: [
+    {
+      value: "Клиенты Барбершопа",
+      label: "Клиенты Барбершопа",
+      backendKey: "can_view_barber_clients",
+    },
+    {
+      value: "Услуги",
+      label: "Услуги",
+      backendKey: "can_view_barber_services",
+    },
+    {
+      value: "История",
+      label: "История",
+      backendKey: "can_view_barber_history",
+    },
+    { value: "Записи", label: "Записи", backendKey: "can_view_barber_records" },
+  ],
+  Гостиница: [
+    { value: "Комнаты", label: "Комнаты", backendKey: "can_view_hostel_rooms" },
+    {
+      value: "Бронирования",
+      label: "Бронирования",
+      backendKey: "can_view_hostel_booking",
+    },
+    {
+      value: "Клиенты Гостиницы",
+      label: "Клиенты Гостиницы",
+      backendKey: "can_view_hostel_clients",
+    },
+    {
+      value: "Аналитика Гостиницы",
+      label: "Аналитика Гостиницы",
+      backendKey: "can_view_hostel_analytics",
+    },
+  ],
+  Школа: [
+    {
+      value: "Ученики",
+      label: "Ученики",
+      backendKey: "can_view_school_students",
+    },
+    { value: "Группы", label: "Группы", backendKey: "can_view_school_groups" },
+    { value: "Уроки", label: "Уроки", backendKey: "can_view_school_lessons" },
+    {
+      value: "Учителя",
+      label: "Учителя",
+      backendKey: "can_view_school_teachers",
+    },
+    { value: "Лиды", label: "Лиды", backendKey: "can_view_school_leads" },
+    { value: "Счета", label: "Счета", backendKey: "can_view_school_invoices" },
+  ],
+  Кафе: [
+    { value: "Меню", label: "Меню", backendKey: "can_view_cafe_menu" },
+    {
+      value: "Заказы Кафе",
+      label: "Заказы Кафе",
+      backendKey: "can_view_cafe_orders",
+    },
+    {
+      value: "Закупки",
+      label: "Закупки",
+      backendKey: "can_view_cafe_purchasing",
+    },
+    { value: "Бронь", label: "Бронь", backendKey: "can_view_cafe_booking" },
+    {
+      value: "Клиенты Кафе",
+      label: "Клиенты Кафе",
+      backendKey: "can_view_cafe_clients",
+    },
+    { value: "Столы", label: "Столы", backendKey: "can_view_cafe_tables" },
+  ],
+  "Строительная компания": [
+    {
+      value: "Процесс работы",
+      label: "Процесс работы",
+      backendKey: "can_view_building_work_process",
+    },
+  ],
+  "Ремонтные и отделочные работы": [
+    {
+      value: "Процесс работы",
+      label: "Процесс работы",
+      backendKey: "can_view_building_work_process",
+    },
+  ],
+  "Архитектура и дизайн": [
+    {
+      value: "Процесс работы",
+      label: "Процесс работы",
+      backendKey: "can_view_building_work_process",
+    },
+  ],
+};
+
+// Функция для получения всех доступных permissions на основе сектора и тарифа
+const getAllAccessTypes = (sectorName, tariff = null) => {
+  console.log("getAllAccessTypes - sectorName:", sectorName, "tariff:", tariff);
+
+  let basicAccess = [...BASIC_ACCESS_TYPES];
+
+  // Фильтруем базовые permissions для тарифа "Старт"
+  if (tariff === "Старт") {
+    const startTariffPermissions = [
+      "can_view_sale", // Продажа
+      "can_view_products", // Склад
+      "can_view_cashbox", // Касса
+      "can_view_brand_category", // Бренд и категория
+      "can_view_settings", // Настройки
+      "can_view_analytics", // Аналитика
+    ];
+
+    basicAccess = basicAccess.filter((access) =>
+      startTariffPermissions.includes(access.backendKey)
+    );
+
+    console.log(
+      "getAllAccessTypes - Start tariff, filtered basicAccess:",
+      basicAccess
+    );
+
+    // Для тарифа "Старт" не показываем секторные permissions
+    return basicAccess;
+  }
+
+  const sectorAccess = SECTOR_ACCESS_TYPES[sectorName] || [];
+  const result = [...basicAccess, ...sectorAccess];
+  console.log("getAllAccessTypes - Other tariff, result:", result);
+  return result;
+};
+
+// Для обратной совместимости
+export const ALL_ACCESS_TYPES_MAPPING = BASIC_ACCESS_TYPES;
+
+/**
+ * InlineAccessList — простой инлайн-список чекбоксов без кнопки "Сохранить".
+ * При каждом клике сразу вызывает onChange(newLabels).
+ */
+const InlineAccessList = ({
+  selectedLabels = [],
+  onChange,
+  sectorName,
+  profile,
+  tariff,
+}) => {
+  const isChecked = useCallback(
+    (label) => selectedLabels.includes(label),
+    [selectedLabels]
+  );
+
+  const toggle = (label) => {
+    const next = isChecked(label)
+      ? selectedLabels.filter((l) => l !== label)
+      : [...selectedLabels, label];
+    onChange?.(next);
+  };
+
+  // Получаем доступные permissions на основе сектора, тарифа и роли пользователя
+  const availableAccessTypes = (() => {
+    if (!sectorName) return ALL_ACCESS_TYPES_MAPPING;
+
+    // Для тарифа "Старт" всегда показываем только базовые permissions
+    if (tariff === "Старт") {
+      return getAllAccessTypes(sectorName, tariff);
+    }
+
+    const allTypes = getAllAccessTypes(sectorName, tariff);
+
+    // Если пользователь не владелец, показываем только базовые permissions
+    if (profile?.role_display !== "Владелец") {
+      return ALL_ACCESS_TYPES_MAPPING;
+    }
+
+    return allTypes;
+  })();
+
+  return (
+    <div className="inline-access-list">
+      {availableAccessTypes.map((type) => (
+        <label key={type.backendKey} className="inline-access-item">
+          <input
+            type="checkbox"
+            checked={isChecked(type.value)}
+            onChange={() => toggle(type.value)}
+          />
+          <span>{type.label}</span>
+        </label>
+      ))}
+    </div>
+  );
+};
+
 const DepartmentDetails = () => {
   const { id: departmentId } = useParams();
   const navigate = useNavigate();
@@ -59,30 +254,46 @@ const DepartmentDetails = () => {
     last_name: "",
   });
   const [profile, setProfile] = useState(null);
+  const [company, setCompany] = useState(null);
+  const [tariff, setTariff] = useState("Старт"); // Устанавливаем значение по умолчанию
+  console.log("DepartmentDetails - Tariff:", tariff);
 
   const [employeeForm, setEmployeeForm] = useState({
     employee_id: "",
-    accesses: [],
+    accesses: [], // массив ярлыков (["Обзор", "Касса", ...])
   });
-  const [state, setState] = useState({});
 
-  const convertBackendAccessesToLabels = useCallback((accessData) => {
-    const labelsArray = [];
-    ALL_ACCESS_TYPES_MAPPING.forEach((type) => {
-      if (accessData && accessData[type.backendKey] === true) {
-        labelsArray.push(type.value);
-      }
-    });
-    return labelsArray;
-  }, []);
+  const convertBackendAccessesToLabels = useCallback(
+    (accessData) => {
+      const labelsArray = [];
+      const availableAccessTypes = company?.sector?.name
+        ? getAllAccessTypes(company.sector.name)
+        : ALL_ACCESS_TYPES_MAPPING;
 
-  const convertLabelsToBackendAccesses = useCallback((labelsArray) => {
-    const backendAccessObject = {};
-    ALL_ACCESS_TYPES_MAPPING.forEach((type) => {
-      backendAccessObject[type.backendKey] = labelsArray.includes(type.value);
-    });
-    return backendAccessObject;
-  }, []);
+      availableAccessTypes.forEach((type) => {
+        if (accessData && accessData[type.backendKey] === true) {
+          labelsArray.push(type.value);
+        }
+      });
+      return labelsArray;
+    },
+    [company?.sector?.name]
+  );
+
+  const convertLabelsToBackendAccesses = useCallback(
+    (labelsArray) => {
+      const backendAccessObject = {};
+      const availableAccessTypes = company?.sector?.name
+        ? getAllAccessTypes(company.sector.name)
+        : ALL_ACCESS_TYPES_MAPPING;
+
+      availableAccessTypes.forEach((type) => {
+        backendAccessObject[type.backendKey] = labelsArray.includes(type.value);
+      });
+      return backendAccessObject;
+    },
+    [company?.sector?.name]
+  );
 
   const fetchDepartmentDetails = useCallback(async () => {
     setLoading(true);
@@ -111,6 +322,7 @@ const DepartmentDetails = () => {
 
       const processedEmployees = (data.employees || []).map((employee) => ({
         ...employee,
+        // предполагается, что флаги доступов на верхнем уровне employee
         accesses: convertBackendAccessesToLabels(employee),
       }));
       setEmployees(processedEmployees);
@@ -120,7 +332,7 @@ const DepartmentDetails = () => {
     } finally {
       setLoading(false);
     }
-  }, [departmentId, AUTH_TOKEN, convertBackendAccessesToLabels]);
+  }, [departmentId, convertBackendAccessesToLabels]);
 
   const fetchAllAvailableEmployees = useCallback(async () => {
     try {
@@ -144,7 +356,7 @@ const DepartmentDetails = () => {
     } catch (err) {
       console.error("Ошибка при получении всех сотрудников:", err);
     }
-  }, [AUTH_TOKEN]);
+  }, []);
 
   const fetchProfile = async () => {
     try {
@@ -169,11 +381,36 @@ const DepartmentDetails = () => {
     }
   };
 
+  const fetchCompany = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await fetch("https://app.nurcrm.kg/api/users/company/", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCompany(data);
+        setTariff(data.subscription_plan?.name || "Старт");
+      } else {
+        console.error("Ошибка загрузки компании");
+      }
+    } catch (err) {
+      console.error("Ошибка запроса компании:", err);
+    }
+  };
+
   useEffect(() => {
     if (departmentId) {
       fetchDepartmentDetails();
       fetchAllAvailableEmployees();
       fetchProfile();
+      fetchCompany();
     }
   }, [departmentId, fetchDepartmentDetails, fetchAllAvailableEmployees]);
 
@@ -205,14 +442,6 @@ const DepartmentDetails = () => {
     setEmployeeForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAccessChangeForAddModal = (e) => {
-    const selectedOptions = Array.from(
-      e.target.selectedOptions,
-      (option) => option.value
-    );
-    setEmployeeForm((prev) => ({ ...prev, accesses: selectedOptions }));
-  };
-
   const handleSubmitAddEmployee = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -222,9 +451,37 @@ const DepartmentDetails = () => {
         employeeForm.accesses
       );
 
+      // Фильтруем секторные permissions - они должны быть только у владельца
+      const filteredAccessesPayload = { ...accessesPayload };
+
+      // Если тариф "Старт" или пользователь не владелец, убираем секторные permissions
+      if (tariff === "Старт" || profile?.role_display !== "Владелец") {
+        const sectorPermissions = company?.sector?.name
+          ? getAllAccessTypes(company.sector.name, tariff)
+              .filter(
+                (type) =>
+                  !BASIC_ACCESS_TYPES.some(
+                    (basic) => basic.backendKey === type.backendKey
+                  )
+              )
+              .map((type) => type.backendKey)
+          : [];
+
+        sectorPermissions.forEach((permission) => {
+          delete filteredAccessesPayload[permission];
+        });
+
+        console.log(
+          "Filtered out sector permissions for tariff/role:",
+          tariff,
+          profile?.role_display,
+          sectorPermissions
+        );
+      }
+
       const payload = {
         employee_id: employeeForm.employee_id,
-        ...accessesPayload,
+        ...filteredAccessesPayload,
       };
 
       const response = await fetch(
@@ -246,6 +503,24 @@ const DepartmentDetails = () => {
             JSON.stringify(errorData) ||
             "Не удалось добавить сотрудника в отдел"
         );
+      }
+
+      // Дополнительно синхронизируем флаги доступов на самом сотруднике,
+      // т.к. эндпоинт assign-employee может не проставлять отдельные флаги (например, can_view_sale)
+      try {
+        await fetch(
+          `${BASE_URL}/users/employees/${employeeForm.employee_id}/`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${AUTH_TOKEN}`,
+            },
+            body: JSON.stringify(filteredAccessesPayload),
+          }
+        );
+      } catch (_) {
+        // Мягко игнорируем, список всё равно перезагрузим ниже
       }
 
       await fetchDepartmentDetails();
@@ -304,9 +579,7 @@ const DepartmentDetails = () => {
     setLoading(true);
     setError(null);
     try {
-      const payload = {
-        employee_id: employeeId,
-      };
+      const payload = { employee_id: employeeId };
 
       const response = await fetch(
         `${BASE_URL}/construction/departments/${departmentId}/remove-employee/`,
@@ -354,9 +627,7 @@ const DepartmentDetails = () => {
         `${BASE_URL}/construction/departments/${departmentId}/`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${AUTH_TOKEN}`,
-          },
+          headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
         }
       );
 
@@ -366,7 +637,7 @@ const DepartmentDetails = () => {
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.detail || JSON.stringify(errorData);
-        } catch (parseError) {
+        } catch {
           errorMessage = errorText || errorMessage;
         }
         throw new Error(errorMessage);
@@ -385,6 +656,7 @@ const DepartmentDetails = () => {
     const { name, value } = e.target;
     setEditingEmployee((prev) => ({ ...prev, [name]: value }));
   };
+
   const dispatch = useDispatch();
 
   const onFormSubmit = async (e) => {
@@ -394,10 +666,7 @@ const DepartmentDetails = () => {
       await dispatch(
         updateEmployees({
           id,
-          data: {
-            first_name: first_name.trim(),
-            last_name: last_name.trim(),
-          },
+          data: { first_name: first_name.trim(), last_name: last_name.trim() },
         })
       ).unwrap();
       fetchDepartmentDetails();
@@ -475,7 +744,7 @@ const DepartmentDetails = () => {
           <tbody>
             {employees.length > 0 ? (
               employees.map((employee, index) => (
-                <tr key={employee.id}>
+                <tr disabled={employee.role === "owner"} key={employee.id}>
                   {console.log(employee)}
                   <td>{index + 1}</td>
                   <td>
@@ -485,6 +754,7 @@ const DepartmentDetails = () => {
                     {profile?.role === "owner" || profile?.role === "admin" ? (
                       <>
                         <AccessList
+                          role={employee.role}
                           employeeAccesses={employee.accesses}
                           onSaveAccesses={(newAccessesPayload) =>
                             handleSaveEmployeeAccesses(
@@ -492,6 +762,9 @@ const DepartmentDetails = () => {
                               newAccessesPayload
                             )
                           }
+                          sectorName={company?.sector?.name}
+                          profile={profile}
+                          tariff={tariff}
                         />
                         {console.log(employee.accesses)}
                       </>
@@ -538,6 +811,7 @@ const DepartmentDetails = () => {
         </div>
       </footer>
 
+      {/* Модалка: Добавить сотрудника */}
       <Modal
         isOpen={isAddEmployeeModalOpen}
         onClose={handleCloseAddEmployeeModal}
@@ -560,17 +834,20 @@ const DepartmentDetails = () => {
             required
           />
 
-          <Select
-            label="Доступы"
-            name="accesses"
-            value={employeeForm.accesses}
-            onChange={handleAccessChangeForAddModal}
-            options={ALL_ACCESS_TYPES_MAPPING.map((type) => ({
-              value: type.value,
-              label: type.label,
-            }))}
-            multiple
-          />
+          {/* Доступы без кнопки сохранения — сразу пишем в форму */}
+          <div className="field">
+            <label className="field__label">Доступы</label>
+            <InlineAccessList
+              selectedLabels={employeeForm.accesses}
+              onChange={(nextLabels) =>
+                setEmployeeForm((prev) => ({ ...prev, accesses: nextLabels }))
+              }
+              sectorName={company?.sector?.name}
+              profile={profile}
+              tariff={tariff}
+            />
+          </div>
+
           <div className="modalActions">
             <button
               type="button"
@@ -586,6 +863,7 @@ const DepartmentDetails = () => {
         </form>
       </Modal>
 
+      {/* Модалка: Редактировать ФИО */}
       <Modal
         isOpen={isEditEmployeeModalOpen}
         onClose={handleCloseEditEmployeeModal}
