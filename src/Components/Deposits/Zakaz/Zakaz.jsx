@@ -71,7 +71,7 @@ const EditModal = ({ order, onClose, onSaveSuccess, onDeleteConfirm }) => {
     } catch (err) {
       console.error("Failed to update order:", err);
       alert(
-        `Ошибка при обновлении заказа: ${err.message || JSON.stringify(err)}`
+        `Ошибка при обновлении закупки: ${err.message || JSON.stringify(err)}`
       );
     }
   };
@@ -79,7 +79,7 @@ const EditModal = ({ order, onClose, onSaveSuccess, onDeleteConfirm }) => {
   const handleDelete = async () => {
     if (
       window.confirm(
-        `Вы уверены, что хотите удалить заказ №${order?.order_number}?`
+        `Вы уверены, что хотите удалить закупки №${order?.order_number}?`
       )
     ) {
       try {
@@ -89,7 +89,7 @@ const EditModal = ({ order, onClose, onSaveSuccess, onDeleteConfirm }) => {
       } catch (err) {
         console.error("Failed to delete order:", err);
         alert(
-          `Ошибка при удалении заказа: ${err.message || JSON.stringify(err)}`
+          `Ошибка при удалении закупки: ${err.message || JSON.stringify(err)}`
         );
       }
     }
@@ -112,7 +112,7 @@ const EditModal = ({ order, onClose, onSaveSuccess, onDeleteConfirm }) => {
       <div className="edit-modal__overlay" onClick={onClose} />
       <div className="edit-modal__content">
         <div className="edit-modal__header">
-          <h3>Редактирование заказа №{order?.order_number}</h3>
+          <h3>Редактирование закупки №{order?.order_number}</h3>
           <X className="edit-modal__close-icon" size={20} onClick={onClose} />
         </div>
 
@@ -123,7 +123,7 @@ const EditModal = ({ order, onClose, onSaveSuccess, onDeleteConfirm }) => {
         )}
 
         <div className="edit-modal__section">
-          <label>Номер заказа *</label>
+          <label>Номер закупки *</label>
           <input
             type="text"
             name="order_number"
@@ -175,7 +175,7 @@ const EditModal = ({ order, onClose, onSaveSuccess, onDeleteConfirm }) => {
         </div>
 
         <div className="edit-modal__section">
-          <label>Дата заказа</label>
+          <label>Дата закупки</label>
           <input
             type="date"
             name="date_ordered"
@@ -572,9 +572,9 @@ const AddModal = ({ onClose }) => {
   };
 
   const handleSubmit = async () => {
-    console.log("Попытка отправить заказ:");
-    console.log("newOrderData:", newOrderData);
-    console.log("items:", newOrderData.items);
+    // console.log("Попытка отправить заказ:");
+    // console.log("newOrderData:", newOrderData);
+    // console.log("items:", newOrderData.items);
 
     if (
       !newOrderData.order_number ||
@@ -582,11 +582,11 @@ const AddModal = ({ onClose }) => {
       !newOrderData.phone ||
       !newOrderData.department
     ) {
-      alert("Пожалуйста, заполните все обязательные поля заказа.");
+      alert("Пожалуйста, заполните все обязательные поля.");
       return;
     }
     if (newOrderData.items.length === 0) {
-      alert("Пожалуйста, добавьте хотя бы один продукт в заказ.");
+      alert("Пожалуйста, добавьте хотя бы один продукт.");
       return;
     }
 

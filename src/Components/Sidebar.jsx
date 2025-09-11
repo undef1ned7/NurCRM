@@ -70,6 +70,16 @@ const HIDE_RULES = [
   { when: { sector: "Гостиница" }, hide: { toIncludes: ["crm/analytics"] } },
   { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/clients"] } },
   { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/hostel/bar"] } },
+  {
+    when: { sector: "Гостиница" },
+    hide: { toIncludes: ["/crm/zakaz"] },
+  },
+  {
+    when: { sector: "Гостиница" },
+    hide: { toIncludes: ["/crm/hostel/obzor"] },
+  },
+  { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/kassa"] } },
+  { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/sell"] } },
   { when: { sector: "Барбершоп" }, hide: { toIncludes: ["crm/employ"] } },
   { when: { sector: "Барбершоп" }, hide: { toIncludes: ["crm/clients"] } },
   { when: { sector: "Барбершоп" }, hide: { toIncludes: ["crm/analytics"] } },
@@ -80,8 +90,17 @@ const HIDE_RULES = [
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/obzor"] } },
   { when: { sector: "Магазин" }, hide: { toIncludes: ["/crm/obzor"] } },
   { when: { sector: "Барбершоп" }, hide: { toIncludes: ["/crm/zakaz"] } },
+  { when: { sector: "Барбершоп" }, hide: { toIncludes: ["crm/raspisanie"] } },
   { when: { sector: "Школа" }, hide: { toIncludes: ["/crm/zakaz"] } },
+  { when: { sector: "Школа" }, hide: { toIncludes: ["crm/analytics"] } },
+  { when: { sector: "Школа" }, hide: { toIncludes: ["crm/employ"] } },
+  { when: { sector: "Школа" }, hide: { toIncludes: ["crm/kassa"] } },
+  { when: { sector: "Школа" }, hide: { toIncludes: ["crm/raspisanie"] } },
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/zakaz"] } },
+  { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/cafe/reservation"] } },
+  { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/raspisanie"] } },
+  { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/cafe/purchasing"] } },
+  { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/analytics"] } },
   { when: { sector: "Магазин" }, hide: { toIncludes: ["/crm/zakaz"] } },
   {
     when: { sector: "Строительная компания" },
@@ -90,6 +109,14 @@ const HIDE_RULES = [
   {
     when: { sector: "Магазин" },
     hide: { toIncludes: ["/crm/market/analytics"] },
+  },
+  {
+    when: { sector: "Магазин" },
+    hide: { toIncludes: ["/crm/market/bar"] },
+  },
+  {
+    when: { sector: "Магазин" },
+    hide: { toIncludes: ["/crm/market/history"] },
   },
 ];
 
@@ -282,6 +309,13 @@ const MENU_CONFIG = {
         permission: "can_view_hostel_analytics",
         implemented: true,
       },
+      {
+        label: "Касса",
+        to: "/crm/hostel/kassa",
+        icon: <Landmark className="sidebar__menu-icon" />,
+        permission: "can_view_cashbox", // Используем базовый permission
+        implemented: true,
+      },
     ],
 
     // Школа
@@ -308,7 +342,7 @@ const MENU_CONFIG = {
         implemented: true,
       },
       {
-        label: "Учителя",
+        label: "Сотрудники",
         to: "/crm/school/teachers",
         icon: <FaRegUser className="sidebar__menu-icon" />,
         permission: "can_view_school_teachers",
@@ -322,7 +356,7 @@ const MENU_CONFIG = {
         implemented: true,
       },
       {
-        label: "Счета",
+        label: "Аналитика",
         to: "/crm/school/invoices",
         icon: <FaRegClipboard className="sidebar__menu-icon" />,
         permission: "can_view_school_invoices",
@@ -407,7 +441,7 @@ const MENU_CONFIG = {
         implemented: true,
       },
       {
-        label: "Клиенты",
+        label: "Гости",
         to: "/crm/cafe/clients",
         icon: <FaRegUser className="sidebar__menu-icon" />,
         permission: "can_view_cafe_clients",

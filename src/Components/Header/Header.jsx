@@ -12,12 +12,71 @@ const pageTitles = {
   "/crm/obzor": "Обзор",
   "/crm/vitrina": "Витрины",
   "/crm/employ": "Сотрудники",
-  "/crm/zakaz": "Заказы",
+  "/crm/zakaz": "Закупки",
   "/crm/sklad": "Склад",
   "/crm/raspisanie": "Расписание",
   "/crm/sklad-accounting": "Складской учет",
   "/crm/analytics": "Аналитика",
   "/crm/set": "Настройки",
+
+  // --- добавлено ---
+  // Базовые
+  "/crm/sell": "Продажа",
+  "/crm/kassa": "Касса",
+  "/crm/clients": "Клиенты",
+  "/crm/departments": "Отделы",
+  "/crm/brand-category": "Бренд и Категория",
+
+  // Строительная сфера
+  "/crm/building/work": "Процесс работы",
+
+  // Барбершоп
+  "/crm/barber/clients": "Клиенты",
+  "/crm/barber/services": "Услуги",
+  "/crm/barber/masters": "Мастера",
+  "/crm/barber/history": "История",
+  "/crm/barber/records": "Записи",
+  "/crm/barber/cash-reports": "Кассовые отчёты",
+
+  // Гостиница
+  "/crm/hostel/rooms": "Комнаты",
+  "/crm/hostel/bookings": "Бронирования",
+  "/crm/hostel/bar": "Бар",
+  "/crm/hostel/clients": "Клиенты",
+  "/crm/hostel/analytics": "Аналитика",
+  "/crm/hostel/kassa": "Касса",
+
+  // Школа
+  "/crm/school/students": "Ученики",
+  "/crm/school/groups": "Группы",
+  "/crm/school/lessons": "Уроки",
+  "/crm/school/teachers": "Сотрудники",
+  "/crm/school/leads": "Лиды",
+  "/crm/school/invoices": "Аналитика",
+
+  // Магазин
+  "/crm/market/bar": "Бар",
+  "/crm/market/history": "История",
+  "/crm/market/analytics": "Аналитика",
+
+  // Кафе
+  "/crm/cafe/analytics": "Аналитика выплат",
+  "/crm/cafe/menu": "Меню",
+  "/crm/cafe/orders": "Заказы",
+  "/crm/cafe/payroll": "Зарплата",
+  "/crm/cafe/purchasing": "Закупки",
+  "/crm/cafe/reports": "Отчёты",
+  "/crm/cafe/reservations": "Бронь",
+  "/crm/cafe/clients": "Гости",
+  "/crm/cafe/stock": "Склад",
+  "/crm/cafe/tables": "Столы",
+  "/crm/cafe/kassa": "Касса",
+
+  // Доп. услуги
+  "/crm/instagram": "Instagram",
+  "/crm/documents": "Документы",
+  // ВНИМАНИЕ: один и тот же путь для WhatsApp и Telegram
+  "/crm/": "Каналы",
 };
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {

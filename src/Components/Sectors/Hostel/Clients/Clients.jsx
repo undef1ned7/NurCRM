@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import api from "../../../../api";
+// src/components/Clients/Clients.jsx
+// (полный файл)
+
+import React, { useEffect, useMemo, useState } from "react";
 import "./Clients.scss";
+import api from "../../../../api";
 import {
-  createClient,
   getAll,
-  removeClient,
+  createClient,
   updateClient,
+  removeClient,
 } from "./clientStore";
 
 /* ===== helpers ===== */
@@ -19,6 +22,7 @@ const statusRu = (v) =>
     completed: "Завершено",
     canceled: "Отменено",
     active: "Активно",
+    history: "История",
   }[v] ||
   v ||
   "—");
@@ -29,6 +33,19 @@ const num = (v) => {
   return Number.isFinite(n) ? n : 0;
 };
 const toYmd = (iso) => (iso ? String(iso).slice(0, 10) : "");
+const ts = (d) => {
+  const t = Date.parse(d || "");
+  return Number.isFinite(t) ? t : 0;
+};
+const toLocalDT = (iso) => (iso ? new Date(iso).toLocaleString() : "—");
+
+/* misc */
+const nightsBetween = (a, b) => {
+  if (!a || !b) return 1;
+  const ms = new Date(b) - new Date(a);
+  const d = Math.ceil(ms / (24 * 60 * 60 * 1000));
+  return Math.max(1, d);
+};
 
 /* ===== normalizers ===== */
 const normalizeBooking = (b) => ({
@@ -41,9 +58,34 @@ const normalizeBooking = (b) => ({
   start_time: b.start_time || "",
   end_time: b.end_time || "",
   status: b.status || "created",
+  purpose: b.purpose || "",
   total: num(b.total ?? b.amount ?? 0),
   created_at: b.created_at || null,
 });
+
+/* история бронирований (архив) */
+const normalizeHistory = (h) => {
+  const nights = nightsBetween(h.start_time, h.end_time);
+  const snapPrice = num(h.target_price);
+  return {
+    id: `hist_${h.id}`, // чтобы не конфликтовало с обычными
+    client: h.client == null ? null : String(h.client),
+    // refs могут быть null — используем снапшот имени
+    hotel: h.hotel ?? null,
+    room: h.room ?? null,
+    bed: h.bed ?? null,
+    qty: 1, // в истории qty нет — считаем 1
+    start_time: h.start_time || "",
+    end_time: h.end_time || "",
+    status: "history",
+    purpose: h.purpose || "",
+    total: nights * snapPrice, // считаем по снапшоту цены
+    created_at: h.archived_at || null,
+    // передадим снапшот типа/имени дальше в рендер
+    obj_type: h.target_type || null, // "hotel" | "room" | "bed"
+    obj_name: h.target_name || h.client_label || "",
+  };
+};
 
 /* справочники */
 const normalizeHotel = (h) => ({
@@ -63,27 +105,15 @@ const normalizeBed = (b) => ({
   capacity: Number(b.capacity ?? 0),
 });
 
-/* misc */
-const nightsBetween = (a, b) => {
-  if (!a || !b) return 1;
-  const ms = new Date(b) - new Date(a);
-  const d = Math.ceil(ms / (24 * 60 * 60 * 1000));
-  return Math.max(1, d);
-};
-
 /* самая свежая дата по броням клиента (ISO string или null) */
 const calcClientUpdatedAt = (bookings) => {
   if (!bookings?.length) return null;
   let maxTs = 0;
   for (const b of bookings) {
-    const t1 = Date.parse(b.end_time || "");
-    const t2 = Date.parse(b.start_time || "");
-    const t3 = Date.parse(b.created_at || "");
-    const cur = Math.max(
-      isFinite(t1) ? t1 : 0,
-      isFinite(t2) ? t2 : 0,
-      isFinite(t3) ? t3 : 0
-    );
+    const t1 = ts(b.end_time);
+    const t2 = ts(b.start_time);
+    const t3 = ts(b.created_at);
+    const cur = Math.max(t1, t2, t3);
     if (cur > maxTs) maxTs = cur;
   }
   return maxTs ? new Date(maxTs).toISOString() : null;
@@ -108,7 +138,7 @@ const Clients = () => {
   const [roomsMap, setRoomsMap] = useState({});
   const [bedsMap, setBedsMap] = useState({});
 
-  /* ===== загрузка клиентов + броней из API ===== */
+  /* ===== загрузка клиентов + брони + ИСТОРИЯ ===== */
   const load = async () => {
     try {
       setLoading(true);
@@ -116,12 +146,14 @@ const Clients = () => {
 
       const clients = await getAll();
 
-      const [hotelsRes, roomsRes, bedsRes, bookingsAll] = await Promise.all([
-        fetchAll("/booking/hotels/"),
-        fetchAll("/booking/rooms/"),
-        fetchAll("/booking/beds/"),
-        fetchAll("/booking/bookings/"),
-      ]);
+      const [hotelsRes, roomsRes, bedsRes, bookingsAll, historyAll] =
+        await Promise.all([
+          fetchAll("/booking/hotels/"),
+          fetchAll("/booking/rooms/"),
+          fetchAll("/booking/beds/"),
+          fetchAll("/booking/bookings/"),
+          fetchAll("/booking/booking/history/"), // архив
+        ]);
 
       const hotels = hotelsRes.map(normalizeHotel);
       const rooms = roomsRes.map(normalizeRoom);
@@ -141,34 +173,52 @@ const Clients = () => {
       setBedsMap(bedsMapLocal);
 
       const incoming = bookingsAll.map(normalizeBooking);
+      const archived = historyAll.map(normalizeHistory);
 
-      // группировка по клиенту
+      // группировка по клиенту (обычные + архив), без дублей
       const byClient = new Map();
-      incoming.forEach((b) => {
+      const add = (b) => {
         const key = b.client ? String(b.client) : null;
         if (!key) return;
         if (!byClient.has(key)) byClient.set(key, []);
-        byClient.get(key).push(b);
-      });
+        const arr = byClient.get(key);
+        if (!arr.some((x) => String(x.id) === String(b.id))) arr.push(b);
+      };
+      incoming.forEach(add);
+      archived.forEach(add);
+
+      // сортировка сырых записей по дате убыв.
       for (const [, arr] of byClient) {
-        arr.sort((a, b) =>
-          (b.start_time || "").localeCompare(a.start_time || "")
+        arr.sort(
+          (a, b) =>
+            (ts(b.end_time) || ts(b.start_time) || ts(b.created_at)) -
+            (ts(a.end_time) || ts(a.start_time) || ts(a.created_at))
         );
       }
 
+      // сборка строк UI + финальная сортировка по sortKey
       const merged = clients.map((c) => {
-        const bookingsForClient = byClient.get(String(c.id)) || [];
-        const updated_at = calcClientUpdatedAt(bookingsForClient); // <<< вот оно
-        return {
-          ...c,
-          updated_at, // перезаписываем пустое значение вычисленным
-          bookings: bookingsForClient.map((b) =>
+        const clientId = String(c.id);
+        const bookingsForClient = byClient.get(clientId) || [];
+
+        const rowsForClient = bookingsForClient
+          .map((b) =>
             toClientBookingRow(b, {
               hotelsMap: hotelsMapLocal,
               roomsMap: roomsMapLocal,
               bedsMap: bedsMapLocal,
             })
-          ),
+          )
+          .sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0));
+
+        const updated_at = rowsForClient.length
+          ? new Date(rowsForClient[0].sortKey).toISOString()
+          : calcClientUpdatedAt(bookingsForClient);
+
+        return {
+          ...c,
+          updated_at,
+          bookings: rowsForClient,
         };
       });
 
@@ -203,17 +253,12 @@ const Clients = () => {
             ? existing.map((x) => (String(x.id) === String(b.id) ? row : x))
             : [row, ...existing];
 
-          // пересчитать «Обновлён» (по броням клиента)
-          const updated_at =
-            calcClientUpdatedAt(
-              next.map((x) => ({
-                id: x.id,
-                start_time: x.from,
-                end_time: x.to,
-              }))
-            ) || new Date().toISOString();
+          next.sort((a, bb) => (bb.sortKey || 0) - (a.sortKey || 0));
 
-          next.sort((a, bb) => (bb.from || "").localeCompare(a.from || ""));
+          const updated_at = next.length
+            ? new Date(next[0].sortKey).toISOString()
+            : c.updated_at || null;
+
           return { ...c, bookings: next, updated_at };
         })
       );
@@ -227,12 +272,10 @@ const Clients = () => {
           const next = (c.bookings || []).filter(
             (b) => String(b.id) !== String(id)
           );
-          const updated_at =
-            calcClientUpdatedAt(
-              next.map((x) => ({ start_time: x.from, end_time: x.to }))
-            ) ||
-            c.updated_at ||
-            null;
+          next.sort((a, bb) => (bb.sortKey || 0) - (a.sortKey || 0));
+          const updated_at = next.length
+            ? new Date(next[0].sortKey).toISOString()
+            : c.updated_at || null;
           return { ...c, bookings: next, updated_at };
         })
       );
@@ -318,11 +361,19 @@ const Clients = () => {
   const onCloseCard = () => setOpenId(null);
 
   const lastObjectLabel = (c) => {
-    const b = (c.bookings || [])[0];
-    if (!b || !b.obj_type) return "—";
-    if (b.obj_type === "hotel") return `Гостиница: ${b.obj_name || b.obj_id}`;
-    if (b.obj_type === "room") return `Зал: ${b.obj_name || b.obj_id}`;
-    if (b.obj_type === "bed") return `Койко-место: ${b.obj_name || b.obj_id}`;
+    const list = c.bookings || [];
+    if (!list.length) return "—";
+    // самый поздний по sortKey
+    const last = list.reduce(
+      (best, cur) => ((cur.sortKey || 0) > (best.sortKey || 0) ? cur : best),
+      list[0]
+    );
+    if (!last || !last.obj_type) return "—";
+    if (last.obj_type === "hotel")
+      return `Гостиница: ${last.obj_name || last.obj_id}`;
+    if (last.obj_type === "room") return `Зал: ${last.obj_name || last.obj_id}`;
+    if (last.obj_type === "bed")
+      return `Койко-место: ${last.obj_name || last.obj_id}`;
     return "—";
   };
 
@@ -364,7 +415,7 @@ const Clients = () => {
               }}
             >
               <option value="all">Все объекты</option>
-              <option value="hotel">Гостиницы</option>
+              <option value="hotel">Комнаты</option>
               <option value="room">Залы</option>
               <option value="bed">Койко-места</option>
             </select>
@@ -621,15 +672,41 @@ const ClientForm = ({ id, onClose, afterSave, rows }) => {
 /* ===== карточка клиента ===== */
 const ClientCard = ({ id, onClose, rows }) => {
   const [tab, setTab] = useState("profile");
+  const [openBooking, setOpenBooking] = useState(null); // модалка деталей брони
 
   useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
+    const onKey = (e) =>
+      e.key === "Escape" && (openBooking ? setOpenBooking(null) : onClose());
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, openBooking]);
+
+  // блокируем «прыжок» страницы на время открытой карточки/модалки
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
 
   const client = rows.find((c) => c.id === id);
   if (!client) return null;
+
+  const objectLabel = (b) => {
+    if (!b || !b.obj_type) return "—";
+    if (b.obj_type === "hotel") return `Гостиница: ${b.obj_name || b.obj_id}`;
+    if (b.obj_type === "room") return `Зал: ${b.obj_name || b.obj_id}`;
+    if (b.obj_type === "bed")
+      return `Койко-место: ${b.obj_name || b.obj_id}${
+        b.qty ? ` × ${b.qty}` : ""
+      }`;
+    return "—";
+  };
+
+  const nights = (b) => nightsBetween(b.from, b.to);
+  const pricePerNight = (b) => {
+    const n = nights(b) || 1;
+    const total = Number(b.total) || 0;
+    return total && n ? Math.round(total / n) : 0;
+  };
 
   return (
     <div className="clients__modalOverlay" onClick={onClose}>
@@ -676,7 +753,7 @@ const ClientCard = ({ id, onClose, rows }) => {
         >
           <button
             className={`clients__tab ${
-              tab === "profile" ? "clients__tabActive" : ""
+              tab === "profile" ? "clients__tab--active" : ""
             }`}
             role="tab"
             aria-selected={tab === "profile"}
@@ -686,7 +763,7 @@ const ClientCard = ({ id, onClose, rows }) => {
           </button>
           <button
             className={`clients__tab ${
-              tab === "bookings" ? "clients__tabActive" : ""
+              tab === "bookings" ? "clients__tab--active" : ""
             }`}
             role="tab"
             aria-selected={tab === "bookings"}
@@ -728,26 +805,24 @@ const ClientCard = ({ id, onClose, rows }) => {
                 </tr>
               </thead>
               <tbody>
-                {client.bookings?.length ? (
-                  client.bookings.map((b) => (
-                    <tr key={b.id}>
-                      <td>{statusRu(b.status)}</td>
-                      <td>
-                        {b.obj_type === "hotel"
-                          ? `Гостиница: ${b.obj_name || b.obj_id}`
-                          : b.obj_type === "room"
-                          ? `Зал: ${b.obj_name || b.obj_id}`
-                          : b.obj_type === "bed"
-                          ? `Койко-место: ${b.obj_name || b.obj_id}${
-                              b.qty ? ` × ${b.qty}` : ""
-                            }`
-                          : "—"}
-                      </td>
-                      <td>{b.from}</td>
-                      <td>{b.to}</td>
-                      <td>{fmtMoney(b.total)}</td>
-                    </tr>
-                  ))
+                {(client.bookings || []).length ? (
+                  [...client.bookings]
+                    .sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0))
+                    .map((b) => (
+                      <tr
+                        key={b.id}
+                        className="clients__rowClickable"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => setOpenBooking(b)}
+                        title="Открыть детали брони"
+                      >
+                        <td>{statusRu(b.status)}</td>
+                        <td>{objectLabel(b)}</td>
+                        <td>{b.from}</td>
+                        <td>{b.to}</td>
+                        <td>{fmtMoney(b.total)}</td>
+                      </tr>
+                    ))
                 ) : (
                   <tr>
                     <td className="clients__empty" colSpan={5}>
@@ -766,6 +841,96 @@ const ClientCard = ({ id, onClose, rows }) => {
           </button>
         </div>
       </div>
+
+      {/* ───────────── улучшенная модалка «Детали брони» ───────────── */}
+      {openBooking && (
+        <div
+          className="clients__modalOverlay"
+          onClick={() => setOpenBooking(null)}
+        >
+          <div
+            className="clients__modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="booking-detail-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="clients__modalHeader">
+              <div id="booking-detail-title" className="clients__modalTitle">
+                🧾 Детали брони
+              </div>
+              <button
+                className="clients__iconBtn"
+                onClick={() => setOpenBooking(null)}
+                aria-label="Закрыть"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Верхний краткий блок */}
+            <div className="clients__notes" style={{ marginBottom: 6 }}>
+              <strong>Объект:</strong>
+              <div className="clients__noteArea">
+                {objectLabel(openBooking)}
+              </div>
+            </div>
+
+            {/* Сетка ключевых полей */}
+            <div className="clients__form" style={{ paddingTop: 0 }}>
+              <div className="clients__formGrid">
+                <div className="clients__field">
+                  <label className="clients__label">Статус</label>
+                  <div>{statusRu(openBooking.status)}</div>
+                </div>
+
+                <div className="clients__field">
+                  <label className="clients__label">Создано</label>
+                  <div>{toLocalDT(openBooking.created_at)}</div>
+                </div>
+
+                <div className="clients__field">
+                  <label className="clients__label">Период</label>
+                  <div>
+                    {openBooking.from || "—"} — {openBooking.to || "—"}
+                  </div>
+                </div>
+
+                <div className="clients__field">
+                  <label className="clients__label">Ночей</label>
+                  <div>{nights(openBooking)}</div>
+                </div>
+
+                <div className="clients__field">
+                  <label className="clients__label">Сумма</label>
+                  <div>{fmtMoney(openBooking.total)}</div>
+                </div>
+
+                <div className="clients__field">
+                  <label className="clients__label">Цена за ночь</label>
+                  <div>{fmtMoney(pricePerNight(openBooking))}</div>
+                </div>
+              </div>
+
+              {openBooking.purpose ? (
+                <div className="clients__notes" style={{ marginTop: 6 }}>
+                  <strong>Назначение:</strong>
+                  <div className="clients__noteArea">{openBooking.purpose}</div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="clients__modalFooter">
+              <button
+                className="clients__btn"
+                onClick={() => setOpenBooking(null)}
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -789,6 +954,7 @@ function toClientBookingRow(b, { hotelsMap, roomsMap, bedsMap }) {
   const from = toYmd(b.start_time);
   const to = toYmd(b.end_time);
 
+  // сумма
   let total = num(b.total);
   if (!total) {
     const nights = nightsBetween(b.start_time, b.end_time);
@@ -802,23 +968,36 @@ function toClientBookingRow(b, { hotelsMap, roomsMap, bedsMap }) {
     else total = 0;
   }
 
-  let obj_type = null,
-    obj_id = null,
-    obj_name = "",
-    qty = Number(b.qty || 1) || 1;
-  if (b.hotel) {
-    obj_type = "hotel";
-    obj_id = b.hotel;
-    obj_name = hotelsMap[String(b.hotel)]?.name || "";
-  } else if (b.room) {
-    obj_type = "room";
-    obj_id = b.room;
-    obj_name = roomsMap[String(b.room)]?.name || "";
-  } else if (b.bed) {
-    obj_type = "bed";
-    obj_id = b.bed;
-    obj_name = bedsMap[String(b.bed)]?.name || "";
+  // ключ свежести (максимум из end/start/created_at)
+  const sortKey = Math.max(ts(b.end_time), ts(b.start_time), ts(b.created_at));
+
+  // объект
+  let obj_type = b.obj_type || null;
+  let obj_id = null;
+  let obj_name = b.obj_name || "";
+
+  if (!obj_type) {
+    if (b.hotel) {
+      obj_type = "hotel";
+      obj_id = b.hotel;
+      obj_name = hotelsMap[String(b.hotel)]?.name || "";
+    } else if (b.room) {
+      obj_type = "room";
+      obj_id = b.room;
+      obj_name = roomsMap[String(b.room)]?.name || "";
+    } else if (b.bed) {
+      obj_type = "bed";
+      obj_id = b.bed;
+      obj_name = bedsMap[String(b.bed)]?.name || "";
+    }
+  } else {
+    // если тип есть, а id не указан — оставим снапшот имени
+    if (obj_type === "hotel") obj_id = b.hotel ?? obj_id;
+    if (obj_type === "room") obj_id = b.room ?? obj_id;
+    if (obj_type === "bed") obj_id = b.bed ?? obj_id;
   }
+
+  const qty = Number(b.qty || 1) || 1;
 
   return {
     id: b.id,
@@ -830,6 +1009,9 @@ function toClientBookingRow(b, { hotelsMap, roomsMap, bedsMap }) {
     obj_id,
     obj_name,
     qty: obj_type === "bed" ? qty : undefined,
+    sortKey, // для «последнего объекта»
+    purpose: b.purpose || "", // для модалки
+    created_at: b.created_at || null, // для модалки
   };
 }
 

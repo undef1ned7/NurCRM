@@ -32,5 +32,16 @@
       padding: 0;
       cursor: pointer;
     }
+    &-row {
+      display: flex;
+      align-items: center;
+      column-gap: 20px;
+      input {
+        outline: none;
+        padding: 3px;
+        border: none;
+        border-bottom: 1px solid #000;
+      }
+    }
   }
 }

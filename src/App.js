@@ -82,8 +82,9 @@ import { AnalyticsPage } from "./Components/Sectors/Hostel/Analytics/AnalyticsPa
 import HostelClients from "./Components/Sectors/Hostel/Clients/Clients";
 import BarberSklad from "./Components/Sectors/Barber/Sklad/BarberSklad";
 import CafeKassa from "./Components/Sectors/cafe/kassaCafe/kassa";
-import CafeClients from "./Components/Sectors/cafe/Clients/Cliets";
+import CafeClients from "./Components/Sectors/cafe/Clients/Clients";
 import BuildingWork from "./Components/Sectors/Building/BuildingWork/BuildingWork";
+import HostelKassa from "./Components/Sectors/Hostel/kassa/kassa";
 // import ClientDebtDetail from "./Components/Sectors/Building/ClientDebtDetail";
 
 function App() {
@@ -465,6 +466,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AnalyticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="hostel/kassa*"
+              element={
+                <ProtectedRoute>
+                  <HostelKassa />
                 </ProtectedRoute>
               }
             />

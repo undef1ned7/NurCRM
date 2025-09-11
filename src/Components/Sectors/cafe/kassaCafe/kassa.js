@@ -1,3 +1,4 @@
+// src/components/Kassa/Kassa.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Routes,
@@ -11,9 +12,6 @@ import api from "../../../../api";
 import Reports from "../Reports/Reports";
 import "./kassa.scss";
 
-/* Base path */
-const BASE = "/crm/cafe/kassa";
-
 /* helpers */
 const asArray = (d) =>
   Array.isArray(d?.results) ? d.results : Array.isArray(d) ? d : [];
@@ -21,6 +19,7 @@ const listFrom = (res) => res?.data?.results || res?.data || [];
 const money = (v) =>
   (Number(v) || 0).toLocaleString("ru-RU", { minimumFractionDigits: 0 }) + " c";
 const when = (iso) => (iso ? new Date(iso).toLocaleDateString() : "—");
+const whenDT = (iso) => (iso ? new Date(iso).toLocaleString() : "—");
 const toNum = (x) => Number(String(x).replace(",", ".")) || 0;
 const numStr = (n) => String(Number(n) || 0).replace(",", ".");
 
@@ -63,19 +62,19 @@ const HeaderTabs = () => {
       <div className="kassa__tabs">
         <Link
           className={`kassa__tab ${isList ? "kassa__tab--active" : ""}`}
-          to={BASE}
+          to="/crm/cafe/kassa"
         >
           Кассы
         </Link>
         <Link
           className={`kassa__tab ${isPay ? "kassa__tab--active" : ""}`}
-          to={`${BASE}/pay`}
+          to="/crm/cafe/kassa/pay"
         >
           Оплата
         </Link>
         <Link
           className={`kassa__tab ${isReports ? "kassa__tab--active" : ""}`}
-          to={`${BASE}/reports`}
+          to="/crm/cafe/kassa/reports"
         >
           Отчёты
         </Link>
@@ -172,8 +171,8 @@ const CashboxList = () => {
         <table className="kassa__table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Название Отдела</th>
+              {/* без ID */}
+              <th>Касса</th>
               <th>Приход</th>
               <th>Расход</th>
               <th>Действия</th>
@@ -182,16 +181,15 @@ const CashboxList = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5}>Загрузка…</td>
+                <td colSpan={4}>Загрузка…</td>
               </tr>
             ) : filtered.length ? (
-              filtered.map((r, i) => (
+              filtered.map((r) => (
                 <tr
-                  key={r.id}
+                  key={r.id || r.uuid}
                   className="kassa__rowClickable"
-                  onClick={() => navigate(`${BASE}/${r.id}`)}
+                  onClick={() => navigate(`/crm/cafe/kassa/${r.id || r.uuid}`)}
                 >
-                  <td>{i + 1}</td>
                   <td>
                     <b>{r.department_name || r.name || "—"}</b>
                   </td>
@@ -202,7 +200,7 @@ const CashboxList = () => {
                       className="kassa__btn kassa__btn--secondary"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`${BASE}/${r.id}`);
+                        navigate(`/crm/cafe/kassa/${r.id || r.uuid}`);
                       }}
                     >
                       Открыть
@@ -212,7 +210,7 @@ const CashboxList = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="kassa__center">
+                <td colSpan={4} className="kassa__center">
                   Нет данных
                 </td>
               </tr>
@@ -277,7 +275,6 @@ const CashboxPayment = () => {
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState("");
 
-  // Если у заказа нет items — подтягиваем подробности
   const hydrateOrdersDetails = async (list) => {
     const needIds = list
       .filter((o) => !Array.isArray(o.items) || o.items.length === 0)
@@ -362,7 +359,6 @@ const CashboxPayment = () => {
     );
   };
 
-  // Сгруппировать неоплаченные по столам
   const groups = useMemo(() => {
     const byTable = new Map();
     for (const o of ordersUnpaid) {
@@ -380,7 +376,6 @@ const CashboxPayment = () => {
     }));
   }, [ordersUnpaid, tablesMap]);
 
-  // Проставить заказу "paid" (с запасными вариантами)
   const markOrderPaid = async (id) => {
     try {
       await api.post(`/cafe/orders/${id}/pay/`);
@@ -401,7 +396,6 @@ const CashboxPayment = () => {
     return false;
   };
 
-  // Оплата
   const payTable = async (grp) => {
     if (!boxId) {
       alert("Создайте кассу в разделе «Кассы», чтобы принимать оплату.");
@@ -417,7 +411,6 @@ const CashboxPayment = () => {
 
     setPayingId(grp.tableId);
     try {
-      // 1) Приход в кассу
       await api.post("/construction/cashflows/", {
         cashbox: boxId,
         type: "income",
@@ -425,7 +418,6 @@ const CashboxPayment = () => {
         amount: numStr(grp.total),
       });
 
-      // 2) Все заказы -> paid
       const okIds = [];
       await Promise.all(
         grp.orders.map(async (o) => {
@@ -433,7 +425,6 @@ const CashboxPayment = () => {
         })
       );
 
-      // 3) Попробовать удалить на сервере (если разрешено)
       await Promise.all(
         okIds.map(async (id) => {
           try {
@@ -442,10 +433,8 @@ const CashboxPayment = () => {
         })
       );
 
-      // 4) Убрать оплаченные из локального состояния
       setOrdersUnpaid((prev) => prev.filter((o) => !okIds.includes(o.id)));
 
-      // 5) Освободить стол
       if (grp.tableId) {
         try {
           await api.patch(`/cafe/tables/${grp.tableId}/`, { status: "free" });
@@ -461,7 +450,6 @@ const CashboxPayment = () => {
         }
       }
 
-      // 6) Сообщить вкладке Orders
       try {
         window.dispatchEvent(
           new CustomEvent("orders:refresh", {
@@ -470,7 +458,6 @@ const CashboxPayment = () => {
         );
       } catch {}
 
-      // 7) Финальная синхронизация
       await loadAll();
     } catch (e) {
       console.error(e);
@@ -483,12 +470,10 @@ const CashboxPayment = () => {
   return (
     <div className="kassa">
       <HeaderTabs />
-
       <div className="kassa__toolbar">
         <div className="kassa__toolbarGroup">
           <span className="kassa__total">К оплате столов: {groups.length}</span>
         </div>
-
         <div className="kassa__controls">
           <select
             className="kassa__input"
@@ -563,7 +548,7 @@ const CashboxReports = () => (
   </div>
 );
 
-/* ──────────────────────────────── Детали кассы */
+/* ──────────────────────────────── Детали кассы + фильтр дат + модалка */
 const CashboxDetail = () => {
   const { id } = useParams();
   const [box, setBox] = useState(null);
@@ -571,6 +556,15 @@ const CashboxDetail = () => {
   const [tab, setTab] = useState("all");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+
+  // Фильтр дат
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  // Модалка операции
+  const [openOp, setOpenOp] = useState(null);
+  const [opLoading, setOpLoading] = useState(false);
+  const [opDetail, setOpDetail] = useState(null);
 
   const fromAny = (res) => {
     const d = res?.data ?? res ?? [];
@@ -644,6 +638,7 @@ const CashboxDetail = () => {
             x.timestamp ||
             x.createdAt ||
             null,
+          raw: x,
         };
       });
 
@@ -660,32 +655,141 @@ const CashboxDetail = () => {
     load();
   }, [id]);
 
+  const inDateRange = (iso) => {
+    if (!iso) return true;
+    const d = new Date(iso);
+    if (dateFrom) {
+      const f = new Date(dateFrom + "T00:00:00");
+      if (d < f) return false;
+    }
+    if (dateTo) {
+      const t = new Date(dateTo + "T23:59:59.999");
+      if (d > t) return false;
+    }
+    return true;
+  };
+
   const shown = useMemo(() => {
-    if (tab === "income") return ops.filter((o) => o.type === "income");
-    if (tab === "expense") return ops.filter((o) => o.type === "expense");
-    return ops;
-  }, [ops, tab]);
+    let arr = ops;
+    if (tab === "income") arr = arr.filter((o) => o.type === "income");
+    if (tab === "expense") arr = arr.filter((o) => o.type === "expense");
+    if (dateFrom || dateTo) arr = arr.filter((o) => inDateRange(o.created_at));
+    return arr;
+  }, [ops, tab, dateFrom, dateTo]);
+
+  // детали операции (заказ/клиент/стол/зона)
+  const openDetails = async (op) => {
+    setOpenOp(op);
+    setOpLoading(true);
+    setOpDetail(null);
+
+    try {
+      const raw = op.raw || {};
+      const orderId =
+        raw.order ||
+        raw.order_id ||
+        raw.orderId ||
+        (typeof raw.source_id === "number" &&
+        (raw.source_type === "order" || raw.source === "order")
+          ? raw.source_id
+          : null) ||
+        null;
+
+      let order = null;
+      if (orderId) {
+        try {
+          order = (await api.get(`/cafe/orders/${orderId}/`)).data;
+        } catch {}
+      }
+
+      const clientId =
+        order?.client || raw.client || raw.client_id || raw.clientId || null;
+      let client = null;
+      if (clientId) {
+        try {
+          client = (await api.get(`/cafe/clients/${clientId}/`)).data;
+        } catch {}
+      }
+      const clientName =
+        client?.name ||
+        client?.full_name ||
+        order?.client_name ||
+        raw.client_name ||
+        null;
+      const clientPhone =
+        client?.phone || order?.client_phone || raw.client_phone || null;
+
+      let tableLabel = null;
+      let zoneTitle = null;
+      const tableId = order?.table || raw.table || raw.table_id || null;
+      if (tableId) {
+        try {
+          const t = (await api.get(`/cafe/tables/${tableId}/`)).data;
+          if (t) {
+            tableLabel = t.number != null ? `Стол ${t.number}` : "Стол";
+            const z = t.zone;
+            if (z && typeof z === "object" && z.title) zoneTitle = z.title;
+            else if (z) {
+              try {
+                const zres = (await api.get(`/cafe/zones/${z}/`)).data;
+                zoneTitle = zres?.title || null;
+              } catch {}
+            }
+          }
+        } catch {}
+      }
+
+      const category = raw.category_name || raw.category || null;
+      const method =
+        raw.method || raw.payment_method || raw.payment_type || null;
+      const userName =
+        raw.user_name || raw.created_by_name || raw.owner_name || null;
+      const comment = raw.note || raw.description || raw.comment || null;
+
+      setOpDetail({
+        orderId: order?.id || orderId || null,
+        clientName,
+        clientPhone,
+        tableLabel,
+        zoneTitle,
+        category,
+        method,
+        userName,
+        comment,
+      });
+    } catch {
+      setOpDetail(null);
+    } finally {
+      setOpLoading(false);
+    }
+  };
+
+  const closeDetails = () => {
+    setOpenOp(null);
+    setOpDetail(null);
+    setOpLoading(false);
+  };
 
   return (
     <div className="kassa">
       <div className="kassa__header">
         <div className="kassa__tabs">
-          <Link className="kassa__tab" to={BASE}>
+          <Link className="kassa__tab" to="/crm/cafe/kassa">
             ← Назад
           </Link>
           <span className="kassa__tab kassa__tab--active">
             {box?.department_name || box?.name || "Касса"}
           </span>
-          <Link className="kassa__tab" to={`${BASE}/pay`}>
+          <Link className="kassa__tab" to="/crm/cafe/kassa/pay">
             Оплата
           </Link>
-          <Link className="kassa__tab" to={`${BASE}/reports`}>
+          <Link className="kassa__tab" to="/crm/cafe/kassa/reports">
             Отчёты
           </Link>
         </div>
       </div>
 
-      <div className="kassa__switch">
+      <div className="kassa__switch" style={{ gap: 8, flexWrap: "wrap" }}>
         <button
           className={`kassa__chip ${
             tab === "expense" ? "kassa__chip--active" : ""
@@ -710,7 +814,50 @@ const CashboxDetail = () => {
         >
           Все
         </button>
+
         <div className="kassa__grow" />
+
+        {/* Дата С / По */}
+        <div className="kassa__field" style={{ minWidth: 140 }}>
+          <label
+            className="kassa__label"
+            style={{ display: "block", fontSize: 12, opacity: 0.8 }}
+          >
+            С
+          </label>
+          <input
+            className="kassa__input"
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+          />
+        </div>
+        <div className="kassa__field" style={{ minWidth: 140 }}>
+          <label
+            className="kassa__label"
+            style={{ display: "block", fontSize: 12, opacity: 0.8 }}
+          >
+            По
+          </label>
+          <input
+            className="kassa__input"
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+          />
+        </div>
+        {(dateFrom || dateTo) && (
+          <button
+            className="kassa__btn"
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+            }}
+          >
+            Сбросить
+          </button>
+        )}
+
         <button
           className="kassa__btn kassa__btn--primary"
           onClick={() =>
@@ -723,6 +870,7 @@ const CashboxDetail = () => {
         </button>
       </div>
 
+      {/* Таблица операций */}
       <div className="kassa__tableWrap">
         <table className="kassa__table">
           <thead>
@@ -746,7 +894,11 @@ const CashboxDetail = () => {
               </tr>
             ) : shown.length ? (
               shown.map((o) => (
-                <tr key={o.id}>
+                <tr
+                  key={o.id}
+                  className="kassa__rowClickable"
+                  onClick={() => openDetails(o)}
+                >
                   <td>{o.type === "income" ? "Приход" : "Расход"}</td>
                   <td>{o.title}</td>
                   <td>{money(o.amount)}</td>
@@ -761,8 +913,180 @@ const CashboxDetail = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Модалка — карточка операции */}
+      {openOp && (
+        <div className="kassa-modal" onClick={closeDetails}>
+          <div className="kassa-modal__overlay" />
+          <div
+            className="kassa-modal__card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="kassa-modal__header">
+              <h3
+                className="kassa-modal__title"
+                style={{ display: "flex", alignItems: "center", gap: 10 }}
+              >
+                <span
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    background:
+                      openOp.type === "income" ? "#ecfdf5" : "#fef2f2",
+                    border: `1px solid ${
+                      openOp.type === "income" ? "#a7f3d0" : "#fecaca"
+                    }`,
+                    color: openOp.type === "income" ? "#065f46" : "#7f1d1d",
+                  }}
+                >
+                  {openOp.type === "income" ? "ПРИХОД" : "РАСХОД"}
+                </span>
+                <span style={{ fontWeight: 800 }}>{money(openOp.amount)}</span>
+              </h3>
+              <button
+                className="kassa-modal__close"
+                onClick={closeDetails}
+                aria-label="Закрыть"
+              >
+                ×
+              </button>
+            </div>
+
+            <div
+              className="kassa-modal__section"
+              style={{ display: "grid", gap: 12 }}
+            >
+              {/* Общее */}
+              <div
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  padding: 12,
+                  background: "#fff",
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: 2 }}>Общее</div>
+                <Row label="Наименование" value={openOp.title || "—"} />
+                <Row label="Дата/время" value={whenDT(openOp.created_at)} />
+                <Row
+                  label="Касса"
+                  value={box?.department_name || box?.name || "—"}
+                />
+                {opDetail?.category && (
+                  <Row label="Категория" value={opDetail.category} />
+                )}
+                {opDetail?.method && (
+                  <Row label="Способ оплаты" value={opDetail.method} />
+                )}
+                {opDetail?.userName && (
+                  <Row label="Кассир" value={opDetail.userName} />
+                )}
+              </div>
+
+              {/* Источник / Заказ */}
+              {(opDetail?.orderId ||
+                opDetail?.tableLabel ||
+                opDetail?.zoneTitle) && (
+                <div
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    padding: 12,
+                    background: "#fff",
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                    Источник
+                  </div>
+                  {opDetail.orderId && (
+                    <Row label="Заказ" value={`#${opDetail.orderId}`} />
+                  )}
+                  {opDetail.tableLabel && (
+                    <Row label="Стол" value={opDetail.tableLabel} />
+                  )}
+                  {opDetail.zoneTitle && (
+                    <Row label="Зона" value={opDetail.zoneTitle} />
+                  )}
+                </div>
+              )}
+
+              {/* Клиент — показываем ТОЛЬКО если есть данные (или пока грузится) */}
+              {(opLoading || opDetail?.clientName || opDetail?.clientPhone) && (
+                <div
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    padding: 12,
+                    background: "#fff",
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Клиент</div>
+                  {opLoading ? (
+                    <div>Загрузка данных…</div>
+                  ) : (
+                    <>
+                      {opDetail?.clientName && (
+                        <Row label="Имя" value={opDetail.clientName} />
+                      )}
+                      {opDetail?.clientPhone && (
+                        <Row label="Телефон" value={opDetail.clientPhone} />
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Примечание */}
+              {opDetail?.comment && (
+                <div
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    padding: 12,
+                    background: "#fff",
+                    display: "grid",
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ fontWeight: 700 }}>Примечание</div>
+                  <div>{opDetail.comment}</div>
+                </div>
+              )}
+            </div>
+
+            <div className="kassa-modal__footer">
+              <button className="kassa__btn" onClick={closeDetails}>
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+// помощник для строк в карточках
+const Row = ({ label, value }) => (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "160px 1fr",
+      gap: 10,
+      alignItems: "start",
+    }}
+  >
+    <div style={{ color: "#6b7280" }}>{label}</div>
+    <div style={{ fontWeight: 600 }}>{value || "—"}</div>
+  </div>
+);
 
 export default CafeKassa;

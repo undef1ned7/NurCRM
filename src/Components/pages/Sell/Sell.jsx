@@ -49,6 +49,8 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
   });
   const { list } = useClient();
   const [clientId, setClientId] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [activeProductId, setActiveProductId] = useState(null);
   const dispatch = useDispatch();
   const { creating, createError, brands, categories, barcodeError } =
     useProducts();
@@ -104,31 +106,52 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
               placeholder="Введите название товара"
               className="add-modal__input"
               name="search"
-              onChange={onChange}
+              // onChange={onChange} // твой хендлер поиска
             />
-            {/* {foundProduct?.results.length > 0 && ( */}
+
             <ul className="sell__list">
               {foundProduct?.results?.map((product) => (
                 <li key={product.id}>
                   {product.name}{" "}
-                  <button
-                    onClick={async () => {
-                      try {
-                        await dispatch(
-                          manualFilling({ id, productId: product.id })
-                        ).unwrap();
-                        await dispatch(startSale()).unwrap();
-                      } catch (err) {
-                        console.error("manualFilling/startSale error:", err);
-                      }
-                    }}
-                  >
-                    <Plus size={16} />
-                  </button>
+                  <div className="sell__list-row">
+                    {activeProductId === product.id ? (
+                      <>
+                        <input
+                          type="number"
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value)}
+                          placeholder="Введите количество"
+                        />
+                        <button>Закрыть</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => setActiveProductId(product.id)}>
+                          Указать количество
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await dispatch(
+                                manualFilling({ id, productId: product.id })
+                              ).unwrap();
+                              await dispatch(startSale()).unwrap();
+                            } catch (err) {
+                              console.error(
+                                "manualFilling/startSale error:",
+                                err
+                              );
+                            }
+                          }}
+                        >
+                          <Plus size={16} />{" "}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
-            {/* )} */}
           </div>
         </>
       ),
@@ -173,8 +196,8 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
         ).unwrap();
 
         dispatch(historySellProduct());
-        
-        navigate(`/crm/clients/${clientId}`);
+
+        // navigate(`/crm/clients/${clientId}`);
 
         // Создаём ссылку и скачиваем файл
         const url = window.URL.createObjectURL(pdfBlob);

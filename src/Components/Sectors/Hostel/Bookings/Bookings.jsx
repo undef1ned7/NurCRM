@@ -1,4 +1,3 @@
-// src/components/Bookings/Bookings.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   FaSearch,
@@ -13,6 +12,7 @@ import {
   createClient, // мини-добавление клиента
 } from "../Clients/clientStore";
 import "./Bookings.scss";
+import Sell from "../../../pages/Sell/Sell";
 
 /* ===== helpers ===== */
 const asArray = (data) =>
@@ -189,6 +189,13 @@ const Bookings = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // слушаем оплаты из «Кассы» — после них перечитываем список
+  useEffect(() => {
+    const onRefresh = () => loadAll();
+    window.addEventListener("bookings:refresh", onRefresh);
+    return () => window.removeEventListener("bookings:refresh", onRefresh);
+  }, []);
+
   /* ===== helpers ===== */
   const hotelName = (id) =>
     hotels.find((h) => String(h.id) === String(id))?.name || "—";
@@ -252,6 +259,7 @@ const Bookings = () => {
   };
 
   /* ===== client list ===== */
+  // clientQuery уже объявлен выше
   const clientList = useMemo(() => {
     const t = clientQuery.trim().toLowerCase();
     const base = clients || [];
@@ -271,7 +279,7 @@ const Bookings = () => {
     return c?.full_name || "";
   }, [form.client, clients]);
 
-  /* ===== occupancy (исключаем текущую бронь при редактировании) ===== */
+  /* ===== occupancy ===== */
   const relevantItems = useMemo(() => {
     if (!form.hotel && !form.room && !form.bed) return [];
     return items
@@ -298,7 +306,7 @@ const Bookings = () => {
     return map;
   }, [relevantItems]);
 
-  /* ===== live conflict check и остаток для койки ===== */
+  /* ===== live conflict check ===== */
   const tripDates = useMemo(() => {
     const sDate = (form.start_time || "").slice(0, 10);
     const eDate = (form.end_time || "").slice(0, 10);
@@ -350,153 +358,14 @@ const Bookings = () => {
     return 1;
   }, [form.bed, beds]);
 
-  /* ===== CRUD: delete (API) ===== */
-  const destroyApiBooking = async (id) => {
-    await api.delete(`/booking/bookings/${id}/`);
-  };
-
-  const onDelete = async (id) => {
-    if (!window.confirm("Удалить бронь?")) return;
-    try {
-      await destroyApiBooking(id);
-      setItems((prev) => prev.filter((x) => x.id !== id));
-      // уведомим Клиентов
-      try {
-        window.dispatchEvent(
-          new CustomEvent("clients:booking-deleted", { detail: { id } })
-        );
-      } catch {}
-    } catch (e) {
-      console.error(e);
-      setError("Не удалось удалить бронь");
-    }
-  };
-
-  /* ===== submit ===== */
-  const invalidRange = useMemo(() => {
-    if (!form.start_time || !form.end_time) return false;
-    return new Date(form.end_time) < new Date(form.start_time);
-  }, [form.start_time, form.end_time]);
-
-  const onSubmit = async (e) => {
-    e.preventDefault();
-
-    if (objectType === OBJECT_TYPES.HOTEL && !form.hotel) {
-      setError("Выберите комнату");
-      return;
-    }
-    if (objectType === OBJECT_TYPES.ROOM && !form.room) {
-      setError("Выберите зал");
-      return;
-    }
-    if (objectType === OBJECT_TYPES.BED && !form.bed) {
-      setError("Выберите койко-место");
-      return;
-    }
-    if (!form.start_time || !form.end_time) {
-      setError("Укажите даты");
-      return;
-    }
-    if (new Date(form.end_time) < new Date(form.start_time)) {
-      setError("Дата окончания не может быть раньше даты начала");
-      return;
-    }
-    if (!form.client) {
-      setError("Выберите клиента");
-      return;
-    }
-    if (hasConflict) {
-      setError(
-        "Выбранные даты заняты или недостаточно мест. Измените диапазон/количество."
-      );
-      return;
-    }
-
-    const payloadCommon = {
-      start_time: toApiDatetime(form.start_time),
-      end_time: toApiDatetime(form.end_time),
-      purpose: (form.purpose || "").trim(),
-      client: form.client,
-    };
-    const nights = countNights(
-      payloadCommon.start_time,
-      payloadCommon.end_time
-    );
-
-    try {
-      setSaving(true);
-      setError("");
-
-      const payloadApi = {
-        hotel: objectType === OBJECT_TYPES.HOTEL ? form.hotel : null,
-        room: objectType === OBJECT_TYPES.ROOM ? form.room : null,
-        bed: objectType === OBJECT_TYPES.BED ? form.bed : null,
-        qty:
-          objectType === OBJECT_TYPES.BED
-            ? Math.max(1, Number(form.qty || 1))
-            : 1,
-        ...payloadCommon,
-      };
-
-      const pricePerNight = payloadApi.hotel
-        ? hotelPriceById(payloadApi.hotel)
-        : payloadApi.room
-        ? roomPriceById(payloadApi.room)
-        : payloadApi.bed
-        ? bedPriceById(payloadApi.bed)
-        : 0;
-
-      const totalLocal =
-        nights * pricePerNight * (payloadApi.bed ? payloadApi.qty : 1);
-
-      let saved;
-      if (editingId == null) {
-        const { data } = await api.post("/booking/bookings/", payloadApi);
-        saved = normalizeBooking({ ...data, total: data.total || totalLocal });
-        setItems((prev) => [saved, ...prev]);
-      } else {
-        const { data } = await api.put(
-          `/booking/bookings/${editingId}/`,
-          payloadApi
-        );
-        saved = normalizeBooking({ ...data, total: data.total || totalLocal });
-        setItems((prev) => prev.map((x) => (x.id === editingId ? saved : x)));
-      }
-
-      // <<< ВАЖНО: оповещаем страницу Клиентов о сохранённой броне
-      try {
-        window.dispatchEvent(
-          new CustomEvent("clients:booking-saved", {
-            detail: { booking: saved },
-          })
-        );
-      } catch {}
-
-      setModalOpen(false);
-      setEditingId(null);
-      setForm({
-        hotel: null,
-        room: null,
-        bed: null,
-        qty: 1,
-        start_time: "",
-        end_time: "",
-        purpose: "",
-        client: null,
-      });
-    } catch (e2) {
-      console.error(e2);
-      setError("Не удалось сохранить бронь");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   /* ===== список ===== */
   const filtered = useMemo(() => {
-    // скрыть завершённые (end_time < сегодня 00:00)
     const now0 = todayStart().getTime();
+    // скрываем оплаченные/завершённые и уже прошедшие
     const activeOnly = items.filter((b) => {
+      const st = (b.status || "").toLowerCase();
+      if (["paid", "completed", "завершено", "оплачен"].includes(st))
+        return false;
       const endT = b.end_time ? new Date(b.end_time).getTime() : 0;
       return endT >= now0;
     });
@@ -536,117 +405,148 @@ const Bookings = () => {
       return;
     }
     try {
-      // createClient понимает {name, phone} и {full_name, phone}
       const created = await createClient({ name, phone });
       await refreshClients();
       setForm((f) => ({ ...f, client: created.id }));
       setShowClientAdd(false);
       setNewClientName("");
       setNewClientPhone("");
-      // дополнительно можно подсветить созданного — достаточно выбранного состояния
     } catch (e) {
       console.error(e);
       alert("Не удалось создать клиента");
     }
   };
 
+  const [activeTab, setActiveTab] = useState(1);
+
+  const tabs = [
+    {
+      label: "Бронирование",
+      content: (
+        <>
+          <header className="bookings__header">
+            <div>
+              <h2 className="bookings__title">Бронирования</h2>
+            </div>
+
+            <div className="bookings__actions">
+              <div className="bookings__search">
+                <FaSearch className="bookings__searchIcon" />
+                <input
+                  className="bookings__searchInput"
+                  placeholder="Поиск по объекту, датам, назначению"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+              </div>
+
+              <button
+                className="bookings__btn bookings__btn--primary"
+                onClick={openCreate}
+              >
+                <FaPlus /> Добавить
+              </button>
+            </div>
+          </header>
+          {loading ? (
+            <div className="bookings__empty">Загрузка…</div>
+          ) : (
+            <div className="bookings__list">
+              {sorted.map((b) => {
+                const nights = countNights(b.start_time, b.end_time);
+                const price = b.hotel
+                  ? hotelPriceById(b.hotel)
+                  : b.room
+                  ? roomPriceById(b.room)
+                  : b.bed
+                  ? bedPriceById(b.bed)
+                  : 0;
+                const qty = Number(b.qty ?? 1) || 1;
+                const totalShow =
+                  Number(b.total) || nights * price * (b.bed ? qty : 1) || 0;
+
+                const label = b.hotel
+                  ? `Гостиница: ${hotelName(b.hotel)}`
+                  : b.room
+                  ? `Зал: ${roomName(b.room)}`
+                  : `Койко-место: ${bedName(b.bed)}`;
+
+                return (
+                  <div key={b.id} className="bookings__card">
+                    <div>
+                      <div className="bookings__name">{label}</div>
+                      <div className="bookings__meta">
+                        <span className="bookings__badge">
+                          Начало: {toLocalInput(b.start_time)}
+                        </span>
+                        <span className="bookings__badge">
+                          Конец: {toLocalInput(b.end_time)}
+                        </span>
+                        {b.purpose && (
+                          <span className="bookings__badge">
+                            Цель: {b.purpose}
+                          </span>
+                        )}
+                        {b.bed && (
+                          <span className="bookings__badge">Мест: {qty}</span>
+                        )}
+                        <span className="bookings__badge">
+                          Сумма: {fmtMoney(totalShow)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bookings__right">
+                      <button
+                        className="bookings__btn bookings__btn--secondary"
+                        onClick={() => openEdit(b)}
+                        title="Изменить бронь"
+                      >
+                        Изменить
+                      </button>
+                      {/* Кнопку «Оплатить» убрали — оплата только через Кассу */}
+                    </div>
+                  </div>
+                );
+              })}
+              {sorted.length === 0 && !error && (
+                <div className="bookings__empty">Пока нет активных броней</div>
+              )}
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      label: "Продажа",
+      content: <Sell />,
+    },
+  ];
+
   return (
     <section className="bookings">
-      <header className="bookings__header">
-        <div>
-          <h2 className="bookings__title">Бронирования</h2>
-        </div>
-
-        <div className="bookings__actions">
-          <div className="bookings__search">
-            <FaSearch className="bookings__searchIcon" />
-            <input
-              className="bookings__searchInput"
-              placeholder="Поиск по объекту, датам, назначению"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+      {
+        <div className="vitrina__header" style={{ marginBottom: "15px" }}>
+          <div className="vitrina__tabs">
+            {tabs.map((tab, index) => {
+              return (
+                <span
+                  className={`vitrina__tab ${
+                    index === activeTab && "vitrina__tab--active"
+                  }`}
+                  onClick={() => setActiveTab(index)}
+                >
+                  {tab.label}
+                </span>
+                // <button onClick={() => setActiveTab(index)}>{tab.label}</button>
+              );
+            })}
           </div>
-
-          <button
-            className="bookings__btn bookings__btn--primary"
-            onClick={openCreate}
-          >
-            <FaPlus /> Добавить
-          </button>
         </div>
-      </header>
+      }
 
       {error && <div className="bookings__empty">{error}</div>}
-      {loading ? (
-        <div className="bookings__empty">Загрузка…</div>
-      ) : (
-        <div className="bookings__list">
-          {sorted.map((b) => {
-            const nights = countNights(b.start_time, b.end_time);
-            const price = b.hotel
-              ? hotelPriceById(b.hotel)
-              : b.room
-              ? roomPriceById(b.room)
-              : b.bed
-              ? bedPriceById(b.bed)
-              : 0;
-            const qty = Number(b.qty ?? 1) || 1;
-            const totalShow =
-              Number(b.total) || nights * price * (b.bed ? qty : 1) || 0;
-
-            const label = b.hotel
-              ? `Гостиница: ${hotelName(b.hotel)}`
-              : b.room
-              ? `Зал: ${roomName(b.room)}`
-              : `Койко-место: ${bedName(b.bed)}`;
-
-            return (
-              <div key={b.id} className="bookings__card">
-                <div>
-                  <div className="bookings__name">{label}</div>
-                  <div className="bookings__meta">
-                    <span className="bookings__badge">
-                      Начало: {toLocalInput(b.start_time)}
-                    </span>
-                    <span className="bookings__badge">
-                      Конец: {toLocalInput(b.end_time)}
-                    </span>
-                    {b.purpose && (
-                      <span className="bookings__badge">Цель: {b.purpose}</span>
-                    )}
-                    {b.bed && (
-                      <span className="bookings__badge">Мест: {qty}</span>
-                    )}
-                    <span className="bookings__badge">
-                      Сумма: {fmtMoney(totalShow)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="bookings__right">
-                  <button
-                    className="bookings__btn bookings__btn--secondary"
-                    onClick={() => openEdit(b)}
-                  >
-                    Изменить
-                  </button>
-                  <button
-                    className="bookings__btn bookings__btn--secondary"
-                    onClick={() => onDelete(b.id)}
-                  >
-                    Удалить
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {sorted.length === 0 && !error && (
-            <div className="bookings__empty">Пока нет активных броней</div>
-          )}
-        </div>
-      )}
-
+      {tabs[activeTab].content}
       {modalOpen && (
         <div
           className="bookings__modalOverlay"
@@ -891,14 +791,6 @@ const Bookings = () => {
                       required
                     />
                   </div>
-                  {invalidRange && (
-                    <div
-                      className="bookings__conflict"
-                      style={{ marginTop: 6 }}
-                    >
-                      Дата окончания не может быть раньше даты начала.
-                    </div>
-                  )}
                 </div>
 
                 {/* ==== Назначение ==== */}
@@ -1064,9 +956,17 @@ const Bookings = () => {
                 <button
                   type="submit"
                   className="bookings__btn bookings__btn--primary"
-                  disabled={saving || hasConflict || invalidRange}
+                  disabled={
+                    saving ||
+                    hasConflict ||
+                    (form.end_time &&
+                      form.start_time &&
+                      new Date(form.end_time) < new Date(form.start_time))
+                  }
                   title={
-                    invalidRange
+                    form.end_time &&
+                    form.start_time &&
+                    new Date(form.end_time) < new Date(form.start_time)
                       ? "Дата окончания раньше даты начала"
                       : hasConflict
                       ? "Недостаточно мест / даты заняты"
@@ -1082,6 +982,106 @@ const Bookings = () => {
       )}
     </section>
   );
+
+  /* ===== submit из модалки создания/редактирования ===== */
+  async function onSubmit(e) {
+    e.preventDefault();
+
+    if (objectType === OBJECT_TYPES.HOTEL && !form.hotel) {
+      setError("Выберите комнату");
+      return;
+    }
+    if (objectType === OBJECT_TYPES.ROOM && !form.room) {
+      setError("Выберите зал");
+      return;
+    }
+    if (objectType === OBJECT_TYPES.BED && !form.bed) {
+      setError("Выберите койко-место");
+      return;
+    }
+    if (!form.start_time || !form.end_time) {
+      setError("Укажите даты");
+      return;
+    }
+    if (new Date(form.end_time) < new Date(form.start_time)) {
+      setError("Дата окончания не может быть раньше даты начала");
+      return;
+    }
+    if (!form.client) {
+      setError("Выберите клиента");
+      return;
+    }
+    if (hasConflict) {
+      setError(
+        "Выбранные даты заняты или недостаточно мест. Измените диапазон/количество."
+      );
+      return;
+    }
+
+    const payloadCommon = {
+      start_time: toApiDatetime(form.start_time),
+      end_time: toApiDatetime(form.end_time),
+      purpose: (form.purpose || "").trim(),
+      client: form.client,
+    };
+
+    try {
+      setSaving(true);
+      setError("");
+
+      const payloadApi = {
+        hotel: objectType === OBJECT_TYPES.HOTEL ? form.hotel : null,
+        room: objectType === OBJECT_TYPES.ROOM ? form.room : null,
+        bed: objectType === OBJECT_TYPES.BED ? form.bed : null,
+        qty:
+          objectType === OBJECT_TYPES.BED
+            ? Math.max(1, Number(form.qty || 1))
+            : 1,
+        ...payloadCommon,
+      };
+
+      let saved;
+      if (editingId == null) {
+        const { data } = await api.post("/booking/bookings/", payloadApi);
+        saved = normalizeBooking({ ...data });
+        setItems((prev) => [saved, ...prev]);
+      } else {
+        const { data } = await api.put(
+          `/booking/bookings/${editingId}/`,
+          payloadApi
+        );
+        saved = normalizeBooking({ ...data });
+        setItems((prev) => prev.map((x) => (x.id === editingId ? saved : x)));
+      }
+
+      // уведомим Клиентов
+      try {
+        window.dispatchEvent(
+          new CustomEvent("clients:booking-saved", {
+            detail: { booking: saved },
+          })
+        );
+      } catch {}
+
+      setModalOpen(false);
+      setEditingId(null);
+      setForm({
+        hotel: null,
+        room: null,
+        bed: null,
+        qty: 1,
+        start_time: "",
+        end_time: "",
+        purpose: "",
+        client: null,
+      });
+    } catch (e2) {
+      console.error(e2);
+      setError("Не удалось сохранить бронь");
+    } finally {
+      setSaving(false);
+    }
+  }
 };
 
 /* ===== Календарь ===== */

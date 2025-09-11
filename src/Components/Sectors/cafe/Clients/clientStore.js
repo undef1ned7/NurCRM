@@ -168,7 +168,7 @@ export async function getOrdersByClient(clientId) {
   );
 }
 
-/* ===== ЛЁГКАЯ СТАТИСТИКА ДЛЯ ТАБЛИЦЫ (кол-во заказов + последнее время) ===== */
+/* ===== ЛЁГКАЯ СТАТИСТИКА ДЛЯ ТАБЛИЦЫ ===== */
 export async function getOrdersStatsByClient(clientId) {
   if (!clientId) return { orders_count: 0, updated_at_derived: null };
 

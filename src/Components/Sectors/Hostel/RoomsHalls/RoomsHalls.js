@@ -9,7 +9,7 @@ const asArray = (data) =>
 
 const prettyPrice = (p) => {
   const n = Number(p);
-  return Number.isFinite(n) ? n.toLocaleString() : (p || "0");
+  return Number.isFinite(n) ? n.toLocaleString() : p || "0";
 };
 
 /* ===== normalizers ===== */
@@ -302,7 +302,12 @@ export default function RoomsHalls() {
 
   const submitHall = async (e) => {
     e.preventDefault();
-    if (!hallForm.name.trim() || !hallForm.location.trim() || !String(hallForm.price).trim()) return;
+    if (
+      !hallForm.name.trim() ||
+      !hallForm.location.trim() ||
+      !String(hallForm.price).trim()
+    )
+      return;
 
     const payload = {
       name: hallForm.name.trim(),
@@ -395,20 +400,29 @@ export default function RoomsHalls() {
 
   /* ===================== Render ===================== */
   const isHotels = tab === TABS.HOTELS;
-  const isHalls  = tab === TABS.HALLS;
-  const isBeds   = tab === TABS.BEDS;
+  const isHalls = tab === TABS.HALLS;
+  const isBeds = tab === TABS.BEDS;
 
   return (
     <section className="rh">
       {/* Tabs */}
       <div className="rh__tabs">
-        <button className={`rh__tab ${isHotels ? "rh__tab--active" : ""}`} onClick={() => setTab(TABS.HOTELS)}>
+        <button
+          className={`rh__tab ${isHotels ? "rh__tab--active" : ""}`}
+          onClick={() => setTab(TABS.HOTELS)}
+        >
           Комнаты
         </button>
-        <button className={`rh__tab ${isHalls ? "rh__tab--active" : ""}`} onClick={() => setTab(TABS.HALLS)}>
+        <button
+          className={`rh__tab ${isHalls ? "rh__tab--active" : ""}`}
+          onClick={() => setTab(TABS.HALLS)}
+        >
           Залы
         </button>
-        <button className={`rh__tab ${isBeds ? "rh__tab--active" : ""}`} onClick={() => setTab(TABS.BEDS)}>
+        <button
+          className={`rh__tab ${isBeds ? "rh__tab--active" : ""}`}
+          onClick={() => setTab(TABS.BEDS)}
+        >
           Койко-места
         </button>
       </div>
@@ -416,7 +430,9 @@ export default function RoomsHalls() {
       {/* Header */}
       <header className="rh__header">
         <div>
-          <h2 className="rh__title">{isHotels ? "Комнаты" : isHalls ? "Залы" : "Койко-места"}</h2>
+          <h2 className="rh__title">
+            {isHotels ? "Комнаты" : isHalls ? "Залы" : "Койко-места"}
+          </h2>
           <p className="rh__subtitle">
             {isHotels
               ? "Создание, редактирование и список всех комнат"
@@ -445,15 +461,24 @@ export default function RoomsHalls() {
           </div>
 
           {isHotels ? (
-            <button className="rh__btn rh__btn--primary" onClick={openHotelCreate}>
+            <button
+              className="rh__btn rh__btn--primary"
+              onClick={openHotelCreate}
+            >
               <FaPlus /> Добавить
             </button>
           ) : isHalls ? (
-            <button className="rh__btn rh__btn--primary" onClick={openHallCreate}>
+            <button
+              className="rh__btn rh__btn--primary"
+              onClick={openHallCreate}
+            >
               <FaPlus /> Добавить
             </button>
           ) : (
-            <button className="rh__btn rh__btn--primary" onClick={openBedCreate}>
+            <button
+              className="rh__btn rh__btn--primary"
+              onClick={openBedCreate}
+            >
               <FaPlus /> Добавить
             </button>
           )}
@@ -474,21 +499,37 @@ export default function RoomsHalls() {
                   <div className="rh__name">{h.name}</div>
                   <div className="rh__meta">
                     <span className="rh__badge">Вместимость: {h.capacity}</span>
-                    <span className="rh__price">{prettyPrice(h.price)} сом</span>
+                    <span className="rh__price">
+                      {prettyPrice(h.price)} сом
+                    </span>
                   </div>
                   {h.description && (
                     <div className="rh__desc" title={h.description}>
-                      {h.description.length > 140 ? h.description.slice(0, 140) + "…" : h.description}
+                      {h.description.length > 140
+                        ? h.description.slice(0, 140) + "…"
+                        : h.description}
                     </div>
                   )}
                 </div>
                 <div className="rh__rowRight">
-                  <button className="rh__btn rh__btn--secondary" onClick={() => openHotelEdit(h)}>Изменить</button>
-                  <button className="rh__btn rh__btn--secondary" onClick={() => onDeleteHotel(h.id)}>Удалить</button>
+                  <button
+                    className="rh__btn rh__btn--secondary"
+                    onClick={() => openHotelEdit(h)}
+                  >
+                    Изменить
+                  </button>
+                  <button
+                    className="rh__btn rh__btn--secondary"
+                    onClick={() => onDeleteHotel(h.id)}
+                  >
+                    Удалить
+                  </button>
                 </div>
               </div>
             ))}
-            {filteredHotels.length === 0 && <div className="rh__empty">Ничего не найдено</div>}
+            {filteredHotels.length === 0 && (
+              <div className="rh__empty">Ничего не найдено</div>
+            )}
           </div>
         )
       ) : isHalls ? (
@@ -504,17 +545,33 @@ export default function RoomsHalls() {
                   <div className="rh__name">{h.name}</div>
                   <div className="rh__meta">
                     <span className="rh__badge">Вместимость: {h.capacity}</span>
-                    <span className="rh__badge">Локация: {h.location || "—"}</span>
-                    <span className="rh__price">{prettyPrice(h.price)} сом</span>
+                    <span className="rh__badge">
+                      Локация: {h.location || "—"}
+                    </span>
+                    <span className="rh__price">
+                      {prettyPrice(h.price)} сом
+                    </span>
                   </div>
                 </div>
                 <div className="rh__rowRight">
-                  <button className="rh__btn rh__btn--secondary" onClick={() => openHallEdit(h)}>Изменить</button>
-                  <button className="rh__btn rh__btn--secondary" onClick={() => onDeleteHall(h.id)}>Удалить</button>
+                  <button
+                    className="rh__btn rh__btn--secondary"
+                    onClick={() => openHallEdit(h)}
+                  >
+                    Изменить
+                  </button>
+                  <button
+                    className="rh__btn rh__btn--secondary"
+                    onClick={() => onDeleteHall(h.id)}
+                  >
+                    Удалить
+                  </button>
                 </div>
               </div>
             ))}
-            {filteredHalls.length === 0 && <div className="rh__empty">Ничего не найдено</div>}
+            {filteredHalls.length === 0 && (
+              <div className="rh__empty">Ничего не найдено</div>
+            )}
           </div>
         )
       ) : // Beds
@@ -534,23 +591,40 @@ export default function RoomsHalls() {
                 </div>
                 {b.description && (
                   <div className="rh__desc" title={b.description}>
-                    {b.description.length > 140 ? b.description.slice(0, 140) + "…" : b.description}
+                    {b.description.length > 140
+                      ? b.description.slice(0, 140) + "…"
+                      : b.description}
                   </div>
                 )}
               </div>
               <div className="rh__rowRight">
-                <button className="rh__btn rh__btn--secondary" onClick={() => openBedEdit(b)}>Изменить</button>
-                <button className="rh__btn rh__btn--secondary" onClick={() => onDeleteBed(b.id)}>Удалить</button>
+                <button
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => openBedEdit(b)}
+                >
+                  Изменить
+                </button>
+                <button
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => onDeleteBed(b.id)}
+                >
+                  Удалить
+                </button>
               </div>
             </div>
           ))}
-          {filteredBeds.length === 0 && <div className="rh__empty">Ничего не найдено</div>}
+          {filteredBeds.length === 0 && (
+            <div className="rh__empty">Ничего не найдено</div>
+          )}
         </div>
       )}
 
       {/* Модал: Комнаты */}
       {hotelModalOpen && (
-        <div className="rh__modalOverlay" onClick={() => setHotelModalOpen(false)}>
+        <div
+          className="rh__modalOverlay"
+          onClick={() => setHotelModalOpen(false)}
+        >
           <div
             className="rh__modal"
             role="dialog"
@@ -562,7 +636,11 @@ export default function RoomsHalls() {
               <div id="rh-hotel-title" className="rh__modalTitle">
                 {hotelEditingId == null ? "Новая комната" : "Изменить комнату"}
               </div>
-              <button className="rh__iconBtn" onClick={() => setHotelModalOpen(false)} aria-label="Закрыть">
+              <button
+                className="rh__iconBtn"
+                onClick={() => setHotelModalOpen(false)}
+                aria-label="Закрыть"
+              >
                 <FaTimes />
               </button>
             </div>
@@ -577,7 +655,9 @@ export default function RoomsHalls() {
                     className="rh__input"
                     maxLength={200}
                     value={hotelForm.name}
-                    onChange={(e) => setHotelForm({ ...hotelForm, name: e.target.value })}
+                    onChange={(e) =>
+                      setHotelForm({ ...hotelForm, name: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -589,7 +669,12 @@ export default function RoomsHalls() {
                     min={0}
                     className="rh__input"
                     value={hotelForm.capacity}
-                    onChange={(e) => setHotelForm({ ...hotelForm, capacity: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setHotelForm({
+                        ...hotelForm,
+                        capacity: Number(e.target.value),
+                      })
+                    }
                   />
                 </div>
 
@@ -602,7 +687,9 @@ export default function RoomsHalls() {
                     className="rh__input"
                     placeholder="Напр., 3500.00"
                     value={hotelForm.price}
-                    onChange={(e) => setHotelForm({ ...hotelForm, price: e.target.value })}
+                    onChange={(e) =>
+                      setHotelForm({ ...hotelForm, price: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -613,16 +700,30 @@ export default function RoomsHalls() {
                     rows={3}
                     className="rh__input"
                     value={hotelForm.description}
-                    onChange={(e) => setHotelForm({ ...hotelForm, description: e.target.value })}
+                    onChange={(e) =>
+                      setHotelForm({
+                        ...hotelForm,
+                        description: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
 
               <div className="rh__formActions">
-                <button type="button" className="rh__btn rh__btn--secondary" onClick={() => setHotelModalOpen(false)} disabled={saving}>
+                <button
+                  type="button"
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => setHotelModalOpen(false)}
+                  disabled={saving}
+                >
                   Отмена
                 </button>
-                <button type="submit" className="rh__btn rh__btn--primary" disabled={saving}>
+                <button
+                  type="submit"
+                  className="rh__btn rh__btn--primary"
+                  disabled={saving}
+                >
                   {saving ? "Сохранение…" : "Сохранить"}
                 </button>
               </div>
@@ -633,7 +734,10 @@ export default function RoomsHalls() {
 
       {/* Модал: Залы */}
       {hallModalOpen && (
-        <div className="rh__modalOverlay" onClick={() => setHallModalOpen(false)}>
+        <div
+          className="rh__modalOverlay"
+          onClick={() => setHallModalOpen(false)}
+        >
           <div
             className="rh__modal"
             role="dialog"
@@ -645,7 +749,11 @@ export default function RoomsHalls() {
               <div id="rh-hall-title" className="rh__modalTitle">
                 {hallEditingId == null ? "Новый зал" : "Изменить зал"}
               </div>
-              <button className="rh__iconBtn" onClick={() => setHallModalOpen(false)} aria-label="Закрыть">
+              <button
+                className="rh__iconBtn"
+                onClick={() => setHallModalOpen(false)}
+                aria-label="Закрыть"
+              >
                 <FaTimes />
               </button>
             </div>
@@ -660,7 +768,9 @@ export default function RoomsHalls() {
                     className="rh__input"
                     maxLength={100}
                     value={hallForm.name}
-                    onChange={(e) => setHallForm({ ...hallForm, name: e.target.value })}
+                    onChange={(e) =>
+                      setHallForm({ ...hallForm, name: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -672,7 +782,12 @@ export default function RoomsHalls() {
                     min={0}
                     className="rh__input"
                     value={hallForm.capacity}
-                    onChange={(e) => setHallForm({ ...hallForm, capacity: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setHallForm({
+                        ...hallForm,
+                        capacity: Number(e.target.value),
+                      })
+                    }
                   />
                 </div>
 
@@ -684,7 +799,9 @@ export default function RoomsHalls() {
                     className="rh__input"
                     maxLength={255}
                     value={hallForm.location}
-                    onChange={(e) => setHallForm({ ...hallForm, location: e.target.value })}
+                    onChange={(e) =>
+                      setHallForm({ ...hallForm, location: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -698,17 +815,28 @@ export default function RoomsHalls() {
                     className="rh__input"
                     placeholder="Напр., 1200.00"
                     value={hallForm.price}
-                    onChange={(e) => setHallForm({ ...hallForm, price: e.target.value })}
+                    onChange={(e) =>
+                      setHallForm({ ...hallForm, price: e.target.value })
+                    }
                     required
                   />
                 </div>
               </div>
 
               <div className="rh__formActions">
-                <button type="button" className="rh__btn rh__btn--secondary" onClick={() => setHallModalOpen(false)} disabled={saving}>
+                <button
+                  type="button"
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => setHallModalOpen(false)}
+                  disabled={saving}
+                >
                   Отмена
                 </button>
-                <button type="submit" className="rh__btn rh__btn--primary" disabled={saving}>
+                <button
+                  type="submit"
+                  className="rh__btn rh__btn--primary"
+                  disabled={saving}
+                >
                   {saving ? "Сохранение…" : "Сохранить"}
                 </button>
               </div>
@@ -719,7 +847,10 @@ export default function RoomsHalls() {
 
       {/* Модал: Койко-места */}
       {bedModalOpen && (
-        <div className="rh__modalOverlay" onClick={() => setBedModalOpen(false)}>
+        <div
+          className="rh__modalOverlay"
+          onClick={() => setBedModalOpen(false)}
+        >
           <div
             className="rh__modal"
             role="dialog"
@@ -729,9 +860,15 @@ export default function RoomsHalls() {
           >
             <div className="rh__modalHeader">
               <div id="rh-bed-title" className="rh__modalTitle">
-                {bedEditingId == null ? "Новое койко-место" : "Изменить койко-место"}
+                {bedEditingId == null
+                  ? "Новое койко-место"
+                  : "Изменить койко-место"}
               </div>
-              <button className="rh__iconBtn" onClick={() => setBedModalOpen(false)} aria-label="Закрыть">
+              <button
+                className="rh__iconBtn"
+                onClick={() => setBedModalOpen(false)}
+                aria-label="Закрыть"
+              >
                 <FaTimes />
               </button>
             </div>
@@ -746,7 +883,9 @@ export default function RoomsHalls() {
                     className="rh__input"
                     maxLength={200}
                     value={bedForm.name}
-                    onChange={(e) => setBedForm({ ...bedForm, name: e.target.value })}
+                    onChange={(e) =>
+                      setBedForm({ ...bedForm, name: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -760,7 +899,12 @@ export default function RoomsHalls() {
                     min={0}
                     className="rh__input"
                     value={bedForm.capacity}
-                    onChange={(e) => setBedForm({ ...bedForm, capacity: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setBedForm({
+                        ...bedForm,
+                        capacity: Number(e.target.value),
+                      })
+                    }
                     required
                   />
                 </div>
@@ -774,7 +918,9 @@ export default function RoomsHalls() {
                     className="rh__input"
                     placeholder="Напр., 700.00"
                     value={bedForm.price}
-                    onChange={(e) => setBedForm({ ...bedForm, price: e.target.value })}
+                    onChange={(e) =>
+                      setBedForm({ ...bedForm, price: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -785,16 +931,27 @@ export default function RoomsHalls() {
                     rows={3}
                     className="rh__input"
                     value={bedForm.description}
-                    onChange={(e) => setBedForm({ ...bedForm, description: e.target.value })}
+                    onChange={(e) =>
+                      setBedForm({ ...bedForm, description: e.target.value })
+                    }
                   />
                 </div>
               </div>
 
               <div className="rh__formActions">
-                <button type="button" className="rh__btn rh__btn--secondary" onClick={() => setBedModalOpen(false)} disabled={saving}>
+                <button
+                  type="button"
+                  className="rh__btn rh__btn--secondary"
+                  onClick={() => setBedModalOpen(false)}
+                  disabled={saving}
+                >
                   Отмена
                 </button>
-                <button type="submit" className="rh__btn rh__btn--primary" disabled={saving}>
+                <button
+                  type="submit"
+                  className="rh__btn rh__btn--primary"
+                  disabled={saving}
+                >
                   {saving ? "Сохранение…" : "Сохранить"}
                 </button>
               </div>

@@ -2,7 +2,7 @@
 
 /* стабильный скролл и высота вьюпорта на мобильных */
 html {
-  scrollbar-gutter: auto !important;
+  scrollbar-gutter: initial;
 }
 body {
   min-height: 100dvh;
