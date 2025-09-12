@@ -1,3 +1,4 @@
+/* src/components/Booking/rooms-halls.scss */
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap");
 
 /* В :root — только цвета */
@@ -287,6 +288,26 @@
     background: #fff;
 
     &:focus { border-color: var(--primary); }
+  }
+
+  /* === строгое отображение ошибок === */
+  &__input--invalid {
+    border-color: #ef4444;
+    background: #fff7f7;
+  }
+  &__fieldError {
+    color: #b91c1c;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  &__formError {
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #b91c1c;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
   }
 
   &__formActions {

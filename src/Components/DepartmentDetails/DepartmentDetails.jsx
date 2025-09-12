@@ -15,6 +15,7 @@ const AUTH_TOKEN = localStorage.getItem("accessToken");
 const BASIC_ACCESS_TYPES = [
   { value: "Касса", label: "Касса", backendKey: "can_view_cashbox" },
   { value: "Отделы", label: "Отделы", backendKey: "can_view_departments" },
+  { value: "Долги", label: "Долги", backendKey: "can_view_debts" },
   { value: "Заказы", label: "Заказы", backendKey: "can_view_orders" },
   { value: "Аналитика", label: "Аналитика", backendKey: "can_view_analytics" },
   {

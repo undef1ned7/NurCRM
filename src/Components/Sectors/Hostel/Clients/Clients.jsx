@@ -138,6 +138,10 @@ const Clients = () => {
   const [roomsMap, setRoomsMap] = useState({});
   const [bedsMap, setBedsMap] = useState({});
 
+  // inline confirm + deleting
+  const [confirmId, setConfirmId] = useState(null); // id клиента, у которого спрашиваем подтверждение
+  const [deletingId, setDeletingId] = useState(null); // id клиента, который сейчас удаляется
+
   /* ===== загрузка клиентов + брони + ИСТОРИЯ ===== */
   const load = async () => {
     try {
@@ -346,14 +350,27 @@ const Clients = () => {
     setEditId(id);
     setIsFormOpen(true);
   };
-  const onDelete = async (id) => {
-    if (!window.confirm("Удалить клиента?")) return;
+
+  // inline-confirm: запросить удаление
+  const askDelete = (id) => setConfirmId(String(id));
+  const cancelDelete = () => setConfirmId(null);
+
+  // inline-confirm: выполнить удаление
+  const doDelete = async (id) => {
+    const idStr = String(id);
+    setDeletingId(idStr);
     try {
       await removeClient(id);
-      await load();
+      // локально убираем клиента из списка
+      setRows((prev) => prev.filter((c) => String(c.id) !== idStr));
+      // если была открыта карточка этого клиента — закрываем
+      if (String(openId) === idStr) setOpenId(null);
     } catch (e) {
       console.error(e);
-      alert("Ошибка удаления");
+      setErr("Не удалось удалить клиента");
+    } finally {
+      setDeletingId(null);
+      setConfirmId(null);
     }
   };
 
@@ -472,41 +489,72 @@ const Clients = () => {
                 </td>
               </tr>
             ) : filtered.length ? (
-              filtered.map((c) => (
-                <tr key={c.id}>
-                  <td className="clients__ellipsis" title={c.full_name}>
-                    {c.full_name || "—"}
-                  </td>
-                  <td>{c.phone || "—"}</td>
-                  <td>{c.bookings?.length ?? 0}</td>
-                  <td>{lastObjectLabel(c)}</td>
-                  <td>
-                    {c.updated_at
-                      ? new Date(c.updated_at).toLocaleString()
-                      : "—"}
-                  </td>
-                  <td className="clients__rowActions">
-                    <button
-                      className="clients__btn"
-                      onClick={() => onOpenCard(c.id)}
-                    >
-                      Открыть
-                    </button>
-                    <button
-                      className="clients__btn"
-                      onClick={() => onEdit(c.id)}
-                    >
-                      Изм.
-                    </button>
-                    <button
-                      className="clients__btn clients__btn--secondary"
-                      onClick={() => onDelete(c.id)}
-                    >
-                      Удалить
-                    </button>
-                  </td>
-                </tr>
-              ))
+              filtered.map((c) => {
+                const isConfirm = String(c.id) === String(confirmId);
+                const isDeleting = String(c.id) === String(deletingId);
+                return (
+                  <tr key={c.id}>
+                    <td className="clients__ellipsis" title={c.full_name}>
+                      {c.full_name || "—"}
+                    </td>
+                    <td>{c.phone || "—"}</td>
+                    <td>{c.bookings?.length ?? 0}</td>
+                    <td>{lastObjectLabel(c)}</td>
+                    <td>
+                      {c.updated_at
+                        ? new Date(c.updated_at).toLocaleString()
+                        : "—"}
+                    </td>
+                    <td className="clients__rowActions">
+                      {isConfirm ? (
+                        <>
+                          <span
+                            className="clients__muted"
+                            style={{ marginRight: 8 }}
+                          >
+                            Удалить?
+                          </span>
+                          <button
+                            className="clients__btn"
+                            onClick={() => doDelete(c.id)}
+                            disabled={isDeleting}
+                          >
+                            Да
+                          </button>
+                          <button
+                            className="clients__btn clients__btn--secondary"
+                            onClick={cancelDelete}
+                            disabled={isDeleting}
+                          >
+                            Нет
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className="clients__btn"
+                            onClick={() => onOpenCard(c.id)}
+                          >
+                            Открыть
+                          </button>
+                          <button
+                            className="clients__btn"
+                            onClick={() => onEdit(c.id)}
+                          >
+                            Изм.
+                          </button>
+                          <button
+                            className="clients__btn clients__btn--secondary"
+                            onClick={() => askDelete(c.id)}
+                          >
+                            Удалить
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td className="clients__empty" colSpan={6}>

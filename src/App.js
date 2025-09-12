@@ -86,6 +86,7 @@ import CafeClients from "./Components/Sectors/cafe/Clients/Clients";
 import BuildingWork from "./Components/Sectors/Building/BuildingWork/BuildingWork";
 import HostelKassa from "./Components/Sectors/Hostel/kassa/kassa";
 import Objects from "./Components/Sectors/Building/Objects/Objects";
+import Debts from "./Components/Debts/Debts";
 // import ClientDebtDetail from "./Components/Sectors/Building/ClientDebtDetail";
 
 function App() {
@@ -738,6 +739,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Instagram />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="debts"
+              element={
+                <ProtectedRoute>
+                  <Debts />
                 </ProtectedRoute>
               }
             />

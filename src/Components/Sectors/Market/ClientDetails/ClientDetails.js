@@ -16,8 +16,6 @@ import { useClient } from "../../../../store/slices/ClientSlice";
 import "./ClientDetails.scss";
 import { useUser } from "../../../../store/slices/userSlice";
 
-// import { useDispatch } from "react-redux";
-
 /* ===== helpers ===== */
 const listFrom = (res) => res?.data?.results || res?.data || [];
 
@@ -36,7 +34,7 @@ const kindLabel = (v) =>
 const ruStatusToKind = (s) => {
   if (!s) return "sale";
   const t = s.toLowerCase();
-  if (t.startsWith("долг")) return "debt";
+  if (t.startsWith("долг")) return "debt"; // "Долг"/"Долги" и т.п.
   if (t.startsWith("аванс")) return "prepayment";
   if (t.startsWith("предоплат")) return "prepayment";
   return "sale";
@@ -119,10 +117,8 @@ export function toYYYYMMDD(input) {
 
   if (typeof input === "string") {
     const s = input.trim();
-    // Уже в нужном формате
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    // DD.MM.YYYY -> YYYY-MM-DD
-    const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // Уже в нужном формате
+    const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s); // DD.MM.YYYY -> YYYY-MM-DD
     if (m) return `${m[3]}-${m[2]}-${m[1]}`;
   }
 
@@ -481,6 +477,7 @@ export default function MarketClientDetails() {
   const [dealName, setDealName] = useState("");
   const [dealBudget, setDealBudget] = useState("");
   const [dealStatus, setDealStatus] = useState("Продажа");
+  const [dealDebtMonths, setDealDebtMonths] = useState(""); // ← НОВОЕ
 
   // client edit fields (без статуса!)
   const [editFio, setEditFio] = useState("");
@@ -570,6 +567,11 @@ export default function MarketClientDetails() {
         : ""
     );
     setDealStatus(deal ? kindToRu(deal.kind) : "Продажа");
+    setDealDebtMonths(
+      deal?.debt_months !== undefined && deal?.debt_months !== null
+        ? String(deal.debt_months)
+        : ""
+    );
     setIsDealFormOpen(true);
     loadDeals(client.id);
   };
@@ -584,21 +586,9 @@ export default function MarketClientDetails() {
   };
 
   /* ===== API: Deals ===== */
-  const createDealApi = async (clientId, { title, statusRu, amount }) => {
-    const payload = {
-      title: String(title || "").trim(),
-      kind: ruStatusToKind(statusRu),
-      amount: toDecimalString(amount),
-      note: "",
-      client: clientId,
-    };
-    const res = await api.post(`/main/clients/${clientId}/deals/`, payload);
-    return normalizeDealFromApi(res);
-  };
-
-  const updateDealApi = async (
-    dealId,
-    { clientId, title, statusRu, amount }
+  const createDealApi = async (
+    clientId,
+    { title, statusRu, amount, debt_months }
   ) => {
     const payload = {
       title: String(title || "").trim(),
@@ -606,6 +596,27 @@ export default function MarketClientDetails() {
       amount: toDecimalString(amount),
       note: "",
       client: clientId,
+      ...(ruStatusToKind(statusRu) === "debt" && Number(debt_months) > 0
+        ? { debt_months: parseInt(debt_months, 10) }
+        : {}),
+    };
+    const res = await api.post(`/main/clients/${clientId}/deals/`, payload);
+    return normalizeDealFromApi(res);
+  };
+
+  const updateDealApi = async (
+    dealId,
+    { clientId, title, statusRu, amount, debt_months }
+  ) => {
+    const payload = {
+      title: String(title || "").trim(),
+      kind: ruStatusToKind(statusRu),
+      amount: toDecimalString(amount),
+      note: "",
+      client: clientId,
+      ...(ruStatusToKind(statusRu) === "debt" && Number(debt_months) > 0
+        ? { debt_months: parseInt(debt_months, 10) }
+        : {}),
     };
     const res = await api.put(`/main/client-deals/${dealId}/`, payload);
     return normalizeDealFromApi(res);
@@ -615,15 +626,22 @@ export default function MarketClientDetails() {
     await api.delete(`/main/client-deals/${dealId}/`);
   };
 
+  const isDebtSelected = ruStatusToKind(dealStatus) === "debt";
+
   const canSaveDeal =
     String(dealName).trim().length >= 1 &&
     Number(toDecimalString(dealBudget)) >= 0 &&
-    !!client?.id;
+    !!client?.id &&
+    (!isDebtSelected || Number(dealDebtMonths) >= 1);
 
   const handleDealSave = async () => {
     if (!client?.id) return;
     if (!canSaveDeal) {
-      alert("Заполните название и корректную сумму");
+      alert(
+        isDebtSelected
+          ? "Заполните название, сумму и срок долга (в месяцах)"
+          : "Заполните название и корректную сумму"
+      );
       return;
     }
     try {
@@ -633,6 +651,7 @@ export default function MarketClientDetails() {
           title: dealName,
           statusRu: dealStatus,
           amount: dealBudget,
+          debt_months: dealDebtMonths,
         });
         setDeals((prev) =>
           prev.map((d) => (d.id === updated.id ? updated : d))
@@ -644,6 +663,7 @@ export default function MarketClientDetails() {
         title: dealName,
         statusRu: dealStatus,
         amount: dealBudget,
+        debt_months: dealDebtMonths,
       });
       setDeals((prev) => [created, ...prev]);
       closeDealForm();
@@ -738,6 +758,7 @@ export default function MarketClientDetails() {
     setDealName("");
     setDealBudget("");
     setDealStatus("Продажа");
+    setDealDebtMonths("");
     setEditingDeal(null);
     setIsDealFormOpen(false);
   };
@@ -765,8 +786,6 @@ export default function MarketClientDetails() {
     setShowDebtModal(true);
   };
   const sectorName = company?.sector?.name;
-
-  // const { pathname } = useLocation();
 
   const kindTranslate = {
     new: "Новый",
@@ -1053,19 +1072,50 @@ export default function MarketClientDetails() {
                 value={dealStatus}
                 onChange={(e) => setDealStatus(e.target.value)}
               >
+                {/* Используем 'Долг' (ед.ч.), чтобы совпадать с kindToRu */}
                 <option>Продажа</option>
-                <option>Долги</option>
+                <option>Долг</option>
                 <option>Аванс</option>
                 <option>Предоплата</option>
               </select>
             </label>
+
+            {/* НОВОЕ: срок долга показывается только когда выбран Долг */}
+            {isDebtSelected && (
+              <label className="field">
+                <span>
+                  Срок долга (мес.) <b className="req">*</b>
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  step="1"
+                  min="1"
+                  value={dealDebtMonths}
+                  onChange={(e) => setDealDebtMonths(e.target.value)}
+                  onBlur={() => {
+                    const n = parseInt(dealDebtMonths || "0", 10);
+                    setDealDebtMonths(
+                      Number.isFinite(n) && n > 0 ? String(n) : ""
+                    );
+                  }}
+                  placeholder="Например: 6"
+                />
+              </label>
+            )}
 
             <div className="modal-actions">
               <button
                 className="btn btn--yellow"
                 onClick={handleDealSave}
                 disabled={!canSaveDeal}
-                title={!canSaveDeal ? "Заполните обязательные поля" : ""}
+                title={
+                  !canSaveDeal
+                    ? isDebtSelected
+                      ? "Заполните название, сумму и срок долга"
+                      : "Заполните название и сумму"
+                    : ""
+                }
               >
                 {editingDeal ? "Сохранить" : "Добавить"}
               </button>

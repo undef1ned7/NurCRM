@@ -60,6 +60,18 @@ const HIDE_RULES = [
       ],
     },
   },
+  {
+    when: { tariff: "Стандарт" },
+    hide: {
+      labels: ["Долги"],
+    },
+  },
+  {
+    when: { tariff: "Прайм" },
+    hide: {
+      labels: ["Долги"],
+    },
+  },
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/zakaz"] } },
   { when: { sector: "Кафе" }, show: { toIncludes: ["/crm/cafe/stock"] } },
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/cafe/analytics"] } },
@@ -90,6 +102,8 @@ const HIDE_RULES = [
   { when: { sector: "Барбершоп" }, hide: { toIncludes: ["crm/kassa"] } },
   { when: { sector: "Школа" }, hide: { toIncludes: ["/crm/zakaz"] } },
   { when: { sector: "Барбершоп" }, hide: { toIncludes: ["/crm/obzor"] } },
+  { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/obzor"] } },
+  { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/raspisanie"] } },
   { when: { sector: "Школа" }, hide: { toIncludes: ["/crm/obzor"] } },
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/obzor"] } },
   { when: { sector: "Магазин" }, hide: { toIncludes: ["/crm/obzor"] } },
@@ -199,6 +213,13 @@ const MENU_CONFIG = {
       to: "/crm/departments",
       icon: <Users className="sidebar__menu-icon" />,
       permission: "can_view_departments",
+      implemented: true,
+    },
+    {
+      label: "Долги",
+      to: "/crm/debts",
+      icon: <Users className="sidebar__menu-icon" />,
+      permission: "can_view_debts",
       implemented: true,
     },
     {

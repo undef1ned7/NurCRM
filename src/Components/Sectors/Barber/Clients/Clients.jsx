@@ -1,94 +1,839 @@
+// import React, { useEffect, useMemo, useState } from "react";
+// import api from "../../../../api"; // axios instance
+// import "./Clients.scss";
+// import { FaPlus, FaEdit, FaTimes, FaSearch, FaTrash } from "react-icons/fa";
+
+// /* ===== Маппинг статусов ===== */
+// const UI_TO_API_STATUS = {
+//   Активен: "active",
+//   Неактивен: "inactive",
+//   VIP: "vip",
+//   "В черном списке": "blacklist",
+// };
+// const API_TO_UI_STATUS = {
+//   active: "Активен",
+//   inactive: "Неактивен",
+//   vip: "VIP",
+//   blacklist: "В черном списке",
+// };
+// const STATUS_OPTIONS_UI = Object.keys(UI_TO_API_STATUS);
+
+// /* ===== Статусы записей (история) ===== */
+// const APPT_STATUS_LABELS = {
+//   booked: "Забронировано",
+//   confirmed: "Подтверждено",
+//   completed: "Завершено",
+//   canceled: "Отменено",
+//   no_show: "Не пришёл",
+// };
+
+// /* ===== Утилиты ===== */
+// const pad = (n) => String(n).padStart(2, "0");
+// const dateISO = (iso) => {
+//   if (!iso) return "";
+//   const d = new Date(iso);
+//   if (Number.isNaN(d.getTime())) return "";
+//   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// };
+// const timeISO = (iso) => {
+//   if (!iso) return "";
+//   const d = new Date(iso);
+//   if (Number.isNaN(d.getTime())) return "";
+//   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+// };
+// const getInitials = (fullName = "") =>
+//   fullName.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() || "").join("");
+
+// const listFrom = (res) => res?.data?.results || res?.data || [];
+// const todayStr = () => new Date().toISOString().slice(0, 10);
+
+// function msgFromError(e, fallback) {
+//   const data = e?.response?.data;
+//   if (!data) return fallback;
+//   if (typeof data === "string") return data;
+//   if (typeof data === "object") {
+//     try {
+//       const k = Object.keys(data)[0];
+//       const v = Array.isArray(data[k]) ? data[k][0] : data[k];
+//       return String(v || fallback);
+//     } catch { return fallback; }
+//   }
+//   return fallback;
+// }
+// const isInvalidChoiceError = (e) => {
+//   const status = e?.response?.status;
+//   if (status && status !== 400) return false;
+//   const raw = e?.response?.data;
+//   const text = typeof raw === "string" ? raw : raw ? JSON.stringify(raw) : "";
+//   const l = text.toLowerCase();
+//   return (
+//     l.includes("not a valid choice") ||
+//     l.includes("допустимых вариантов") ||
+//     l.includes("недопустим") ||
+//     l.includes("выберите корректное значение") ||
+//     l.includes("invalid choice")
+//   );
+// };
+// const tabKeyFromType = (t) => {
+//   if (!t) return null;
+//   const v = String(t).toLowerCase();
+//   if (v === "client") return "clients";
+//   if (v === "suppliers") return "suppliers";
+//   if (v === "implementers") return "resellers";
+//   return null;
+// };
+// const typeLabel = (t) => {
+//   const v = String(t || "").toLowerCase();
+//   if (v === "client") return "Клиент";
+//   if (v === "suppliers") return "Поставщик";
+//   if (v === "implementers") return "Реализатор";
+//   return "—";
+// };
+
+// /* ================================================================================== */
+
+// const Clients = () => {
+//   const [activeTab, setActiveTab] = useState("clients");
+
+//   /* ===== Клиенты ===== */
+//   const [clients, setClients] = useState([]);
+//   const [appointments, setAppointments] = useState([]);
+//   const [services, setServices] = useState([]);
+//   const [search, setSearch] = useState("");
+//   const [modalOpen, setModalOpen] = useState(false);
+//   const [currentClient, setCurrentClient] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [saving, setSaving] = useState(false);
+//   const [deleting, setDeleting] = useState(false);
+//   const [error, setError] = useState("");
+
+//   // История
+//   const [historyOpen, setHistoryOpen] = useState(false);
+//   const [historyClient, setHistoryClient] = useState(null);
+
+//   /* ===== Fetch ===== */
+//   const fetchClients = async () => {
+//     const { data } = await api.get("/barbershop/clients/");
+//     const normalized = (data.results || []).map((c) => ({
+//       id: c.id,
+//       fullName: c.full_name || "",
+//       phone: c.phone || "",
+//       email: c.email || "",
+//       birthDate: c.birth_date || "",
+//       status: API_TO_UI_STATUS[String(c.status || "").toLowerCase()] || "Активен",
+//       notes: c.notes || "",
+//     }));
+//     setClients(normalized);
+//   };
+
+//   const fetchAllAppointments = async () => {
+//     const acc = [];
+//     let next = "/barbershop/appointments/";
+//     while (next) {
+//       const { data } = await api.get(next);
+//       acc.push(...(data.results || []));
+//       next = data.next;
+//     }
+//     setAppointments(acc);
+//   };
+
+//   const fetchAllServices = async () => {
+//     const acc = [];
+//     let next = "/barbershop/services/";
+//     while (next) {
+//       const { data } = await api.get(next);
+//       acc.push(...(data.results || []));
+//       next = data.next;
+//     }
+//     setServices(acc);
+//   };
+
+//   useEffect(() => {
+//     (async () => {
+//       try {
+//         setLoading(true);
+//         setError("");
+//         await Promise.all([fetchClients(), fetchAllAppointments(), fetchAllServices()]);
+//       } catch (e) {
+//         setError(e?.response?.data?.detail || "Не удалось загрузить клиентов/записи/услуги");
+//       } finally { setLoading(false); }
+//     })();
+//   }, []);
+
+//   /* ===== Карты ===== */
+//   const apptsByClient = useMemo(() => {
+//     const map = new Map();
+//     appointments.forEach((a) => {
+//       if (!a.client) return;
+//       const arr = map.get(a.client) || [];
+//       arr.push(a);
+//       map.set(a.client, arr);
+//     });
+//     return map;
+//   }, [appointments]);
+
+//   const servicesById = useMemo(() => {
+//     const map = new Map();
+//     services.forEach((s) => map.set(s.id, s));
+//     return map;
+//   }, [services]);
+
+//   /* ===== Фильтр ===== */
+//   const filteredClients = useMemo(() => {
+//     const q = search.trim().toLowerCase();
+//     if (!q) return clients;
+//     return clients.filter((c) => (c.fullName || "").toLowerCase().includes(q));
+//   }, [clients, search]);
+
+//   /* ===== CRUD: клиенты ===== */
+//   const openModal = (client = null) => { setCurrentClient(client); setModalOpen(true); };
+//   const closeModal = () => { if (!saving && !deleting) { setModalOpen(false); setCurrentClient(null); } };
+
+//   const saveClient = async (form) => {
+//     setSaving(true); setError("");
+//     try {
+//       const payload = {
+//         full_name: form.fullName,
+//         phone: form.phone,
+//         email: form.email || null,
+//         birth_date: form.birthDate || null,
+//         status: UI_TO_API_STATUS[form.status] || "active",
+//         notes: form.notes || null,
+//         company: localStorage.getItem("company"),
+//       };
+//       if (currentClient?.id) {
+//         await api.patch(`/barbershop/clients/${currentClient.id}/`, payload);
+//       } else {
+//         await api.post("/barbershop/clients/", payload);
+//       }
+//       await fetchClients();
+//       setModalOpen(false); setCurrentClient(null);
+//     } catch (e) {
+//       setError(e?.response?.data?.detail || "Не удалось сохранить клиента");
+//     } finally { setSaving(false); }
+//   };
+
+//   const deleteClient = async () => {
+//     if (!currentClient?.id) return;
+//     const name = currentClient.fullName || "клиента";
+//     if (!window.confirm(`Удалить ${name}? Действие необратимо.`)) return;
+//     setDeleting(true); setError("");
+//     try {
+//       await api.delete(`/barbershop/clients/${currentClient.id}/`);
+//       await fetchClients();
+//       setModalOpen(false); setCurrentClient(null);
+//     } catch (e) {
+//       setError(e?.response?.data?.detail || "Не удалось удалить клиента");
+//     } finally { setDeleting(false); }
+//   };
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     const fd = new FormData(e.currentTarget);
+//     const form = {
+//       fullName: fd.get("fullName")?.toString().trim() || "",
+//       phone: fd.get("phone")?.toString().trim() || "",
+//       email: fd.get("email")?.toString().trim() || "",
+//       birthDate: fd.get("birthDate")?.toString().trim() || "",
+//       status: fd.get("status")?.toString().trim() || "Активен",
+//       notes: fd.get("notes")?.toString() || "",
+//     };
+//     if (!form.fullName || !form.phone) { setError("Обязательные поля: ФИО и Телефон"); return; }
+//     saveClient(form);
+//   };
+
+//   /* ===== История клиента ===== */
+//   const openHistory = (client) => { setHistoryClient(client); setHistoryOpen(true); };
+//   const closeHistory = () => { setHistoryOpen(false); setHistoryClient(null); };
+//   const historyList = useMemo(() => {
+//     if (!historyClient?.id) return [];
+//     const list = (apptsByClient.get(historyClient.id) || []).slice();
+//     return list.sort((a, b) => new Date(b.start_at) - new Date(a.start_at));
+//   }, [historyClient, apptsByClient]);
+
+//   const fmtMoney = (v) => {
+//     if (v === null || v === undefined || v === "") return "—";
+//     const n = Number(v);
+//     return Number.isFinite(n) ? `${n.toLocaleString("ru-RU")} сом` : String(v);
+//   };
+
+//   /* ===== Поставщики ===== */
+//   const [suppliers, setSuppliers] = useState([]);
+//   const [supLoading, setSupLoading] = useState(false);
+//   const [supError, setSupError] = useState("");
+//   const [supSearch, setSupSearch] = useState("");
+//   const [supDate, setSupDate] = useState(todayStr());
+
+//   const [supAddOpen, setSupAddOpen] = useState(false);
+//   const [supAddFullName, setSupAddFullName] = useState("");
+//   const [supAddPhone, setSupAddPhone] = useState("");
+//   const [supAddEmail, setSupAddEmail] = useState("");
+//   const [supAddDate, setSupAddDate] = useState(todayStr());
+//   const [supAddSaving, setSupAddSaving] = useState(false);
+//   const [supAddErr, setSupAddErr] = useState("");
+
+//   const [supEditOpen, setSupEditOpen] = useState(false);
+//   const [supEditErr, setSupEditErr] = useState("");
+//   const [supEditSaving, setSupEditSaving] = useState(false);
+//   const [supDeleting, setSupDeleting] = useState(false);
+//   const [supCurrent, setSupCurrent] = useState(null);
+//   const [supEditFullName, setSupEditFullName] = useState("");
+//   const [supEditPhone, setSupEditPhone] = useState("");
+//   const [supEditEmail, setSupEditEmail] = useState("");
+//   const [supEditDate, setSupEditDate] = useState(todayStr());
+
+//   const canSaveSupAdd =
+//     String(supAddFullName).trim().length >= 1 &&
+//     String(supAddPhone).trim().length >= 1 &&
+//     !supAddSaving;
+
+//   const canSaveSupEdit =
+//     String(supEditFullName).trim().length >= 1 &&
+//     String(supEditPhone).trim().length >= 1 &&
+//     !supEditSaving;
+
+//   const resetSupAddForm = () => {
+//     setSupAddFullName(""); setSupAddPhone(""); setSupAddEmail("");
+//     setSupAddDate(todayStr()); setSupAddErr("");
+//   };
+
+//   const loadSuppliers = async () => {
+//     try {
+//       setSupLoading(true); setSupError("");
+//       try {
+//         const res = await api.get("/main/clients/", { params: { type: "suppliers" } });
+//         setSuppliers(listFrom(res).filter((r) => tabKeyFromType(r?.type) === "suppliers" || !r?.type));
+//         return;
+//       } catch (e) { if (!isInvalidChoiceError(e)) throw e; }
+//       const fallback = await api.get("/main/clients/");
+//       const base = listFrom(fallback);
+//       setSuppliers(base.filter((r) => tabKeyFromType(r?.type) === "suppliers"));
+//     } catch (e) {
+//       setSuppliers([]); setSupError("Не удалось загрузить поставщиков");
+//     } finally { setSupLoading(false); }
+//   };
+
+//   useEffect(() => { if (activeTab === "suppliers") loadSuppliers(); }, [activeTab]);
+
+//   const filteredSuppliers = useMemo(() => {
+//     const base = Array.isArray(suppliers) ? suppliers : [];
+//     if (!supSearch) return base;
+//     const s = supSearch.toLowerCase();
+//     return base.filter(
+//       (c) =>
+//         String(c.full_name || c.fio || "").toLowerCase().includes(s) ||
+//         String(c.phone || "").toLowerCase().includes(s)
+//     );
+//   }, [suppliers, supSearch]);
+
+//   const createSupplierApi = async ({ full_name, phone, email, date }) => {
+//     try {
+//       const payload = {
+//         type: "suppliers",
+//         full_name: String(full_name || "").trim(),
+//         phone: String(phone || "").trim(),
+//         ...(email ? { email: String(email).trim() } : {}),
+//         ...(date ? { date } : {}),
+//       };
+//       const res = await api.post("/main/clients/", payload);
+//       const data = res?.data || payload;
+//       if (!data.type) data.type = "suppliers";
+//       return data;
+//     } catch (e) {
+//       if (!isInvalidChoiceError(e)) throw e;
+//       const fallbackPayload = {
+//         full_name: String(full_name || "").trim(),
+//         phone: String(phone || "").trim(),
+//         ...(email ? { email: String(email).trim() } : {}),
+//         ...(date ? { date } : {}),
+//       };
+//       const res = await api.post("/main/clients/", fallbackPayload);
+//       const data = res?.data || fallbackPayload;
+//       return { ...data, type: data.type || "suppliers" };
+//     }
+//   };
+
+//   const updateSupplierApi = async (id, { full_name, phone, email, date }) => {
+//     try {
+//       const payload = {
+//         type: "suppliers",
+//         full_name: String(full_name || "").trim(),
+//         phone: String(phone || "").trim(),
+//         ...(email ? { email: String(email).trim() } : { email: null }),
+//         ...(date ? { date } : { date: null }),
+//       };
+//       await api.patch(`/main/clients/${id}/`, payload);
+//     } catch (e) {
+//       if (!isInvalidChoiceError(e)) throw e;
+//       const payload = {
+//         full_name: String(full_name || "").trim(),
+//         phone: String(phone || "").trim(),
+//         ...(email ? { email: String(email).trim() } : { email: null }),
+//         ...(date ? { date } : { date: null }),
+//       };
+//       await api.patch(`/main/clients/${id}/`, payload);
+//     }
+//   };
+
+//   const deleteSupplierApi = async (id) => { await api.delete(`/main/clients/${id}/`); };
+
+//   const handleSupAddSave = async () => {
+//     if (!canSaveSupAdd) return;
+//     try {
+//       setSupAddSaving(true); setSupAddErr("");
+//       const created = await createSupplierApi({
+//         full_name: supAddFullName, phone: supAddPhone, email: supAddEmail, date: supAddDate,
+//       });
+//       setSuppliers((prev) => [created, ...(Array.isArray(prev) ? prev : [])]);
+//       setSupAddOpen(false); resetSupAddForm();
+//     } catch (e) { setSupAddErr(msgFromError(e, "Не удалось добавить поставщика")); }
+//     finally { setSupAddSaving(false); }
+//   };
+
+//   const openSupEdit = (row) => {
+//     setSupCurrent(row || null);
+//     setSupEditFullName(row?.full_name || row?.fio || "");
+//     setSupEditPhone(row?.phone || "");
+//     setSupEditEmail(row?.email || "");
+//     setSupEditDate(row?.date || todayStr());
+//     setSupEditErr(""); setSupEditOpen(true);
+//   };
+
+//   const handleSupEditSave = async () => {
+//     if (!supCurrent?.id || !canSaveSupEdit) return;
+//     try {
+//       setSupEditSaving(true); setSupEditErr("");
+//       await updateSupplierApi(supCurrent.id, {
+//         full_name: supEditFullName, phone: supEditPhone, email: supEditEmail, date: supEditDate,
+//       });
+//       await loadSuppliers(); setSupEditOpen(false);
+//     } catch (e) { setSupEditErr(msgFromError(e, "Не удалось сохранить изменения")); }
+//     finally { setSupEditSaving(false); }
+//   };
+
+//   const handleSupDelete = async (row) => {
+//     if (!row?.id) return;
+//     if (!window.confirm(`Удалить поставщика «${row.full_name || row.fio || "—"}»? Действие необратимо.`)) return;
+//     try {
+//       setSupDeleting(true);
+//       await deleteSupplierApi(row.id);
+//       setSuppliers((prev) => (Array.isArray(prev) ? prev.filter((x) => x.id !== row.id) : []));
+//     } catch (e) { alert(msgFromError(e, "Не удалось удалить поставщика")); }
+//     finally { setSupDeleting(false); }
+//   };
+
+//   const supTitle = "Поставщики";
+
+//   /* ===================== RENDER ===================== */
+//   return (
+//     <div className="barberclient">
+//       {/* Табы */}
+//       <nav className="barberclient__tabs" aria-label="Секции">
+//         <button
+//           type="button"
+//           onClick={() => setActiveTab("clients")}
+//           className={`barberclient__tab ${activeTab === "clients" ? "barberclient__tab--active" : ""}`}
+//         >
+//           Клиенты
+//         </button>
+//         <button
+//           type="button"
+//           onClick={() => setActiveTab("suppliers")}
+//           className={`barberclient__tab ${activeTab === "suppliers" ? "barberclient__tab--active" : ""}`}
+//         >
+//           Поставщики
+//         </button>
+//       </nav>
+
+//       {/* Header */}
+//       {activeTab === "clients" ? (
+//         <div className="barberclient__header">
+//           <div>
+//             <h2 className="barberclient__title">Клиенты</h2>
+//             <span className="barberclient__subtitle">
+//               {loading ? "Загрузка..." : `${clients.length} записей`}
+//             </span>
+//           </div>
+//           <div className="barberclient__actions">
+//             <div className="barberclient__search">
+//               <FaSearch className="barberclient__search-icon" />
+//               <input
+//                 className="barberclient__search-input"
+//                 type="text"
+//                 placeholder="Поиск по ФИО"
+//                 value={search}
+//                 onChange={(e) => setSearch(e.target.value)}
+//               />
+//             </div>
+//             <button className="barberclient__btn barberclient__btn--primary" onClick={() => openModal()}>
+//               <FaPlus /> <span className="barberclient__btn-label">Добавить</span>
+//             </button>
+//           </div>
+//         </div>
+//       ) : (
+//         <div className="barberclient__header">
+//           <div>
+//             <h2 className="barberclient__title">{supTitle}</h2>
+//             <span className="barberclient__subtitle">
+//               {supLoading ? "Загрузка..." : `${filteredSuppliers.length}/${suppliers.length} шт.`}
+//             </span>
+//           </div>
+//           <div className="barberclient__actions">
+//             <div className="barberclient__search">
+//               <FaSearch className="barberclient__search-icon" />
+//               <input
+//                 className="barberclient__search-input"
+//                 type="text"
+//                 placeholder="Поиск по ФИО или телефону"
+//                 value={supSearch}
+//                 onChange={(e) => setSupSearch(e.target.value)}
+//               />
+//             </div>
+//             <input
+//               type="date"
+//               className="barberclient__date-input"
+//               value={supDate}
+//               onChange={(e) => setSupDate(e.target.value)}
+//             />
+//             <button
+//               className="barberclient__btn barberclient__btn--secondary barberclient__btn--sm"
+//               onClick={loadSuppliers}
+//               disabled={supLoading}
+//             >
+//               Обновить
+//             </button>
+//             <button
+//               className="barberclient__btn barberclient__btn--primary"
+//               onClick={() => setSupAddOpen(true)}
+//             >
+//               <FaPlus /> <span className="barberclient__btn-label">Новый поставщик</span>
+//             </button>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Ошибки */}
+//       {activeTab === "clients" && error && <div className="barberclient__alert">{error}</div>}
+//       {activeTab === "suppliers" && supError && <div className="barberclient__alert">{supError}</div>}
+
+//       {/* Контент */}
+//       {activeTab === "clients" ? (
+//         loading ? (
+//           <div className="barberclient__skeleton-list">
+//             {[...Array(4)].map((_, i) => <div key={i} className="barberclient__skeleton-card" />)}
+//           </div>
+//         ) : (
+//           <div className="barberclient__list">
+//             {filteredClients.map((client) => {
+//               const appts = apptsByClient.get(client.id) || [];
+//               const total = appts.length;
+//               return (
+//                 <article key={client.id} className="barberclient__card">
+//                   <div className="barberclient__card-left">
+//                     <div className="barberclient__avatar">{getInitials(client.fullName)}</div>
+//                     <div className="barberclient__info">
+//                       <h4 className="barberclient__name">{client.fullName}</h4>
+//                       <div className="barberclient__meta">
+//                         <span className={`barberclient__badge barberclient__badge--${UI_TO_API_STATUS[client.status] || "active"}`}>{client.status}</span>
+//                         <span>{client.phone || "—"}</span>
+//                         <span>•</span>
+//                         <span>Записей: {total}</span>
+//                       </div>
+//                     </div>
+//                   </div>
+
+//                   <div className="barberclient__card-actions">
+//                     <button
+//                       className="barberclient__btn barberclient__btn--secondary barberclient__btn--icon"
+//                       onClick={() => openHistory(client)}
+//                       aria-label="История"
+//                     >
+//                       <FaSearch />
+//                     </button>
+//                     <button
+//                       className="barberclient__btn barberclient__btn--secondary barberclient__btn--icon"
+//                       onClick={() => openModal(client)}
+//                       title="Редактировать"
+//                       aria-label="Редактировать"
+//                     >
+//                       <FaEdit />
+//                     </button>
+//                   </div>
+//                 </article>
+//               );
+//             })}
+//           </div>
+//         )
+//       ) : (
+//         /* Поставщики */
+//         <div className="barberclient__table-container">
+//           <div className="barberclient__table">
+//             <div className="barberclient__thead">
+//               <span>ФИО</span><span>Телефон</span><span>Тип</span><span>Дата</span><span>Действия</span>
+//             </div>
+//             <div className="barberclient__tbody">
+//               {supLoading && <div className="barberclient__loading-row">Загрузка…</div>}
+//               {!supLoading && filteredSuppliers.map((c) => (
+//                 <div className="barberclient__row" key={c.id}>
+//                   <span className="barberclient__ellipsis" title={c.full_name || c.fio || "—"}>
+//                     {c.full_name || c.fio || "—"}
+//                   </span>
+//                   <span>{c.phone || "—"}</span>
+//                   <span>{typeLabel(c.type)}</span>
+//                   <span>{c.date || "—"}</span>
+//                   <span className="barberclient__row-actions">
+//                     <button
+//                       className="barberclient__btn barberclient__btn--secondary barberclient__btn--sm"
+//                       onClick={() => openSupEdit(c)}
+//                       title="Редактировать"
+//                     >
+//                       <FaEdit /> <span className="barberclient__btn-label">Ред.</span>
+//                     </button>
+//                     <button
+//                       className="barberclient__btn barberclient__btn--danger barberclient__btn--sm"
+//                       onClick={() => handleSupDelete(c)}
+//                       disabled={supDeleting}
+//                       title="Удалить"
+//                     >
+//                       <FaTrash /> <span className="barberclient__btn-label">{supDeleting ? "…" : "Удалить"}</span>
+//                     </button>
+//                   </span>
+//                 </div>
+//               ))}
+//               {!supLoading && filteredSuppliers.length === 0 && <div className="barberclient__empty">Ничего не найдено</div>}
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Модалка клиента */}
+//       {modalOpen && (
+//         <div className="barberclient__modalOverlay" onClick={closeModal}>
+//           <div className="barberclient__modal" onClick={(e) => e.stopPropagation()}>
+//             <div className="barberclient__modalHeader">
+//               <h3 className="barberclient__modalTitle">{currentClient ? "Редактировать клиента" : "Новый клиент"}</h3>
+//               <button className="barberclient__iconBtn" onClick={closeModal} aria-label="Закрыть"><FaTimes /></button>
+//             </div>
+
+//             <form className="barberclient__form" onSubmit={handleSubmit}>
+//               <div className="barberclient__formGrid">
+//                 <div className="barberclient__field">
+//                   <label htmlFor="fullName" className="barberclient__label">ФИО <span className="barberclient__req">*</span></label>
+//                   <input id="fullName" name="fullName" className="barberclient__input" defaultValue={currentClient?.fullName || ""} placeholder="Фамилия Имя Отчество" required />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label htmlFor="phone" className="barberclient__label">Телефон <span className="barberclient__req">*</span></label>
+//                   <input id="phone" name="phone" className="barberclient__input" defaultValue={currentClient?.phone || ""} placeholder="+996 ..." inputMode="tel" required />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label htmlFor="email" className="barberclient__label">Email</label>
+//                   <input id="email" name="email" className="barberclient__input" defaultValue={currentClient?.email || ""} placeholder="user@mail.com" type="email" />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label htmlFor="birthDate" className="barberclient__label">Дата рождения</label>
+//                   <input id="birthDate" name="birthDate" className="barberclient__input" defaultValue={currentClient?.birthDate || ""} type="date" />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label htmlFor="status" className="barberclient__label">Статус</label>
+//                   <select id="status" name="status" className="barberclient__input" defaultValue={currentClient?.status || "Активен"}>
+//                     {STATUS_OPTIONS_UI.map((s) => <option key={s} value={s}>{s}</option>)}
+//                   </select>
+//                 </div>
+//                 <div className="barberclient__field barberclient__field--full">
+//                   <label htmlFor="notes" className="barberclient__label">Заметки</label>
+//                   <textarea id="notes" name="notes" className="barberclient__textarea" defaultValue={currentClient?.notes || ""} placeholder="Комментарий, пожелания..." />
+//                 </div>
+//               </div>
+
+//               <div className="barberclient__formActions">
+//                 {currentClient?.id ? (
+//                   <button type="button" className="barberclient__btn barberclient__btn--danger" onClick={deleteClient} disabled={saving || deleting} title="Удалить клиента">
+//                     <FaTrash /> <span className="barberclient__btn-label">{deleting ? "Удаление..." : "Удалить"}</span>
+//                   </button>
+//                 ) : (<span className="barberclient__actionsSpacer" />)}
+
+//                 <div className="barberclient__actionsRight">
+//                   <button type="button" className="barberclient__btn barberclient__btn--secondary" onClick={closeModal} disabled={saving || deleting}>Отмена</button>
+//                   <button type="submit" disabled={saving || deleting} className="barberclient__btn barberclient__btn--primary">
+//                     {saving ? "Сохранение..." : "Сохранить"}
+//                   </button>
+//                 </div>
+//               </div>
+//             </form>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* История клиента */}
+//       {historyOpen && (
+//         <div className="barberclient__modalOverlay" onClick={closeHistory}>
+//           <div className="barberclient__modal" onClick={(e) => e.stopPropagation()}>
+//             <div className="barberclient__modalHeader">
+//               <h3 className="barberclient__modalTitle">История — {historyClient?.fullName}</h3>
+//               <button className="barberclient__iconBtn" onClick={closeHistory} aria-label="Закрыть"><FaTimes /></button>
+//             </div>
+
+//             <div className="barberclient__form" style={{ marginTop: 0 }}>
+//               {historyList.length === 0 ? (
+//                 <div className="barberclient__meta">Записей нет</div>
+//               ) : (
+//                 <div className="barberclient__history">
+//                   {historyList.map((a) => {
+//                     const date = dateISO(a.start_at);
+//                     const time = timeISO(a.start_at);
+//                     const barber = a.barber_name || (a.barber ? `ID ${a.barber}` : "—");
+//                     const svcObj = servicesById.get(a.service);
+//                     const service = a.service_name || svcObj?.service_name || svcObj?.name || "—";
+//                     const priceVal = a.service_price ?? a.price ?? svcObj?.price;
+//                     const st = APPT_STATUS_LABELS[a.status] || a.status || "—";
+//                     return (
+//                       <div key={a.id} className="barberclient__history-card">
+//                         <div className="barberclient__history-top">
+//                           <span className="barberclient__badge">{date} • {time}</span>
+//                           <span className="barberclient__badge barberclient__badge--info">{st}</span>
+//                         </div>
+//                         <div className="barberclient__meta" style={{ gap: 12 }}>
+//                           <span>Мастер: {barber}</span><span>•</span>
+//                           <span>Услуга: {service}</span><span>•</span>
+//                           <span>Цена: {fmtMoney(priceVal)}</span>
+//                         </div>
+//                       </div>
+//                     );
+//                   })}
+//                 </div>
+//               )}
+//               <div className="barberclient__formActions">
+//                 <button type="button" className="barberclient__btn barberclient__btn--secondary" onClick={closeHistory}>Закрыть</button>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Поставщики: добавление */}
+//       {supAddOpen && (
+//         <div className="barberclient__modalOverlay" onClick={() => setSupAddOpen(false)}>
+//           <div className="barberclient__modal" onClick={(e) => e.stopPropagation()}>
+//             <div className="barberclient__modalHeader">
+//               <h3 className="barberclient__modalTitle">Новый поставщик</h3>
+//               <button className="barberclient__iconBtn" onClick={() => setSupAddOpen(false)} aria-label="Закрыть"><FaTimes /></button>
+//             </div>
+
+//             {supAddErr && <div className="barberclient__alert">{supAddErr}</div>}
+
+//             <div className="barberclient__form">
+//               <div className="barberclient__formGrid">
+//                 <div className="barberclient__field">
+//                   <label className="barberclient__label">ФИО <span className="barberclient__req">*</span></label>
+//                   <input type="text" className="barberclient__input" value={supAddFullName} onChange={(e) => setSupAddFullName(e.target.value)} placeholder="Иванов Иван" autoFocus />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label className="barberclient__label">Телефон <span className="barberclient__req">*</span></label>
+//                   <input type="text" className="barberclient__input" value={supAddPhone} onChange={(e) => setSupAddPhone(e.target.value)} placeholder="+996 700 00-00-00" />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label className="barberclient__label">Email</label>
+//                   <input type="email" className="barberclient__input" value={supAddEmail} onChange={(e) => setSupAddEmail(e.target.value)} placeholder="user@mail.com" />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label className="barberclient__label">Дата</label>
+//                   <input type="date" className="barberclient__input" value={supAddDate} onChange={(e) => setSupAddDate(e.target.value)} />
+//                 </div>
+//               </div>
+
+//               <div className="barberclient__formActions">
+//                 <span className="barberclient__actionsSpacer" />
+//                 <div className="barberclient__actionsRight">
+//                   <button className="barberclient__btn barberclient__btn--primary" onClick={handleSupAddSave} disabled={!canSaveSupAdd} title={!canSaveSupAdd ? "Заполните обязательные поля" : ""}>
+//                     {supAddSaving ? "Сохранение…" : "Добавить"}
+//                   </button>
+//                   <button className="barberclient__btn barberclient__btn--secondary" onClick={() => { setSupAddOpen(false); resetSupAddForm(); }}>
+//                     Отмена
+//                   </button>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Поставщики: редактирование */}
+//       {supEditOpen && (
+//         <div className="barberclient__modalOverlay" onClick={() => setSupEditOpen(false)}>
+//           <div className="barberclient__modal" onClick={(e) => e.stopPropagation()}>
+//             <div className="barberclient__modalHeader">
+//               <h3 className="barberclient__modalTitle">Редактировать поставщика</h3>
+//               <button className="barberclient__iconBtn" onClick={() => setSupEditOpen(false)} aria-label="Закрыть"><FaTimes /></button>
+//             </div>
+
+//             {supEditErr && <div className="barberclient__alert">{supEditErr}</div>}
+
+//             <div className="barberclient__form">
+//               <div className="barberclient__formGrid">
+//                 <div className="barberclient__field">
+//                   <label className="barberclient__label">ФИО <span className="barberclient__req">*</span></label>
+//                   <input type="text" className="barberclient__input" value={supEditFullName} onChange={(e) => setSupEditFullName(e.target.value)} placeholder="Иванов Иван" autoFocus />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label className="barberclient__label">Телефон <span className="barberclient__req">*</span></label>
+//                   <input type="text" className="barberclient__input" value={supEditPhone} onChange={(e) => setSupEditPhone(e.target.value)} placeholder="+996 700 00-00-00" />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label className="barberclient__label">Email</label>
+//                   <input type="email" className="barberclient__input" value={supEditEmail} onChange={(e) => setSupEditEmail(e.target.value)} placeholder="user@mail.com" />
+//                 </div>
+//                 <div className="barberclient__field">
+//                   <label className="barberclient__label">Дата</label>
+//                   <input type="date" className="barberclient__input" value={supEditDate} onChange={(e) => setSupEditDate(e.target.value)} />
+//                 </div>
+//               </div>
+
+//               <div className="barberclient__formActions">
+//                 <button className="barberclient__btn barberclient__btn--danger" onClick={() => handleSupDelete(supCurrent)} disabled={supDeleting || supEditSaving} title="Удалить поставщика" type="button">
+//                   <FaTrash /> <span className="barberclient__btn-label">{supDeleting ? "Удаление..." : "Удалить"}</span>
+//                 </button>
+//                 <div className="barberclient__actionsRight">
+//                   <button className="barberclient__btn barberclient__btn--secondary" onClick={() => setSupEditOpen(false)} disabled={supEditSaving || supDeleting} type="button">
+//                     Отмена
+//                   </button>
+//                   <button className="barberclient__btn barberclient__btn--primary" onClick={handleSupEditSave} disabled={!canSaveSupEdit || supDeleting} type="button">
+//                     {supEditSaving ? "Сохранение…" : "Сохранить"}
+//                   </button>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default Clients;
+
+
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../../../api"; // axios instance
+import api from "../../../../api";
 import "./Clients.scss";
 import { FaPlus, FaEdit, FaTimes, FaSearch, FaTrash } from "react-icons/fa";
 
-/* ===== Маппинг статусов ===== */
-const UI_TO_API_STATUS = {
-  Активен: "active",
-  Неактивен: "inactive",
-  VIP: "vip",
-  "В черном списке": "blacklist",
-};
-const API_TO_UI_STATUS = {
-  active: "Активен",
-  inactive: "Неактивен",
-  vip: "VIP",
-  blacklist: "В черном списке",
-};
+/* ===== Статусы ===== */
+const UI_TO_API_STATUS = { Активен: "active", Неактивен: "inactive", VIP: "vip", "В черном списке": "blacklist" };
+const API_TO_UI_STATUS = { active: "Активен", inactive: "Неактивен", vip: "VIP", blacklist: "В черном списке" };
 const STATUS_OPTIONS_UI = Object.keys(UI_TO_API_STATUS);
-
-/* ===== Статусы записей (история) ===== */
-const APPT_STATUS_LABELS = {
-  booked: "Забронировано",
-  confirmed: "Подтверждено",
-  completed: "Завершено",
-  canceled: "Отменено",
-  no_show: "Не пришёл",
-};
 
 /* ===== Утилиты ===== */
 const pad = (n) => String(n).padStart(2, "0");
-const dateISO = (iso) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-const timeISO = (iso) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-const getInitials = (fullName = "") =>
-  fullName.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() || "").join("");
-
+const dateISO = (iso) => { if (!iso) return ""; const d = new Date(iso); if (Number.isNaN(d.getTime())) return ""; return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const timeISO = (iso) => { if (!iso) return ""; const d = new Date(iso); if (Number.isNaN(d.getTime())) return ""; return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const getInitials = (fullName = "") => fullName.trim().split(/\s+/).slice(0,2).map(p=>p[0]?.toUpperCase()||"").join("");
 const listFrom = (res) => res?.data?.results || res?.data || [];
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => new Date().toISOString().slice(0,10);
 
-function msgFromError(e, fallback) {
-  const data = e?.response?.data;
-  if (!data) return fallback;
-  if (typeof data === "string") return data;
-  if (typeof data === "object") {
-    try {
-      const k = Object.keys(data)[0];
-      const v = Array.isArray(data[k]) ? data[k][0] : data[k];
-      return String(v || fallback);
-    } catch { return fallback; }
-  }
-  return fallback;
-}
-const isInvalidChoiceError = (e) => {
-  const status = e?.response?.status;
-  if (status && status !== 400) return false;
-  const raw = e?.response?.data;
-  const text = typeof raw === "string" ? raw : raw ? JSON.stringify(raw) : "";
-  const l = text.toLowerCase();
-  return (
-    l.includes("not a valid choice") ||
-    l.includes("допустимых вариантов") ||
-    l.includes("недопустим") ||
-    l.includes("выберите корректное значение") ||
-    l.includes("invalid choice")
-  );
-};
-const tabKeyFromType = (t) => {
-  if (!t) return null;
-  const v = String(t).toLowerCase();
-  if (v === "client") return "clients";
-  if (v === "suppliers") return "suppliers";
-  if (v === "implementers") return "resellers";
-  return null;
-};
-const typeLabel = (t) => {
-  const v = String(t || "").toLowerCase();
-  if (v === "client") return "Клиент";
-  if (v === "suppliers") return "Поставщик";
-  if (v === "implementers") return "Реализатор";
-  return "—";
-};
+const normalizePhone = (p) => (p || "").replace(/[^\d]/g, "");
+const isValidPhone = (p) => normalizePhone(p).length >= 10;
+
+const normalizeName = (s) => String(s||"").trim().replace(/\s+/g," ").toLowerCase();
 
 /* ================================================================================== */
 
@@ -105,9 +850,16 @@ const Clients = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState("");
 
-  // История
+  // верхний алерт внутри модалки клиента
+  const [clientAlerts, setClientAlerts] = useState([]); // массив строк
+  // подсветка полей рамкой (без текстов под полями)
+  const [formErrors, setFormErrors] = useState({});     // {fullName, phone, birthDate, status}
+
+  // ошибки экрана (вне модалок)
+  const [pageError, setPageError] = useState("");
+
+  /* ===== История ===== */
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyClient, setHistoryClient] = useState(null);
 
@@ -118,7 +870,6 @@ const Clients = () => {
       id: c.id,
       fullName: c.full_name || "",
       phone: c.phone || "",
-      email: c.email || "",
       birthDate: c.birth_date || "",
       status: API_TO_UI_STATUS[String(c.status || "").toLowerCase()] || "Активен",
       notes: c.notes || "",
@@ -127,104 +878,109 @@ const Clients = () => {
   };
 
   const fetchAllAppointments = async () => {
-    const acc = [];
-    let next = "/barbershop/appointments/";
-    while (next) {
-      const { data } = await api.get(next);
-      acc.push(...(data.results || []));
-      next = data.next;
-    }
+    const acc = []; let next = "/barbershop/appointments/";
+    while (next) { const { data } = await api.get(next); acc.push(...(data.results || [])); next = data.next; }
     setAppointments(acc);
   };
 
   const fetchAllServices = async () => {
-    const acc = [];
-    let next = "/barbershop/services/";
-    while (next) {
-      const { data } = await api.get(next);
-      acc.push(...(data.results || []));
-      next = data.next;
-    }
+    const acc = []; let next = "/barbershop/services/";
+    while (next) { const { data } = await api.get(next); acc.push(...(data.results || [])); next = data.next; }
     setServices(acc);
   };
 
   useEffect(() => {
     (async () => {
-      try {
-        setLoading(true);
-        setError("");
-        await Promise.all([fetchClients(), fetchAllAppointments(), fetchAllServices()]);
-      } catch (e) {
-        setError(e?.response?.data?.detail || "Не удалось загрузить клиентов/записи/услуги");
-      } finally { setLoading(false); }
+      try { setLoading(true); setPageError(""); await Promise.all([fetchClients(), fetchAllAppointments(), fetchAllServices()]); }
+      catch { setPageError("Не удалось загрузить данные"); }
+      finally { setLoading(false); }
     })();
   }, []);
 
   /* ===== Карты ===== */
   const apptsByClient = useMemo(() => {
     const map = new Map();
-    appointments.forEach((a) => {
-      if (!a.client) return;
-      const arr = map.get(a.client) || [];
-      arr.push(a);
-      map.set(a.client, arr);
-    });
+    appointments.forEach((a) => { if (!a.client) return; const arr = map.get(a.client) || []; arr.push(a); map.set(a.client, arr); });
     return map;
   }, [appointments]);
 
   const servicesById = useMemo(() => {
-    const map = new Map();
-    services.forEach((s) => map.set(s.id, s));
-    return map;
+    const map = new Map(); services.forEach((s)=>map.set(s.id,s)); return map;
   }, [services]);
 
   /* ===== Фильтр ===== */
   const filteredClients = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return clients;
+    const q = search.trim().toLowerCase(); if (!q) return clients;
     return clients.filter((c) => (c.fullName || "").toLowerCase().includes(q));
   }, [clients, search]);
 
   /* ===== CRUD: клиенты ===== */
-  const openModal = (client = null) => { setCurrentClient(client); setModalOpen(true); };
-  const closeModal = () => { if (!saving && !deleting) { setModalOpen(false); setCurrentClient(null); } };
+  const openModal = (client = null) => { setCurrentClient(client); setFormErrors({}); setClientAlerts([]); setModalOpen(true); };
+  const closeModal = () => { if (!saving && !deleting) { setModalOpen(false); setCurrentClient(null); setFormErrors({}); setClientAlerts([]); } };
+
+  const validateClient = (form) => {
+    const errs = {}; const alerts = [];
+    const nameNorm = normalizeName(form.fullName);
+    const phoneNorm = normalizePhone(form.phone);
+
+    if (!nameNorm) { errs.fullName = true; alerts.push("Укажите ФИО"); }
+    else {
+      const existsName = clients.some(
+        (c) => normalizeName(c.fullName) === nameNorm && (!currentClient?.id || c.id !== currentClient.id)
+      );
+      if (existsName) { errs.fullName = true; alerts.push("Клиент с таким ФИО уже существует"); }
+    }
+
+    if (!form.phone) { errs.phone = true; alerts.push("Укажите телефон"); }
+    else if (!isValidPhone(form.phone)) { errs.phone = true; alerts.push("Телефон: минимум 10 цифр"); }
+    else {
+      const existsPhone = clients.some(
+        (c) => normalizePhone(c.phone) === phoneNorm && (!currentClient?.id || c.id !== currentClient.id)
+      );
+      if (existsPhone) { errs.phone = true; alerts.push("Такой телефон уже существует"); }
+    }
+
+    if (form.birthDate) {
+      const d = new Date(form.birthDate); const now = new Date(todayStr());
+      if (Number.isNaN(d.getTime())) { errs.birthDate = true; alerts.push("Дата рождения некорректна"); }
+      else if (d > now) { errs.birthDate = true; alerts.push("Дата рождения в будущем недопустима"); }
+      else if (d.getFullYear() < 1900) { errs.birthDate = true; alerts.push("Слишком старая дата рождения"); }
+    }
+
+    if (!STATUS_OPTIONS_UI.includes(form.status)) { errs.status = true; alerts.push("Выберите статус из списка"); }
+
+    return { errs, alerts };
+  };
+
+  const focusFirstError = (errs) => {
+    const order = ["fullName", "phone", "birthDate", "status"];
+    const firstKey = order.find((k) => errs[k]);
+    if (firstKey) { const el = document.getElementById(firstKey); if (el?.focus) el.focus(); }
+  };
 
   const saveClient = async (form) => {
-    setSaving(true); setError("");
+    setSaving(true);
     try {
       const payload = {
         full_name: form.fullName,
         phone: form.phone,
-        email: form.email || null,
         birth_date: form.birthDate || null,
         status: UI_TO_API_STATUS[form.status] || "active",
         notes: form.notes || null,
         company: localStorage.getItem("company"),
       };
-      if (currentClient?.id) {
-        await api.patch(`/barbershop/clients/${currentClient.id}/`, payload);
-      } else {
-        await api.post("/barbershop/clients/", payload);
-      }
-      await fetchClients();
-      setModalOpen(false); setCurrentClient(null);
-    } catch (e) {
-      setError(e?.response?.data?.detail || "Не удалось сохранить клиента");
-    } finally { setSaving(false); }
-  };
+      if (currentClient?.id) await api.patch(`/barbershop/clients/${currentClient.id}/`, payload);
+      else await api.post("/barbershop/clients/", payload);
 
-  const deleteClient = async () => {
-    if (!currentClient?.id) return;
-    const name = currentClient.fullName || "клиента";
-    if (!window.confirm(`Удалить ${name}? Действие необратимо.`)) return;
-    setDeleting(true); setError("");
-    try {
-      await api.delete(`/barbershop/clients/${currentClient.id}/`);
       await fetchClients();
-      setModalOpen(false); setCurrentClient(null);
+      setModalOpen(false); setCurrentClient(null); setFormErrors({}); setClientAlerts([]);
     } catch (e) {
-      setError(e?.response?.data?.detail || "Не удалось удалить клиента");
-    } finally { setDeleting(false); }
+      const data = e?.response?.data; const alerts = [];
+      if (typeof data === "string") alerts.push(data);
+      else if (data && typeof data === "object") Object.values(data).forEach((v)=>alerts.push(String(Array.isArray(v)?v[0]:v)));
+      if (!alerts.length) alerts.push("Не удалось сохранить клиента");
+      setClientAlerts(["Исправьте ошибки в форме", ...alerts]);
+    } finally { setSaving(false); }
   };
 
   const handleSubmit = (e) => {
@@ -233,13 +989,21 @@ const Clients = () => {
     const form = {
       fullName: fd.get("fullName")?.toString().trim() || "",
       phone: fd.get("phone")?.toString().trim() || "",
-      email: fd.get("email")?.toString().trim() || "",
       birthDate: fd.get("birthDate")?.toString().trim() || "",
       status: fd.get("status")?.toString().trim() || "Активен",
       notes: fd.get("notes")?.toString() || "",
     };
-    if (!form.fullName || !form.phone) { setError("Обязательные поля: ФИО и Телефон"); return; }
-    saveClient(form);
+    const { errs, alerts } = validateClient(form);
+    if (alerts.length) { setFormErrors(errs); setClientAlerts(["Исправьте ошибки в форме", ...alerts]); focusFirstError(errs); return; }
+    setFormErrors({}); setClientAlerts([]); saveClient(form);
+  };
+
+  const deleteClient = async () => {
+    if (!currentClient?.id) return;
+    if (!window.confirm(`Удалить ${currentClient.fullName || "клиента"}? Действие необратимо.`)) return;
+    setDeleting(true);
+    try { await api.delete(`/barbershop/clients/${currentClient.id}/`); await fetchClients(); setModalOpen(false); }
+    finally { setDeleting(false); }
   };
 
   /* ===== История клиента ===== */
@@ -248,16 +1012,12 @@ const Clients = () => {
   const historyList = useMemo(() => {
     if (!historyClient?.id) return [];
     const list = (apptsByClient.get(historyClient.id) || []).slice();
-    return list.sort((a, b) => new Date(b.start_at) - new Date(a.start_at));
+    return list.sort((a,b)=>new Date(b.start_at)-new Date(a.start_at));
   }, [historyClient, apptsByClient]);
 
-  const fmtMoney = (v) => {
-    if (v === null || v === undefined || v === "") return "—";
-    const n = Number(v);
-    return Number.isFinite(n) ? `${n.toLocaleString("ru-RU")} сом` : String(v);
-  };
+  const fmtMoney = (v) => (v===null||v===undefined||v==="")?"—":`${Number(v).toLocaleString("ru-RU")} сом`;
 
-  /* ===== Поставщики ===== */
+  /* ===== Поставщики (как было) ===== */
   const [suppliers, setSuppliers] = useState([]);
   const [supLoading, setSupLoading] = useState(false);
   const [supError, setSupError] = useState("");
@@ -271,6 +1031,7 @@ const Clients = () => {
   const [supAddDate, setSupAddDate] = useState(todayStr());
   const [supAddSaving, setSupAddSaving] = useState(false);
   const [supAddErr, setSupAddErr] = useState("");
+  const [supAddErrors, setSupAddErrors] = useState({});
 
   const [supEditOpen, setSupEditOpen] = useState(false);
   const [supEditErr, setSupEditErr] = useState("");
@@ -281,144 +1042,94 @@ const Clients = () => {
   const [supEditPhone, setSupEditPhone] = useState("");
   const [supEditEmail, setSupEditEmail] = useState("");
   const [supEditDate, setSupEditDate] = useState(todayStr());
+  const [supEditErrors, setSupEditErrors] = useState({});
 
-  const canSaveSupAdd =
-    String(supAddFullName).trim().length >= 1 &&
-    String(supAddPhone).trim().length >= 1 &&
-    !supAddSaving;
+  const canSaveSupAdd = String(supAddFullName).trim() && String(supAddPhone).trim() && !supAddSaving;
+  const canSaveSupEdit = String(supEditFullName).trim() && String(supEditPhone).trim() && !supEditSaving;
 
-  const canSaveSupEdit =
-    String(supEditFullName).trim().length >= 1 &&
-    String(supEditPhone).trim().length >= 1 &&
-    !supEditSaving;
+  const resetSupAddForm = () => { setSupAddFullName(""); setSupAddPhone(""); setSupAddEmail(""); setSupAddDate(todayStr()); setSupAddErr(""); setSupAddErrors({}); };
 
-  const resetSupAddForm = () => {
-    setSupAddFullName(""); setSupAddPhone(""); setSupAddEmail("");
-    setSupAddDate(todayStr()); setSupAddErr("");
+  const tabKeyFromType = (t) => { const v = String(t||"").toLowerCase(); if (v==="client") return "clients"; if (v==="suppliers") return "suppliers"; if (v==="implementers") return "resellers"; return null; };
+  const typeLabel = (t) => { const v = String(t||"").toLowerCase(); if (v==="client") return "Клиент"; if (v==="suppliers") return "Поставщик"; if (v==="implementers") return "Реализатор"; return "—"; };
+
+  const isInvalidChoiceError = (e) => {
+    const raw = e?.response?.data; const text = typeof raw==="string"?raw:raw?JSON.stringify(raw):""; const l = text.toLowerCase();
+    return l.includes("not a valid choice")||l.includes("invalid choice")||l.includes("недопустим")||l.includes("выберите корректное значение");
   };
 
   const loadSuppliers = async () => {
     try {
       setSupLoading(true); setSupError("");
-      try {
-        const res = await api.get("/main/clients/", { params: { type: "suppliers" } });
-        setSuppliers(listFrom(res).filter((r) => tabKeyFromType(r?.type) === "suppliers" || !r?.type));
-        return;
-      } catch (e) { if (!isInvalidChoiceError(e)) throw e; }
-      const fallback = await api.get("/main/clients/");
-      const base = listFrom(fallback);
-      setSuppliers(base.filter((r) => tabKeyFromType(r?.type) === "suppliers"));
-    } catch (e) {
-      setSuppliers([]); setSupError("Не удалось загрузить поставщиков");
-    } finally { setSupLoading(false); }
+      try { const res = await api.get("/main/clients/", { params: { type: "suppliers" } }); setSuppliers(listFrom(res).filter(r=>tabKeyFromType(r?.type)==="suppliers"||!r?.type)); return; }
+      catch (e) { if (!isInvalidChoiceError(e)) throw e; }
+      const fallback = await api.get("/main/clients/"); const base = listFrom(fallback);
+      setSuppliers(base.filter((r)=>tabKeyFromType(r?.type)==="suppliers"));
+    } catch { setSuppliers([]); setSupError("Не удалось загрузить поставщиков"); }
+    finally { setSupLoading(false); }
   };
+  useEffect(()=>{ if (activeTab==="suppliers") loadSuppliers(); },[activeTab]);
 
-  useEffect(() => { if (activeTab === "suppliers") loadSuppliers(); }, [activeTab]);
-
-  const filteredSuppliers = useMemo(() => {
-    const base = Array.isArray(suppliers) ? suppliers : [];
-    if (!supSearch) return base;
+  const filteredSuppliers = useMemo(()=>{
+    const base = Array.isArray(suppliers)?suppliers:[]; if (!supSearch) return base;
     const s = supSearch.toLowerCase();
-    return base.filter(
-      (c) =>
-        String(c.full_name || c.fio || "").toLowerCase().includes(s) ||
-        String(c.phone || "").toLowerCase().includes(s)
-    );
-  }, [suppliers, supSearch]);
+    return base.filter(c=>String(c.full_name||c.fio||"").toLowerCase().includes(s)||String(c.phone||"").toLowerCase().includes(s));
+  },[suppliers,supSearch]);
 
   const createSupplierApi = async ({ full_name, phone, email, date }) => {
     try {
-      const payload = {
-        type: "suppliers",
-        full_name: String(full_name || "").trim(),
-        phone: String(phone || "").trim(),
-        ...(email ? { email: String(email).trim() } : {}),
-        ...(date ? { date } : {}),
-      };
-      const res = await api.post("/main/clients/", payload);
-      const data = res?.data || payload;
-      if (!data.type) data.type = "suppliers";
-      return data;
+      const payload = { type:"suppliers", full_name:String(full_name||"").trim(), phone:String(phone||"").trim(), ...(email?{email:String(email).trim()}:{}), ...(date?{date}:{}), };
+      const res = await api.post("/main/clients/", payload); const data = res?.data || payload; if (!data.type) data.type="suppliers"; return data;
     } catch (e) {
       if (!isInvalidChoiceError(e)) throw e;
-      const fallbackPayload = {
-        full_name: String(full_name || "").trim(),
-        phone: String(phone || "").trim(),
-        ...(email ? { email: String(email).trim() } : {}),
-        ...(date ? { date } : {}),
-      };
-      const res = await api.post("/main/clients/", fallbackPayload);
-      const data = res?.data || fallbackPayload;
-      return { ...data, type: data.type || "suppliers" };
+      const payload = { full_name:String(full_name||"").trim(), phone:String(phone||"").trim(), ...(email?{email:String(email).trim()}:{}), ...(date?{date}:{}), };
+      const res = await api.post("/main/clients/", payload); const data = res?.data || payload; return { ...data, type: data.type || "suppliers" };
     }
   };
-
-  const updateSupplierApi = async (id, { full_name, phone, email, date }) => {
-    try {
-      const payload = {
-        type: "suppliers",
-        full_name: String(full_name || "").trim(),
-        phone: String(phone || "").trim(),
-        ...(email ? { email: String(email).trim() } : { email: null }),
-        ...(date ? { date } : { date: null }),
-      };
-      await api.patch(`/main/clients/${id}/`, payload);
-    } catch (e) {
+  const updateSupplierApi = async (id, obj) => {
+    try { await api.patch(`/main/clients/${id}/`, { type:"suppliers", full_name:obj.full_name, phone:obj.phone, ...(obj.email?{email:obj.email}:{email:null}), ...(obj.date?{date:obj.date}:{date:null}) }); }
+    catch (e) {
       if (!isInvalidChoiceError(e)) throw e;
-      const payload = {
-        full_name: String(full_name || "").trim(),
-        phone: String(phone || "").trim(),
-        ...(email ? { email: String(email).trim() } : { email: null }),
-        ...(date ? { date } : { date: null }),
-      };
-      await api.patch(`/main/clients/${id}/`, payload);
+      await api.patch(`/main/clients/${id}/`, { full_name:obj.full_name, phone:obj.phone, ...(obj.email?{email:obj.email}:{email:null}), ...(obj.date?{date:obj.date}:{date:null}) });
     }
   };
-
   const deleteSupplierApi = async (id) => { await api.delete(`/main/clients/${id}/`); };
+
+  const validateSupplier = ({ full_name, phone, email, date }, isEdit=false, currentId=null) => {
+    const errs = {}; const name = String(full_name||"").trim(); const ph = String(phone||"").trim();
+    if (!name) errs.full_name = "Укажите ФИО";
+    if (!ph) errs.phone = "Укажите телефон"; else if (!isValidPhone(ph)) errs.phone = "Телефон должен содержать ≥10 цифр";
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) errs.email = "Некорректный email";
+    if (date) { const d = new Date(date); const now = new Date(todayStr()); if (Number.isNaN(d.getTime())) errs.date="Некорректная дата"; else if (d>now) errs.date="Дата в будущем недопустима"; }
+    return errs;
+  };
 
   const handleSupAddSave = async () => {
     if (!canSaveSupAdd) return;
+    const errs = validateSupplier({ full_name: supAddFullName, phone: supAddPhone, email: supAddEmail, date: supAddDate });
+    if (Object.keys(errs).length) { setSupAddErrors(errs); setSupAddErr("Исправьте ошибки в форме"); return; }
     try {
-      setSupAddSaving(true); setSupAddErr("");
-      const created = await createSupplierApi({
-        full_name: supAddFullName, phone: supAddPhone, email: supAddEmail, date: supAddDate,
-      });
-      setSuppliers((prev) => [created, ...(Array.isArray(prev) ? prev : [])]);
-      setSupAddOpen(false); resetSupAddForm();
-    } catch (e) { setSupAddErr(msgFromError(e, "Не удалось добавить поставщика")); }
+      setSupAddSaving(true); setSupAddErr(""); setSupAddErrors({});
+      const created = await createSupplierApi({ full_name:supAddFullName, phone:supAddPhone, email:supAddEmail, date:supAddDate });
+      setSuppliers((prev)=>[created,...(Array.isArray(prev)?prev:[])]); setSupAddOpen(false); resetSupAddForm();
+    } catch { setSupAddErr("Не удалось добавить поставщика"); }
     finally { setSupAddSaving(false); }
   };
 
-  const openSupEdit = (row) => {
-    setSupCurrent(row || null);
-    setSupEditFullName(row?.full_name || row?.fio || "");
-    setSupEditPhone(row?.phone || "");
-    setSupEditEmail(row?.email || "");
-    setSupEditDate(row?.date || todayStr());
-    setSupEditErr(""); setSupEditOpen(true);
-  };
+  const openSupEdit = (row) => { setSupCurrent(row||null); setSupEditFullName(row?.full_name||row?.fio||""); setSupEditPhone(row?.phone||""); setSupEditEmail(row?.email||""); setSupEditDate(row?.date||todayStr()); setSupEditErr(""); setSupEditErrors({}); setSupEditOpen(true); };
 
   const handleSupEditSave = async () => {
     if (!supCurrent?.id || !canSaveSupEdit) return;
-    try {
-      setSupEditSaving(true); setSupEditErr("");
-      await updateSupplierApi(supCurrent.id, {
-        full_name: supEditFullName, phone: supEditPhone, email: supEditEmail, date: supEditDate,
-      });
-      await loadSuppliers(); setSupEditOpen(false);
-    } catch (e) { setSupEditErr(msgFromError(e, "Не удалось сохранить изменения")); }
+    const errs = validateSupplier({ full_name: supEditFullName, phone: supEditPhone, email: supEditEmail, date: supEditDate }, true, supCurrent.id);
+    if (Object.keys(errs).length) { setSupEditErrors(errs); setSupEditErr("Исправьте ошибки в форме"); return; }
+    try { setSupEditSaving(true); setSupEditErr(""); setSupEditErrors({}); await updateSupplierApi(supCurrent.id, { full_name:supEditFullName, phone:supEditPhone, email:supEditEmail, date:supEditDate }); await loadSuppliers(); setSupEditOpen(false); }
+    catch { setSupEditErr("Не удалось сохранить изменения"); }
     finally { setSupEditSaving(false); }
   };
 
   const handleSupDelete = async (row) => {
     if (!row?.id) return;
     if (!window.confirm(`Удалить поставщика «${row.full_name || row.fio || "—"}»? Действие необратимо.`)) return;
-    try {
-      setSupDeleting(true);
-      await deleteSupplierApi(row.id);
-      setSuppliers((prev) => (Array.isArray(prev) ? prev.filter((x) => x.id !== row.id) : []));
-    } catch (e) { alert(msgFromError(e, "Не удалось удалить поставщика")); }
+    try { setSupDeleting(true); await deleteSupplierApi(row.id); setSuppliers((prev)=> (Array.isArray(prev)?prev.filter(x=>x.id!==row.id):[])); }
     finally { setSupDeleting(false); }
   };
 
@@ -429,104 +1140,55 @@ const Clients = () => {
     <div className="barberclient">
       {/* Табы */}
       <nav className="barberclient__tabs" aria-label="Секции">
-        <button
-          type="button"
-          onClick={() => setActiveTab("clients")}
-          className={`barberclient__tab ${activeTab === "clients" ? "barberclient__tab--active" : ""}`}
-        >
-          Клиенты
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("suppliers")}
-          className={`barberclient__tab ${activeTab === "suppliers" ? "barberclient__tab--active" : ""}`}
-        >
-          Поставщики
-        </button>
+        <button type="button" onClick={()=>setActiveTab("clients")} className={`barberclient__tab ${activeTab==="clients"?"barberclient__tab--active":""}`}>Клиенты</button>
+        <button type="button" onClick={()=>setActiveTab("suppliers")} className={`barberclient__tab ${activeTab==="suppliers"?"barberclient__tab--active":""}`}>Поставщики</button>
       </nav>
 
       {/* Header */}
-      {activeTab === "clients" ? (
+      {activeTab==="clients" ? (
         <div className="barberclient__header">
           <div>
             <h2 className="barberclient__title">Клиенты</h2>
-            <span className="barberclient__subtitle">
-              {loading ? "Загрузка..." : `${clients.length} записей`}
-            </span>
+            <span className="barberclient__subtitle">{loading ? "Загрузка..." : `${clients.length} записей`}</span>
           </div>
           <div className="barberclient__actions">
             <div className="barberclient__search">
               <FaSearch className="barberclient__search-icon" />
-              <input
-                className="barberclient__search-input"
-                type="text"
-                placeholder="Поиск по ФИО"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <input className="barberclient__search-input" type="text" placeholder="Поиск по ФИО" value={search} onChange={(e)=>setSearch(e.target.value)} />
             </div>
-            <button className="barberclient__btn barberclient__btn--primary" onClick={() => openModal()}>
-              <FaPlus /> <span className="barberclient__btn-label">Добавить</span>
-            </button>
+            <button className="barberclient__btn barberclient__btn--primary" onClick={()=>openModal()}><FaPlus /><span className="barberclient__btn-label">Добавить</span></button>
           </div>
         </div>
       ) : (
         <div className="barberclient__header">
           <div>
             <h2 className="barberclient__title">{supTitle}</h2>
-            <span className="barberclient__subtitle">
-              {supLoading ? "Загрузка..." : `${filteredSuppliers.length}/${suppliers.length} шт.`}
-            </span>
+            <span className="barberclient__subtitle">{supLoading ? "Загрузка..." : `${filteredSuppliers.length}/${suppliers.length} шт.`}</span>
           </div>
           <div className="barberclient__actions">
             <div className="barberclient__search">
               <FaSearch className="barberclient__search-icon" />
-              <input
-                className="barberclient__search-input"
-                type="text"
-                placeholder="Поиск по ФИО или телефону"
-                value={supSearch}
-                onChange={(e) => setSupSearch(e.target.value)}
-              />
+              <input className="barberclient__search-input" type="text" placeholder="Поиск по ФИО или телефону" value={supSearch} onChange={(e)=>setSupSearch(e.target.value)} />
             </div>
-            <input
-              type="date"
-              className="barberclient__date-input"
-              value={supDate}
-              onChange={(e) => setSupDate(e.target.value)}
-            />
-            <button
-              className="barberclient__btn barberclient__btn--secondary barberclient__btn--sm"
-              onClick={loadSuppliers}
-              disabled={supLoading}
-            >
-              Обновить
-            </button>
-            <button
-              className="barberclient__btn barberclient__btn--primary"
-              onClick={() => setSupAddOpen(true)}
-            >
-              <FaPlus /> <span className="barberclient__btn-label">Новый поставщик</span>
-            </button>
+            <input type="date" className="barberclient__date-input" value={supDate} onChange={(e)=>setSupDate(e.target.value)} />
+            <button className="barberclient__btn barberclient__btn--secondary barberclient__btn--sm" onClick={loadSuppliers} disabled={supLoading}>Обновить</button>
+            <button className="barberclient__btn barberclient__btn--primary" onClick={()=>setSupAddOpen(true)}><FaPlus /><span className="barberclient__btn-label">Новый поставщик</span></button>
           </div>
         </div>
       )}
 
-      {/* Ошибки */}
-      {activeTab === "clients" && error && <div className="barberclient__alert">{error}</div>}
-      {activeTab === "suppliers" && supError && <div className="barberclient__alert">{supError}</div>}
+      {/* Ошибки экрана */}
+      {activeTab==="clients" && pageError && <div className="barberclient__alert">{pageError}</div>}
+      {activeTab==="suppliers" && supError && <div className="barberclient__alert">{supError}</div>}
 
       {/* Контент */}
-      {activeTab === "clients" ? (
+      {activeTab==="clients" ? (
         loading ? (
-          <div className="barberclient__skeleton-list">
-            {[...Array(4)].map((_, i) => <div key={i} className="barberclient__skeleton-card" />)}
-          </div>
+          <div className="barberclient__skeleton-list">{[...Array(4)].map((_,i)=><div key={i} className="barberclient__skeleton-card" />)}</div>
         ) : (
           <div className="barberclient__list">
             {filteredClients.map((client) => {
               const appts = apptsByClient.get(client.id) || [];
-              const total = appts.length;
               return (
                 <article key={client.id} className="barberclient__card">
                   <div className="barberclient__card-left">
@@ -534,30 +1196,16 @@ const Clients = () => {
                     <div className="barberclient__info">
                       <h4 className="barberclient__name">{client.fullName}</h4>
                       <div className="barberclient__meta">
-                        <span className={`barberclient__badge barberclient__badge--${UI_TO_API_STATUS[client.status] || "active"}`}>{client.status}</span>
+                        <span className={`barberclient__badge barberclient__badge--${UI_TO_API_STATUS[client.status]||"active"}`}>{client.status}</span>
                         <span>{client.phone || "—"}</span>
                         <span>•</span>
-                        <span>Записей: {total}</span>
+                        <span>Записей: {appts.length}</span>
                       </div>
                     </div>
                   </div>
-
                   <div className="barberclient__card-actions">
-                    <button
-                      className="barberclient__btn barberclient__btn--secondary barberclient__btn--icon"
-                      onClick={() => openHistory(client)}
-                      aria-label="История"
-                    >
-                      <FaSearch />
-                    </button>
-                    <button
-                      className="barberclient__btn barberclient__btn--secondary barberclient__btn--icon"
-                      onClick={() => openModal(client)}
-                      title="Редактировать"
-                      aria-label="Редактировать"
-                    >
-                      <FaEdit />
-                    </button>
+                    <button className="barberclient__btn barberclient__btn--secondary barberclient__btn--icon" onClick={()=>openHistory(client)} aria-label="История"><FaSearch /></button>
+                    <button className="barberclient__btn barberclient__btn--secondary barberclient__btn--icon" onClick={()=>openModal(client)} aria-label="Редактировать"><FaEdit /></button>
                   </div>
                 </article>
               );
@@ -565,42 +1213,24 @@ const Clients = () => {
           </div>
         )
       ) : (
-        /* Поставщики */
         <div className="barberclient__table-container">
           <div className="barberclient__table">
-            <div className="barberclient__thead">
-              <span>ФИО</span><span>Телефон</span><span>Тип</span><span>Дата</span><span>Действия</span>
-            </div>
+            <div className="barberclient__thead"><span>ФИО</span><span>Телефон</span><span>Тип</span><span>Дата</span><span>Действия</span></div>
             <div className="barberclient__tbody">
               {supLoading && <div className="barberclient__loading-row">Загрузка…</div>}
-              {!supLoading && filteredSuppliers.map((c) => (
+              {!supLoading && filteredSuppliers.map((c)=>(
                 <div className="barberclient__row" key={c.id}>
-                  <span className="barberclient__ellipsis" title={c.full_name || c.fio || "—"}>
-                    {c.full_name || c.fio || "—"}
-                  </span>
+                  <span className="barberclient__ellipsis" title={c.full_name||c.fio||"—"}>{c.full_name||c.fio||"—"}</span>
                   <span>{c.phone || "—"}</span>
                   <span>{typeLabel(c.type)}</span>
                   <span>{c.date || "—"}</span>
                   <span className="barberclient__row-actions">
-                    <button
-                      className="barberclient__btn barberclient__btn--secondary barberclient__btn--sm"
-                      onClick={() => openSupEdit(c)}
-                      title="Редактировать"
-                    >
-                      <FaEdit /> <span className="barberclient__btn-label">Ред.</span>
-                    </button>
-                    <button
-                      className="barberclient__btn barberclient__btn--danger barberclient__btn--sm"
-                      onClick={() => handleSupDelete(c)}
-                      disabled={supDeleting}
-                      title="Удалить"
-                    >
-                      <FaTrash /> <span className="barberclient__btn-label">{supDeleting ? "…" : "Удалить"}</span>
-                    </button>
+                    <button className="barberclient__btn barberclient__btn--secondary barberclient__btn--sm" onClick={()=>openSupEdit(c)} title="Редактировать"><FaEdit /><span className="barberclient__btn-label">Ред.</span></button>
+                    <button className="barberclient__btn barberclient__btn--danger barberclient__btn--sm" onClick={()=>handleSupDelete(c)} disabled={supDeleting} title="Удалить"><FaTrash /><span className="barberclient__btn-label">{supDeleting?"…":"Удалить"}</span></button>
                   </span>
                 </div>
               ))}
-              {!supLoading && filteredSuppliers.length === 0 && <div className="barberclient__empty">Ничего не найдено</div>}
+              {!supLoading && filteredSuppliers.length===0 && <div className="barberclient__empty">Ничего не найдено</div>}
             </div>
           </div>
         </div>
@@ -609,54 +1239,61 @@ const Clients = () => {
       {/* Модалка клиента */}
       {modalOpen && (
         <div className="barberclient__modalOverlay" onClick={closeModal}>
-          <div className="barberclient__modal" onClick={(e) => e.stopPropagation()}>
+          <div className="barberclient__modal" onClick={(e)=>e.stopPropagation()}>
             <div className="barberclient__modalHeader">
               <h3 className="barberclient__modalTitle">{currentClient ? "Редактировать клиента" : "Новый клиент"}</h3>
               <button className="barberclient__iconBtn" onClick={closeModal} aria-label="Закрыть"><FaTimes /></button>
             </div>
 
-            <form className="barberclient__form" onSubmit={handleSubmit}>
+            {/* Красный алерт только сверху */}
+            {clientAlerts.length>0 && (
+              <div className="barberclient__alert">
+                {clientAlerts.length===1 ? clientAlerts[0] : (
+                  <ul className="barberclient__alert-list">{clientAlerts.map((m,i)=><li key={i}>{m}</li>)}</ul>
+                )}
+            </div>
+            )}
+
+            <form className="barberclient__form" onSubmit={handleSubmit} noValidate>
               <div className="barberclient__formGrid">
-                <div className="barberclient__field">
+                <div className={`barberclient__field ${formErrors.fullName?"barberclient__field--invalid":""}`}>
                   <label htmlFor="fullName" className="barberclient__label">ФИО <span className="barberclient__req">*</span></label>
-                  <input id="fullName" name="fullName" className="barberclient__input" defaultValue={currentClient?.fullName || ""} placeholder="Фамилия Имя Отчество" required />
+                  <input id="fullName" name="fullName" className={`barberclient__input ${formErrors.fullName?"barberclient__input--invalid":""}`} defaultValue={currentClient?.fullName||""} placeholder="Фамилия Имя Отчество" />
                 </div>
-                <div className="barberclient__field">
+
+                <div className={`barberclient__field ${formErrors.phone?"barberclient__field--invalid":""}`}>
                   <label htmlFor="phone" className="barberclient__label">Телефон <span className="barberclient__req">*</span></label>
-                  <input id="phone" name="phone" className="barberclient__input" defaultValue={currentClient?.phone || ""} placeholder="+996 ..." inputMode="tel" required />
+                  <input id="phone" name="phone" className={`barberclient__input ${formErrors.phone?"barberclient__input--invalid":""}`} defaultValue={currentClient?.phone||""} placeholder="+996 ..." inputMode="tel" />
                 </div>
-                <div className="barberclient__field">
-                  <label htmlFor="email" className="barberclient__label">Email</label>
-                  <input id="email" name="email" className="barberclient__input" defaultValue={currentClient?.email || ""} placeholder="user@mail.com" type="email" />
-                </div>
-                <div className="barberclient__field">
+
+                <div className={`barberclient__field ${formErrors.birthDate?"barberclient__field--invalid":""}`}>
                   <label htmlFor="birthDate" className="barberclient__label">Дата рождения</label>
-                  <input id="birthDate" name="birthDate" className="barberclient__input" defaultValue={currentClient?.birthDate || ""} type="date" />
+                  <input id="birthDate" name="birthDate" className={`barberclient__input ${formErrors.birthDate?"barberclient__input--invalid":""}`} defaultValue={currentClient?.birthDate||""} type="date" />
                 </div>
-                <div className="barberclient__field">
+
+                <div className={`barberclient__field ${formErrors.status?"barberclient__field--invalid":""}`}>
                   <label htmlFor="status" className="barberclient__label">Статус</label>
-                  <select id="status" name="status" className="barberclient__input" defaultValue={currentClient?.status || "Активен"}>
-                    {STATUS_OPTIONS_UI.map((s) => <option key={s} value={s}>{s}</option>)}
+                  <select id="status" name="status" className={`barberclient__input ${formErrors.status?"barberclient__input--invalid":""}`} defaultValue={currentClient?.status||"Активен"}>
+                    {STATUS_OPTIONS_UI.map((s)=><option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
+
                 <div className="barberclient__field barberclient__field--full">
                   <label htmlFor="notes" className="barberclient__label">Заметки</label>
-                  <textarea id="notes" name="notes" className="barberclient__textarea" defaultValue={currentClient?.notes || ""} placeholder="Комментарий, пожелания..." />
+                  <textarea id="notes" name="notes" className="barberclient__textarea" defaultValue={currentClient?.notes||""} placeholder="Комментарий, пожелания..." />
                 </div>
               </div>
 
               <div className="barberclient__formActions">
                 {currentClient?.id ? (
-                  <button type="button" className="barberclient__btn barberclient__btn--danger" onClick={deleteClient} disabled={saving || deleting} title="Удалить клиента">
-                    <FaTrash /> <span className="barberclient__btn-label">{deleting ? "Удаление..." : "Удалить"}</span>
+                  <button type="button" className="barberclient__btn barberclient__btn--danger" onClick={deleteClient} disabled={saving||deleting} title="Удалить клиента">
+                    <FaTrash /><span className="barberclient__btn-label">{deleting?"Удаление...":"Удалить"}</span>
                   </button>
                 ) : (<span className="barberclient__actionsSpacer" />)}
 
                 <div className="barberclient__actionsRight">
-                  <button type="button" className="barberclient__btn barberclient__btn--secondary" onClick={closeModal} disabled={saving || deleting}>Отмена</button>
-                  <button type="submit" disabled={saving || deleting} className="barberclient__btn barberclient__btn--primary">
-                    {saving ? "Сохранение..." : "Сохранить"}
-                  </button>
+                  <button type="button" className="barberclient__btn barberclient__btn--secondary" onClick={closeModal} disabled={saving||deleting}>Отмена</button>
+                  <button type="submit" disabled={saving||deleting} className="barberclient__btn barberclient__btn--primary">{saving?"Сохранение...":"Сохранить"}</button>
                 </div>
               </div>
             </form>
@@ -667,32 +1304,29 @@ const Clients = () => {
       {/* История клиента */}
       {historyOpen && (
         <div className="barberclient__modalOverlay" onClick={closeHistory}>
-          <div className="barberclient__modal" onClick={(e) => e.stopPropagation()}>
+          <div className="barberclient__modal" onClick={(e)=>e.stopPropagation()}>
             <div className="barberclient__modalHeader">
               <h3 className="barberclient__modalTitle">История — {historyClient?.fullName}</h3>
               <button className="barberclient__iconBtn" onClick={closeHistory} aria-label="Закрыть"><FaTimes /></button>
             </div>
 
-            <div className="barberclient__form" style={{ marginTop: 0 }}>
-              {historyList.length === 0 ? (
+            <div className="barberclient__form" style={{marginTop:0}}>
+              {historyList.length===0 ? (
                 <div className="barberclient__meta">Записей нет</div>
               ) : (
                 <div className="barberclient__history">
-                  {historyList.map((a) => {
-                    const date = dateISO(a.start_at);
-                    const time = timeISO(a.start_at);
+                  {historyList.map((a)=> {
+                    const date = dateISO(a.start_at); const time = timeISO(a.start_at);
                     const barber = a.barber_name || (a.barber ? `ID ${a.barber}` : "—");
                     const svcObj = servicesById.get(a.service);
                     const service = a.service_name || svcObj?.service_name || svcObj?.name || "—";
                     const priceVal = a.service_price ?? a.price ?? svcObj?.price;
-                    const st = APPT_STATUS_LABELS[a.status] || a.status || "—";
                     return (
                       <div key={a.id} className="barberclient__history-card">
                         <div className="barberclient__history-top">
                           <span className="barberclient__badge">{date} • {time}</span>
-                          <span className="barberclient__badge barberclient__badge--info">{st}</span>
                         </div>
-                        <div className="barberclient__meta" style={{ gap: 12 }}>
+                        <div className="barberclient__meta" style={{gap:12}}>
                           <span>Мастер: {barber}</span><span>•</span>
                           <span>Услуга: {service}</span><span>•</span>
                           <span>Цена: {fmtMoney(priceVal)}</span>
@@ -712,44 +1346,40 @@ const Clients = () => {
 
       {/* Поставщики: добавление */}
       {supAddOpen && (
-        <div className="barberclient__modalOverlay" onClick={() => setSupAddOpen(false)}>
-          <div className="barberclient__modal" onClick={(e) => e.stopPropagation()}>
+        <div className="barberclient__modalOverlay" onClick={()=>setSupAddOpen(false)}>
+          <div className="barberclient__modal" onClick={(e)=>e.stopPropagation()}>
             <div className="barberclient__modalHeader">
               <h3 className="barberclient__modalTitle">Новый поставщик</h3>
-              <button className="barberclient__iconBtn" onClick={() => setSupAddOpen(false)} aria-label="Закрыть"><FaTimes /></button>
+              <button className="barberclient__iconBtn" onClick={()=>setSupAddOpen(false)} aria-label="Закрыть"><FaTimes /></button>
             </div>
 
             {supAddErr && <div className="barberclient__alert">{supAddErr}</div>}
 
             <div className="barberclient__form">
               <div className="barberclient__formGrid">
-                <div className="barberclient__field">
+                <div className={`barberclient__field ${supAddErrors.full_name?"barberclient__field--invalid":""}`}>
                   <label className="barberclient__label">ФИО <span className="barberclient__req">*</span></label>
-                  <input type="text" className="barberclient__input" value={supAddFullName} onChange={(e) => setSupAddFullName(e.target.value)} placeholder="Иванов Иван" autoFocus />
+                  <input type="text" className={`barberclient__input ${supAddErrors.full_name?"barberclient__input--invalid":""}`} value={supAddFullName} onChange={(e)=>setSupAddFullName(e.target.value)} placeholder="Иванов Иван" autoFocus />
                 </div>
-                <div className="barberclient__field">
+                <div className={`barberclient__field ${supAddErrors.phone?"barberclient__field--invalid":""}`}>
                   <label className="barberclient__label">Телефон <span className="barberclient__req">*</span></label>
-                  <input type="text" className="barberclient__input" value={supAddPhone} onChange={(e) => setSupAddPhone(e.target.value)} placeholder="+996 700 00-00-00" />
+                  <input type="text" className={`barberclient__input ${supAddErrors.phone?"barberclient__input--invalid":""}`} value={supAddPhone} onChange={(e)=>setSupAddPhone(e.target.value)} placeholder="+996 700 00-00-00" />
                 </div>
-                <div className="barberclient__field">
+                <div className={`barberclient__field ${supAddErrors.email?"barberclient__field--invalid":""}`}>
                   <label className="barberclient__label">Email</label>
-                  <input type="email" className="barberclient__input" value={supAddEmail} onChange={(e) => setSupAddEmail(e.target.value)} placeholder="user@mail.com" />
+                  <input type="email" className={`barberclient__input ${supAddErrors.email?"barberclient__input--invalid":""}`} value={supAddEmail} onChange={(e)=>setSupAddEmail(e.target.value)} placeholder="user@mail.com" />
                 </div>
-                <div className="barberclient__field">
+                <div className={`barberclient__field ${supAddErrors.date?"barberclient__field--invalid":""}`}>
                   <label className="barberclient__label">Дата</label>
-                  <input type="date" className="barberclient__input" value={supAddDate} onChange={(e) => setSupAddDate(e.target.value)} />
+                  <input type="date" className={`barberclient__input ${supAddErrors.date?"barberclient__input--invalid":""}`} value={supAddDate} onChange={(e)=>setSupAddDate(e.target.value)} />
                 </div>
               </div>
 
               <div className="barberclient__formActions">
                 <span className="barberclient__actionsSpacer" />
                 <div className="barberclient__actionsRight">
-                  <button className="barberclient__btn barberclient__btn--primary" onClick={handleSupAddSave} disabled={!canSaveSupAdd} title={!canSaveSupAdd ? "Заполните обязательные поля" : ""}>
-                    {supAddSaving ? "Сохранение…" : "Добавить"}
-                  </button>
-                  <button className="barberclient__btn barberclient__btn--secondary" onClick={() => { setSupAddOpen(false); resetSupAddForm(); }}>
-                    Отмена
-                  </button>
+                  <button className="barberclient__btn barberclient__btn--primary" onClick={handleSupAddSave} disabled={!canSaveSupAdd}>{supAddSaving?"Сохранение…":"Добавить"}</button>
+                  <button className="barberclient__btn barberclient__btn--secondary" onClick={()=>{ setSupAddOpen(false); resetSupAddForm(); }}>Отмена</button>
                 </div>
               </div>
             </div>
@@ -759,46 +1389,40 @@ const Clients = () => {
 
       {/* Поставщики: редактирование */}
       {supEditOpen && (
-        <div className="barberclient__modalOverlay" onClick={() => setSupEditOpen(false)}>
-          <div className="barberclient__modal" onClick={(e) => e.stopPropagation()}>
+        <div className="barberclient__modalOverlay" onClick={()=>setSupEditOpen(false)}>
+          <div className="barberclient__modal" onClick={(e)=>e.stopPropagation()}>
             <div className="barberclient__modalHeader">
               <h3 className="barberclient__modalTitle">Редактировать поставщика</h3>
-              <button className="barberclient__iconBtn" onClick={() => setSupEditOpen(false)} aria-label="Закрыть"><FaTimes /></button>
+              <button className="barberclient__iconBtn" onClick={()=>setSupEditOpen(false)} aria-label="Закрыть"><FaTimes /></button>
             </div>
 
             {supEditErr && <div className="barberclient__alert">{supEditErr}</div>}
 
             <div className="barberclient__form">
               <div className="barberclient__formGrid">
-                <div className="barberclient__field">
+                <div className={`barberclient__field ${supEditErrors.full_name?"barberclient__field--invalid":""}`}>
                   <label className="barberclient__label">ФИО <span className="barberclient__req">*</span></label>
-                  <input type="text" className="barberclient__input" value={supEditFullName} onChange={(e) => setSupEditFullName(e.target.value)} placeholder="Иванов Иван" autoFocus />
+                  <input type="text" className={`barberclient__input ${supEditErrors.full_name?"barberclient__input--invalid":""}`} value={supEditFullName} onChange={(e)=>setSupEditFullName(e.target.value)} placeholder="Иванов Иван" autoFocus />
                 </div>
-                <div className="barberclient__field">
+                <div className={`barberclient__field ${supEditErrors.phone?"barberclient__field--invalid":""}`}>
                   <label className="barberclient__label">Телефон <span className="barberclient__req">*</span></label>
-                  <input type="text" className="barberclient__input" value={supEditPhone} onChange={(e) => setSupEditPhone(e.target.value)} placeholder="+996 700 00-00-00" />
+                  <input type="text" className={`barberclient__input ${supEditErrors.phone?"barberclient__input--invalid":""}`} value={supEditPhone} onChange={(e)=>setSupEditPhone(e.target.value)} placeholder="+996 700 00-00-00" />
                 </div>
-                <div className="barberclient__field">
+                <div className={`barberclient__field ${supEditErrors.email?"barberclient__field--invalid":""}`}>
                   <label className="barberclient__label">Email</label>
-                  <input type="email" className="barberclient__input" value={supEditEmail} onChange={(e) => setSupEditEmail(e.target.value)} placeholder="user@mail.com" />
+                  <input type="email" className={`barberclient__input ${supEditErrors.email?"barberclient__input--invalid":""}`} value={supEditEmail} onChange={(e)=>setSupEditEmail(e.target.value)} placeholder="user@mail.com" />
                 </div>
-                <div className="barberclient__field">
+                <div className={`barberclient__field ${supEditErrors.date?"barberclient__field--invalid":""}`}>
                   <label className="barberclient__label">Дата</label>
-                  <input type="date" className="barberclient__input" value={supEditDate} onChange={(e) => setSupEditDate(e.target.value)} />
+                  <input type="date" className={`barberclient__input ${supEditErrors.date?"barberclient__input--invalid":""}`} value={supEditDate} onChange={(e)=>setSupEditDate(e.target.value)} />
                 </div>
               </div>
 
               <div className="barberclient__formActions">
-                <button className="barberclient__btn barberclient__btn--danger" onClick={() => handleSupDelete(supCurrent)} disabled={supDeleting || supEditSaving} title="Удалить поставщика" type="button">
-                  <FaTrash /> <span className="barberclient__btn-label">{supDeleting ? "Удаление..." : "Удалить"}</span>
-                </button>
+                <button className="barberclient__btn barberclient__btn--danger" onClick={()=>handleSupDelete(supCurrent)} disabled={supDeleting||supEditSaving} type="button"><FaTrash /><span className="barberclient__btn-label">{supDeleting?"Удаление...":"Удалить"}</span></button>
                 <div className="barberclient__actionsRight">
-                  <button className="barberclient__btn barberclient__btn--secondary" onClick={() => setSupEditOpen(false)} disabled={supEditSaving || supDeleting} type="button">
-                    Отмена
-                  </button>
-                  <button className="barberclient__btn barberclient__btn--primary" onClick={handleSupEditSave} disabled={!canSaveSupEdit || supDeleting} type="button">
-                    {supEditSaving ? "Сохранение…" : "Сохранить"}
-                  </button>
+                  <button className="barberclient__btn barberclient__btn--secondary" onClick={()=>setSupEditOpen(false)} disabled={supEditSaving||supDeleting} type="button">Отмена</button>
+                  <button className="barberclient__btn barberclient__btn--primary" onClick={handleSupEditSave} disabled={!canSaveSupEdit||supDeleting} type="button">{supEditSaving?"Сохранение…":"Сохранить"}</button>
                 </div>
               </div>
             </div>

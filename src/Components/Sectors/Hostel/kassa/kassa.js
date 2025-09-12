@@ -1,4 +1,3 @@
-// src/components/Kassa/Kassa.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Routes,
@@ -12,6 +11,9 @@ import api from "../../../../api";
 import Reports from "../../cafe/Reports/Reports";
 import { getAll as getAllClients } from "../Clients/clientStore";
 import "./kassa.scss";
+
+/* ──────────────────────────────── Базовый путь */
+const BASE = "/crm/hostel/kassa";
 
 /* helpers */
 const asArray = (d) =>
@@ -44,7 +46,7 @@ const isUnpaidStatus = (s) => {
 };
 
 /* ───────────────────────────────────────────────── */
-const HostelKassa = () => (
+const Kassa = () => (
   <Routes>
     <Route index element={<CashboxList />} />
     <Route path="pay" element={<CashboxPayment />} />
@@ -56,28 +58,32 @@ const HostelKassa = () => (
 /* Верхние вкладки */
 const HeaderTabs = () => {
   const { pathname } = useLocation();
-  const isList = /\/kassa\/?$/.test(pathname);
-  const isReports = /\/kassa\/reports\/?$/.test(pathname);
-  const isPay = /\/kassa\/pay\/?$/.test(pathname);
+
+  // точные проверки активной вкладки под BASE
+  const isPath = (p) => pathname === p || pathname === `${p}/`;
+
+  const isList = isPath(BASE);
+  const isReports = isPath(`${BASE}/reports`);
+  const isPay = isPath(`${BASE}/pay`);
 
   return (
     <div className="kassa__header">
       <div className="kassa__tabs">
         <Link
           className={`kassa__tab ${isList ? "kassa__tab--active" : ""}`}
-          to="/crm/cafe/kassa"
+          to={BASE}
         >
           Кассы
         </Link>
         <Link
           className={`kassa__tab ${isPay ? "kassa__tab--active" : ""}`}
-          to="/crm/cafe/kassa/pay"
+          to={`${BASE}/pay`}
         >
           Оплата
         </Link>
         <Link
           className={`kassa__tab ${isReports ? "kassa__tab--active" : ""}`}
-          to="/crm/cafe/kassa/reports"
+          to={`${BASE}/reports`}
         >
           Отчёты
         </Link>
@@ -191,7 +197,7 @@ const CashboxList = () => {
                 <tr
                   key={r.id || r.uuid}
                   className="kassa__rowClickable"
-                  onClick={() => navigate(`/crm/cafe/kassa/${r.id || r.uuid}`)}
+                  onClick={() => navigate(`${BASE}/${r.id || r.uuid}`)}
                 >
                   <td>
                     <b>{r.department_name || r.name || "—"}</b>
@@ -203,7 +209,7 @@ const CashboxList = () => {
                       className="kassa__btn kassa__btn--secondary"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/crm/cafe/kassa/${r.id || r.uuid}`);
+                        navigate(`${BASE}/${r.id || r.uuid}`);
                       }}
                     >
                       Открыть
@@ -835,16 +841,16 @@ const CashboxDetail = () => {
     <div className="kassa">
       <div className="kassa__header">
         <div className="kassa__tabs">
-          <Link className="kassa__tab" to="/crm/cafe/kassa">
+          <Link className="kassa__tab" to={BASE}>
             ← Назад
           </Link>
           <span className="kassa__tab kassa__tab--active">
             {box?.department_name || box?.name || "Касса"}
           </span>
-          <Link className="kassa__tab" to="/crm/cafe/kassa/pay">
+          <Link className="kassa__tab" to={`${BASE}/pay`}>
             Оплата
           </Link>
-          <Link className="kassa__tab" to="/crm/cafe/kassa/reports">
+          <Link className="kassa__tab" to={`${BASE}/reports`}>
             Отчёты
           </Link>
         </div>
@@ -1089,4 +1095,4 @@ const KV = ({ k, v }) => (
   </div>
 );
 
-export default HostelKassa;
+export default Kassa;
