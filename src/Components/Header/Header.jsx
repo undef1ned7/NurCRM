@@ -18,6 +18,7 @@ const pageTitles = {
   "/crm/sklad-accounting": "Складской учет",
   "/crm/analytics": "Аналитика",
   "/crm/set": "Настройки",
+  "/crm/debts": "Долги",
 
   // --- добавлено ---
   // Базовые
@@ -37,7 +38,7 @@ const pageTitles = {
   "/crm/barber/masters": "Мастера",
   "/crm/barber/history": "История",
   "/crm/barber/records": "Записи",
-  "/crm/barber/cash-reports": "Кассовые отчёты",
+  "/crm/barber/cash-reports": "Аналитика",
 
   // Гостиница
   "/crm/hostel/rooms": "Комнаты",
@@ -49,10 +50,10 @@ const pageTitles = {
 
   // Школа
   "/crm/school/students": "Ученики",
-  "/crm/school/groups": "Группы",
+  "/crm/school/groups": "Направления",
   "/crm/school/lessons": "Уроки",
   "/crm/school/teachers": "Сотрудники",
-  "/crm/school/leads": "Лиды",
+  "/crm/school/leads": "Заявки",
   "/crm/school/invoices": "Аналитика",
 
   // Магазин

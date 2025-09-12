@@ -10,7 +10,10 @@ import { useEffect, useState } from "react";
 import { useDepartments } from "../../../../store/slices/departmentSlice";
 import { getDepartments } from "../../../../store/creators/departmentCreators";
 import { useDebounce } from "../../../../hooks/useDebounce";
-import { fetchClientsAsync } from "../../../../store/creators/clientCreators";
+import {
+  createClientAsync,
+  fetchClientsAsync,
+} from "../../../../store/creators/clientCreators";
 import { useClient } from "../../../../store/slices/ClientSlice";
 
 /* ---------- helpers ---------- */
@@ -48,6 +51,15 @@ const AddModal = ({ onClose }) => {
     work_calendar_date: today,
     description: "",
   });
+  const [showInputs, setShowInputs] = useState(false);
+
+  const [newClient, setNewClient] = useState({
+    full_name: "",
+    phone: "",
+    email: "",
+    date: new Date().toISOString().split("T")[0],
+    type: "contractor",
+  });
 
   const contractors = (contractorList || []).filter(
     (c) => String(c.type).toLowerCase() === "contractor"
@@ -62,6 +74,10 @@ const AddModal = ({ onClose }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setState((prev) => ({ ...prev, [name]: value }));
+  };
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setNewClient((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleContractorSelect = (e) => {
@@ -88,6 +104,22 @@ const AddModal = ({ onClose }) => {
     } catch (err) {
       console.error(err);
       alert("Не удалось создать запись");
+    }
+  };
+
+  const onClientSubmit = async () => {
+    try {
+      const created = await dispatch(createClientAsync(newClient)).unwrap();
+      dispatch(fetchClientsAsync());
+      setSelectedContractorId(String(created.id));
+      setState((prev) => ({
+        ...prev,
+        contractor_name: created.full_name || "",
+        contractor_phone: created.phone || "",
+      }));
+      setShowInputs(false);
+    } catch (e) {
+      console.log(e);
     }
   };
 
@@ -148,6 +180,55 @@ const AddModal = ({ onClose }) => {
               placeholder="+996 700 00-00-00"
             />
           </div>
+
+          <button
+            className="create-client"
+            style={{ width: "100%", marginBottom: "10px" }}
+            type="button"
+            onClick={() => setShowInputs(!showInputs)}
+          >
+            {showInputs ? "Отменить" : "Создать подрядчика"}
+          </button>
+          {showInputs && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                rowGap: "10px",
+              }}
+              // onSubmit={onSubmit}
+            >
+              <input
+                className="add-modal__input"
+                onChange={onChange}
+                type="text"
+                placeholder="ФИО"
+                name="full_name"
+              />
+              <input
+                className="add-modal__input"
+                onChange={onChange}
+                type="text"
+                name="phone"
+                placeholder="Телефон"
+              />
+              <input
+                className="add-modal__input"
+                onChange={onChange}
+                type="email"
+                name="email"
+                placeholder="Почта"
+              />
+              <button
+                style={{ width: "100%", marginBottom: "10px" }}
+                type="button"
+                className="create-client"
+                onClick={onClientSubmit}
+              >
+                Создать
+              </button>
+            </div>
+          )}
 
           <div className="add-modal__section">
             <label>Тип юр.лица</label>

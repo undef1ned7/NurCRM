@@ -296,7 +296,7 @@ const MENU_CONFIG = {
         implemented: true,
       },
       {
-        label: "Кассовые отчёты",
+        label: "Аналитика",
         to: "/crm/barber/cash-reports",
         icon: <FaRegChartBar className="sidebar__menu-icon" />,
         permission: "can_view_cashbox", // Используем базовый permission
@@ -360,7 +360,7 @@ const MENU_CONFIG = {
         implemented: true,
       },
       {
-        label: "Группы",
+        label: "Направления",
         to: "/crm/school/groups",
         icon: <FaRegListAlt className="sidebar__menu-icon" />,
         permission: "can_view_school_groups",
@@ -381,7 +381,7 @@ const MENU_CONFIG = {
         implemented: true,
       },
       {
-        label: "Лиды",
+        label: "Заявки",
         to: "/crm/school/leads",
         icon: <FaComments className="sidebar__menu-icon" />,
         permission: "can_view_school_leads",

@@ -17,7 +17,9 @@ import {
   startSellObjects,
   updateProductInCart,
   updateSale,
-  createDeal, // <-- обработаем статусы создания сделок
+  createDeal,
+  historySellObjectDetail,
+  historySellObjects, // <-- обработаем статусы создания сделок
 } from "../creators/saleThunk";
 
 const initialState = {
@@ -35,7 +37,9 @@ const initialState = {
   pdf: null,
   objects: [], // список object-items
   cartObject: null,
-  lastDeal: null, // результат создания сделки (опционально)
+  lastDeal: null,
+  historyObjects: [],
+  historyObjectDetail: null,
 };
 
 const ensureError = (action) =>
@@ -169,6 +173,18 @@ const saleSlice = createSlice({
         state.loading = false;
       })
 
+      .addCase(historySellObjects.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(historySellObjects.fulfilled, (state, { payload }) => {
+        state.historyObjects = payload;
+        state.loading = false;
+      })
+      .addCase(historySellObjects.rejected, (state, action) => {
+        state.error = ensureError(action);
+        state.loading = false;
+      })
+
       .addCase(historySellProductDetail.pending, (state) => {
         state.loading = true;
       })
@@ -177,6 +193,18 @@ const saleSlice = createSlice({
         state.loading = false;
       })
       .addCase(historySellProductDetail.rejected, (state, action) => {
+        state.error = ensureError(action);
+        state.loading = false;
+      })
+
+      .addCase(historySellObjectDetail.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(historySellObjectDetail.fulfilled, (state, { payload }) => {
+        state.historyObjectDetail = payload;
+        state.loading = false;
+      })
+      .addCase(historySellObjectDetail.rejected, (state, action) => {
         state.error = ensureError(action);
         state.loading = false;
       })

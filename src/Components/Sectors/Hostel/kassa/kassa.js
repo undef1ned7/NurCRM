@@ -8,7 +8,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import api from "../../../../api";
-import Reports from "../../cafe/Reports/Reports";
+import Reports from "../Reports/Reports";
 import { getAll as getAllClients } from "../Clients/clientStore";
 import "./kassa.scss";
 

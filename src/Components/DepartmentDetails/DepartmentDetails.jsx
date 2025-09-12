@@ -18,7 +18,7 @@ const BASIC_ACCESS_TYPES = [
   { value: "Долги", label: "Долги", backendKey: "can_view_debts" },
   { value: "Заказы", label: "Заказы", backendKey: "can_view_orders" },
   { value: "Аналитика", label: "Аналитика", backendKey: "can_view_analytics" },
-  {
+  { 
     value: "Аналитика Отделов",
     label: "Аналитика Отделов",
     backendKey: "can_view_department_analytics",

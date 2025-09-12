@@ -22,6 +22,8 @@ import {
   getObjects,
   getProductCheckout,
   getProductInvoice,
+  historySellObjectDetail,
+  historySellObjects,
   historySellProduct,
   historySellProductDetail,
   manualFilling,
@@ -118,7 +120,7 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
                 <li key={product.id}>
                   {product.name}{" "}
                   <div className="sell__list-row">
-                    {/* {activeProductId === product.id ? (
+                    {activeProductId === product.id ? (
                       <>
                         <input
                           type="number"
@@ -126,29 +128,54 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
                           onChange={(e) => setQuantity(e.target.value)}
                           placeholder="Введите количество"
                         />
-                        <button>Закрыть</button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await dispatch(
+                                manualFilling({
+                                  id,
+                                  productId: product.id,
+                                  quantity: Number(quantity), // передаём кол-во
+                                })
+                              ).unwrap();
+                              await dispatch(startSale()).unwrap();
+                              setActiveProductId(null); // сбрасываем активный товар
+                              setQuantity(""); // очищаем инпут
+                            } catch (err) {
+                              console.error(
+                                "manualFilling/startSale error:",
+                                err
+                              );
+                            }
+                          }}
+                        >
+                          Сохранить
+                        </button>
                       </>
                     ) : (
-                      <> */}
-                    {/* <button onClick={() => setActiveProductId(product.id)}>
+                      <>
+                        <button onClick={() => setActiveProductId(product.id)}>
                           Указать количество
-                        </button> */}
-                    <button
-                      onClick={async () => {
-                        try {
-                          await dispatch(
-                            manualFilling({ id, productId: product.id })
-                          ).unwrap();
-                          await dispatch(startSale()).unwrap();
-                        } catch (err) {
-                          console.error("manualFilling/startSale error:", err);
-                        }
-                      }}
-                    >
-                      <Plus size={16} />{" "}
-                    </button>
-                    {/* </>
-                    )} */}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await dispatch(
+                                manualFilling({ id, productId: product.id })
+                              ).unwrap();
+                              await dispatch(startSale()).unwrap();
+                            } catch (err) {
+                              console.error(
+                                "manualFilling/startSale error:",
+                                err
+                              );
+                            }
+                          }}
+                        >
+                          <Plus size={16} />{" "}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </li>
               ))}
@@ -459,7 +486,6 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
 
 const STATUSES = [
   { value: "new", label: "Новая" },
-  { value: "pending", label: "В ожидании" },
   { value: "paid", label: "Оплачена" },
   { value: "canceled", label: "Отменена" },
 ];
@@ -986,7 +1012,14 @@ const SellBuildingModal = ({ onClose }) => {
 
 const SellDetail = ({ onClose, id }) => {
   const dispatch = useDispatch();
-  const { historyDetail: item } = useSale();
+  const { historyDetail: item, historyObjectDetail } = useSale();
+  const { company } = useUser();
+
+  const sectorName = company?.sector?.name?.trim().toLowerCase() ?? "";
+  const planName = company?.subscription_plan?.name?.trim().toLowerCase() ?? "";
+
+  const isBuildingCompany = sectorName === "строительная компания";
+  const isStartPlan = planName === "старт";
   // console.log(1, item);
 
   const kindTranslate = {
@@ -995,10 +1028,17 @@ const SellDetail = ({ onClose, id }) => {
     canceled: "Отмененный",
   };
 
+  const filterField = isStartPlan
+    ? item
+    : isBuildingCompany
+    ? historyObjectDetail
+    : item;
+
   useEffect(() => {
     dispatch(historySellProductDetail(id));
+    dispatch(historySellObjectDetail(id));
   }, [id, dispatch]);
-  console.log(item);
+  console.log(filterField);
   return (
     <div className="sellDetail add-modal">
       <div className="add-modal__overlay" onClick={onClose} />
@@ -1009,12 +1049,13 @@ const SellDetail = ({ onClose, id }) => {
         </div>
         <div className="sellDetail__content">
           <div className="sell__box">
-            <p className="receipt__title">Клиент: {item?.client_name}</p>
+            <p className="receipt__title">Клиент: {filterField?.client_name}</p>
             <p className="receipt__title">
-              Статус: {kindTranslate[item?.status] || item?.status}
+              Статус:{" "}
+              {kindTranslate[filterField?.status] || filterField?.status}
             </p>
             <p className="receipt__title">
-              Дата: {new Date(item?.created_at).toLocaleString()}
+              Дата: {new Date(filterField?.created_at).toLocaleString()}
             </p>
           </div>
           <div className="receipt">
@@ -1074,10 +1115,10 @@ const SellDetail = ({ onClose, id }) => {
                 </form>
               )}
             </div> */}
-            {item?.items?.map((product, idx) => (
+            {filterField?.items?.map((product, idx) => (
               <div className="receipt__item" key={idx}>
                 <p className="receipt__item-name">
-                  {idx + 1}. {product.product_name}
+                  {idx + 1}. {product.product_name ?? product.object_name}
                 </p>
                 <div>
                   <p>{product.tax_total}</p>
@@ -1093,9 +1134,9 @@ const SellDetail = ({ onClose, id }) => {
               <div
                 style={{ gap: "10px", display: "flex", alignItems: "center" }}
               >
-                <p>Общая скидка {item?.discount_total} </p>
-                <p>Налог {item?.tax_total}</p>
-                <b>≡ {item?.total}</b>
+                <p>Общая скидка {filterField?.discount_total} </p>
+                <p>Налог {filterField?.tax_total}</p>
+                <b>≡ {filterField?.total}</b>
               </div>
             </div>
           </div>
@@ -1107,6 +1148,7 @@ const SellDetail = ({ onClose, id }) => {
 
 const Sell = () => {
   const dispatch = useDispatch();
+  const { company } = useUser();
 
   const {
     list: products,
@@ -1123,7 +1165,7 @@ const Sell = () => {
     // categories.
   } = useSelector((state) => state.product);
   const navigate = useNavigate();
-  const { history, start } = useSale();
+  const { history, start, historyObjects, historyObjectDetail } = useSale();
   // const { start } = useSale();
   const { list: cashBoxes } = useCash();
 
@@ -1149,6 +1191,12 @@ const Sell = () => {
   const [activeTab, setActiveTab] = useState(1);
   const [sellId, setSellId] = useState("");
 
+  const sectorName = company?.sector?.name?.trim().toLowerCase() ?? "";
+  const planName = company?.subscription_plan?.name?.trim().toLowerCase() ?? "";
+
+  const isBuildingCompany = sectorName === "строительная компания";
+  const isStartPlan = planName === "старт";
+
   useEffect(() => {
     const params = {
       page: currentPage,
@@ -1171,6 +1219,12 @@ const Sell = () => {
     deleting,
     currentFilters,
   ]);
+
+  const filterField = isStartPlan
+    ? history
+    : isBuildingCompany
+    ? historyObjects
+    : history;
 
   const handleEdit = (item) => {
     setSelectedItem(item);
@@ -1223,6 +1277,7 @@ const Sell = () => {
 
   const debouncedSearch = useDebounce((value) => {
     dispatch(historySellProduct({ search: value }));
+    dispatch(historySellObjects({ search: value }));
   }, 1000);
 
   const onChange = (e) => {
@@ -1236,6 +1291,7 @@ const Sell = () => {
 
   useEffect(() => {
     dispatch(historySellProduct({ search: "" }));
+    dispatch(historySellObjects({ search: "" }));
   }, [dispatch, showSellModal]);
   // console.log(history);
 
@@ -1263,7 +1319,6 @@ const Sell = () => {
     setSellId(id);
     setShowDetailSell(true);
   };
-  const { company } = useUser();
 
   const kindTranslate = {
     new: "Новый",
@@ -1271,11 +1326,6 @@ const Sell = () => {
     canceled: "Отмененный",
   };
 
-  const sectorName = company?.sector?.name?.trim().toLowerCase() ?? "";
-  const planName = company?.subscription_plan?.name?.trim().toLowerCase() ?? "";
-
-  const isBuildingCompany = sectorName === "строительная компания";
-  const isStartPlan = planName === "старт";
   useEffect(() => {
     dispatch(getCashBoxes());
   }, []);
@@ -1357,20 +1407,40 @@ const Sell = () => {
             </>
           ) : isBuildingCompany ? (
             // 🔹 Если НЕ старт, но строительная компания
-            <button
-              className="sklad__add"
-              onClick={() => setShowBuilding(true)}
-            >
-              <Plus size={16} style={{ marginRight: "4px" }} /> Продать товар
-            </button>
+            <>
+              <button
+                className="sklad__add"
+                onClick={() => setShowBuilding(true)}
+              >
+                <Plus size={16} style={{ marginRight: "4px" }} /> Продать товар
+              </button>
+            </>
           ) : (
             // 🔹 Все остальные (НЕ старт и НЕ строительная компания)
-            <button
-              className="sklad__add"
-              onClick={() => setShowSellModal(true)}
-            >
-              <Plus size={16} style={{ marginRight: "4px" }} /> Продать товар
-            </button>
+            <>
+              <select
+                value={selectCashBox}
+                onChange={(e) => setSelectCashBox(e.target.value)}
+                className="employee__search-wrapper"
+              >
+                <option value="" disabled>
+                  Выберите кассу
+                </option>
+                {cashBoxes?.map((cash) => (
+                  <option key={cash.id} value={cash.id}>
+                    {cash.name ?? cash.department_name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="sklad__add"
+                onClick={() => setShowSellModal(true)}
+                disabled={!selectCashBox}
+                title={!selectCashBox ? "Сначала выберите кассу" : undefined}
+              >
+                <Plus size={16} style={{ marginRight: "4px" }} /> Продать товар
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -1382,7 +1452,7 @@ const Sell = () => {
           Ошибка загрузки:
           {/* {error.detail || error.message || JSON.stringify(error)} */}
         </p>
-      ) : history?.length === 0 ? (
+      ) : filterField?.length === 0 ? (
         <p className="sklad__no-products-message">Нет доступных товаров.</p>
       ) : (
         <div className="table-wrapper">
@@ -1402,7 +1472,7 @@ const Sell = () => {
               </tr>
             </thead>
             <tbody>
-              {history?.map((item, index) => (
+              {filterField?.map((item, index) => (
                 <tr
                   onClick={() => handleSellModal(item.id)}
                   key={item.id}

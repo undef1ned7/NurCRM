@@ -59,11 +59,11 @@ export const updateSale = createAsyncThunk(
 
 export const manualFilling = createAsyncThunk(
   "sale/manualFilling",
-  async ({ id, productId }, { rejectWithValue }) => {
+  async ({ id, productId, quantity }, { rejectWithValue }) => {
     try {
       const { data: response } = await api.post(
         `/main/pos/sales/${id}/add-item/`,
-        { product_id: productId }
+        { product_id: productId, quantity }
       );
       return response;
     } catch (error) {
@@ -136,11 +136,36 @@ export const historySellProduct = createAsyncThunk(
   }
 );
 
+export const historySellObjects = createAsyncThunk(
+  "products/historySellObjects",
+  async (search, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/main/object-sales/`, {
+        params: search,
+      });
+      return data.results;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const historySellProductDetail = createAsyncThunk(
   "products/historySellProductDetail",
   async (id, { rejectWithValue }) => {
     try {
       const { data } = await api.get(`/main/pos/sales/${id}/`);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+export const historySellObjectDetail = createAsyncThunk(
+  "products/historySellObjectDetail",
+  async (id, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/main/object-sales/${id}/`);
       return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
