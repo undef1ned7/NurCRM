@@ -41,6 +41,7 @@ import { historySellProductDetail } from "../../../store/creators/saleThunk";
 
 const SellModal = ({ onClose, id, selectCashBox }) => {
   const { list: cashBoxes } = useCash();
+
   const [cashData, setCashData] = useState({
     cashbox: "",
     type: "income",
@@ -114,7 +115,7 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
                 <li key={product.id}>
                   {product.name}{" "}
                   <div className="sell__list-row">
-                    {activeProductId === product.id ? (
+                    {/* {activeProductId === product.id ? (
                       <>
                         <input
                           type="number"
@@ -125,29 +126,26 @@ const SellModal = ({ onClose, id, selectCashBox }) => {
                         <button>Закрыть</button>
                       </>
                     ) : (
-                      <>
-                        <button onClick={() => setActiveProductId(product.id)}>
+                      <> */}
+                    {/* <button onClick={() => setActiveProductId(product.id)}>
                           Указать количество
-                        </button>
-                        <button
-                          onClick={async () => {
-                            try {
-                              await dispatch(
-                                manualFilling({ id, productId: product.id })
-                              ).unwrap();
-                              await dispatch(startSale()).unwrap();
-                            } catch (err) {
-                              console.error(
-                                "manualFilling/startSale error:",
-                                err
-                              );
-                            }
-                          }}
-                        >
-                          <Plus size={16} />{" "}
-                        </button>
-                      </>
-                    )}
+                        </button> */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          await dispatch(
+                            manualFilling({ id, productId: product.id })
+                          ).unwrap();
+                          await dispatch(startSale()).unwrap();
+                        } catch (err) {
+                          console.error("manualFilling/startSale error:", err);
+                        }
+                      }}
+                    >
+                      <Plus size={16} />{" "}
+                    </button>
+                    {/* </>
+                    )} */}
                   </div>
                 </li>
               ))}

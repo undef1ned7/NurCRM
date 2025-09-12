@@ -1,37 +1,77 @@
-import React, { useState } from "react";
-import { useDispatch } from "react-redux";
-import { useProducts } from "../../../../store/slices/productSlice";
+import React, { useEffect, useMemo, useState } from "react";
 import { MoreVertical, Plus, X } from "lucide-react";
-import { createProductAsync } from "../../../../store/creators/productCreators";
+import { useDispatch } from "react-redux";
+import { getObjects } from "../../../../store/creators/saleThunk";
+import { useSale } from "../../../../store/slices/saleSlice";
 
-/**
- * Модалка добавления объекта
- * Поля: наименование, описание, цена, дата, количество
- * Без кассы. Уведомляет родителя через onSaveSuccess при удачном создании.
- */
+/* ================= helpers ================= */
+
+const API_URL = "https://app.nurcrm.kg/api/main/object-items/";
+
+// Достаём токен из localStorage, если он есть
+const getAuthHeaders = () => {
+  const token =
+    localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// Универсальный fetch c обработкой ошибок
+async function httpJson(url, options = {}) {
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+
+  if (!res.ok) {
+    const msg =
+      (data && (data.detail || data.message)) ||
+      res.statusText ||
+      "Request failed";
+    const err = new Error(msg);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+// список может прийти как results[], так и сразу как массив
+const listFrom = (data) =>
+  data && (data.results || data) && Array.isArray(data.results || data)
+    ? data.results || data
+    : [];
+
+/* =============== AddModal: POST /object-items/ =============== */
+
 const AddModal = ({ onClose, onSaveSuccess }) => {
-  const dispatch = useDispatch();
-  const { creating, createError } = useProducts();
-
   const today = new Date().toISOString().split("T")[0];
+
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   const [form, setForm] = useState({
     name: "",
     description: "",
-    price: "",
-    date: today,
-    quantity: "",
+    price: "", // строка
+    date: today, // YYYY-MM-DD
+    quantity: "", // число
   });
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    // аккуратная обработка number-полей
     if (type === "number") {
-      if (value === "") {
-        setForm((p) => ({ ...p, [name]: "" }));
+      // quantity — целое, price — оставляем в виде строки (API ждёт string)
+      if (name === "quantity") {
+        setForm((p) => ({ ...p, [name]: value === "" ? "" : Number(value) }));
       } else {
-        const num = name === "quantity" ? Number(value) : parseFloat(value);
-        setForm((p) => ({ ...p, [name]: Number.isNaN(num) ? "" : num }));
+        setForm((p) => ({ ...p, [name]: value })); // price оставляем строкой
       }
     } else {
       setForm((p) => ({ ...p, [name]: value }));
@@ -39,6 +79,8 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
   };
 
   const handleSubmit = async () => {
+    setCreateError("");
+
     const { name, description, price, date, quantity } = form;
 
     if (!name || price === "" || !date || quantity === "") {
@@ -49,20 +91,30 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
     }
 
     const payload = {
-      name,
-      description,
-      price: price.toString(),
-      date, // формат YYYY-MM-DD
+      name: String(name).trim(),
+      description: String(description || "").trim(),
+      price: String(price), // API ждёт строку
+      date, // YYYY-MM-DD
       quantity: Number(quantity),
     };
 
     try {
-      await dispatch(createProductAsync(payload)).unwrap();
+      setCreating(true);
+      await httpJson(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      onSaveSuccess?.(); // родителю — перезагрузить список
       onClose();
-      onSaveSuccess && onSaveSuccess();
     } catch (err) {
-      console.error("Failed to create object:", err);
-      alert(`Ошибка при добавлении: ${err?.message || JSON.stringify(err)}`);
+      console.error(err);
+      setCreateError(
+        err?.data
+          ? JSON.stringify(err.data)
+          : err?.message || "Ошибка при добавлении"
+      );
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -76,13 +128,9 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
         </div>
 
         {createError && (
-          <p className="add-modal__error-message">
-            Ошибка добавления:{" "}
-            {createError.message || JSON.stringify(createError)}
-          </p>
+          <p className="add-modal__error-message">Ошибка: {createError}</p>
         )}
 
-        {/* Наименование */}
         <div className="add-modal__section">
           <label>Наименование *</label>
           <input
@@ -96,7 +144,6 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
           />
         </div>
 
-        {/* Описание */}
         <div className="add-modal__section">
           <label>Описание</label>
           <textarea
@@ -109,7 +156,6 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
           />
         </div>
 
-        {/* Цена */}
         <div className="add-modal__section">
           <label>Цена *</label>
           <input
@@ -123,9 +169,9 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
             step="0.01"
             required
           />
+          <div className="hint">API ожидает цену строкой — это учтено.</div>
         </div>
 
-        {/* Дата */}
         <div className="add-modal__section">
           <label>Дата *</label>
           <input
@@ -138,7 +184,6 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
           />
         </div>
 
-        {/* Количество */}
         <div className="add-modal__section">
           <label>Количество *</label>
           <input
@@ -175,17 +220,61 @@ const AddModal = ({ onClose, onSaveSuccess }) => {
   );
 };
 
-const Objects = () => {
-  const dispatch = useDispatch();
-  const {
-    list: products,
-    loading,
-    categories = [],
-    error,
-    count,
-  } = useProducts();
+/* ============================ Главный список ============================ */
 
+const Objects = () => {
+  // const [items, setItems] = useState([]);
+  const [count, setCount] = useState(null);
+  // const [loading, setLoading] = useState(false);
+  // const [error, setError] = useState("");
+  const { objects: items, error, loading } = useSale();
+  const dispatch = useDispatch();
+
+  const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+
+  // const load = async () => {
+  //   setError("");
+  //   setLoading(true);
+  //   try {
+  //     const data = await httpJson(API_URL, { method: "GET" });
+  //     const list = listFrom(data);
+  //     setItems(list);
+  //     setCount(
+  //       typeof data?.count === "number"
+  //         ? data.count
+  //         : Array.isArray(list)
+  //         ? list.length
+  //         : 0
+  //     );
+  //   } catch (err) {
+  //     console.error(err);
+  //     setError(
+  //       err?.data
+  //         ? JSON.stringify(err.data)
+  //         : err?.message || "Не удалось загрузить список"
+  //     );
+  //     setItems([]);
+  //     setCount(0);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  useEffect(() => {
+    dispatch(getObjects());
+  }, []);
+
+  // Простейшая локальная фильтрация по наименованию/описанию
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    if (!s) return items;
+    return items.filter((it) => {
+      const name = String(it.name || "").toLowerCase();
+      const desc = String(it.description || "").toLowerCase();
+      return name.includes(s) || desc.includes(s);
+    });
+  }, [items, search]);
 
   return (
     <div className="objects">
@@ -193,20 +282,21 @@ const Objects = () => {
         <div className="sklad__left">
           <input
             type="text"
-            placeholder="Поиск по наименованию"
+            placeholder="Поиск по наименованию или описанию"
             className="sklad__search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
-          {/* опциональный фильтр, можно оставить как есть */}
-          <select className="employee__search-wrapper">
-            {categories.map((category) => (
-              <option key={category.id ?? category.name} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
           <div className="sklad__center">
-            <span>Всего: {count !== null ? count : "-"}</span>
-            <span>Найдено: {products.length}</span>
+            <span>Всего: {count ?? "-"}</span>
+            <span>Найдено: {filtered.length}</span>
+            <button
+              className="sklad__reset"
+              onClick={() => dispatch(getObjects())}
+              style={{ marginLeft: 12 }}
+            >
+              Обновить
+            </button>
           </div>
         </div>
 
@@ -217,11 +307,11 @@ const Objects = () => {
         </div>
       </div>
 
+      {error && <p className="sklad__error-message">Ошибка: {error}</p>}
+
       {loading ? (
         <p className="sklad__loading-message">Загрузка...</p>
-      ) : error ? (
-        <p className="sklad__error-message">Ошибка загрузки</p>
-      ) : products.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <p className="sklad__no-products-message">Нет записей.</p>
       ) : (
         <div className="table-wrapper">
@@ -241,8 +331,8 @@ const Objects = () => {
               </tr>
             </thead>
             <tbody>
-              {products.map((item, index) => (
-                <tr key={item.id}>
+              {filtered.map((item, index) => (
+                <tr key={item.id ?? `${item.name}-${index}`}>
                   <td>
                     <input type="checkbox" />
                   </td>
@@ -267,7 +357,10 @@ const Objects = () => {
       {showAdd && (
         <AddModal
           onClose={() => setShowAdd(false)}
-          onSaveSuccess={() => setShowAdd(false)}
+          onSaveSuccess={() => {
+            setShowAdd(false);
+            dispatch(getObjects()); // перезагружаем список после успешного создания
+          }}
         />
       )}
     </div>

@@ -161,3 +161,29 @@ export const getProductInvoice = createAsyncThunk(
     }
   }
 );
+
+export const getObjects = createAsyncThunk(
+  "objects/get",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/main/object-items/`);
+      return data.results;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const createObject = createAsyncThunk(
+  "object/create",
+  async (data, { rejectWithValue }) => {
+    try {
+      const { data: response } = await api.post("/main/object-items/", data);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+

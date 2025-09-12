@@ -1,8 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { useSelector } from "react-redux";
 import {
+  createObject,
   deleteProductInCart,
   doSearch,
+  getObjects,
   getProductCheckout,
   getProductInvoice,
   historySellProduct,
@@ -27,6 +29,7 @@ const initialState = {
   history: [],
   historyDetail: null,
   pdf: null,
+  objects: [],
   // errorBarcode: null,
 };
 
@@ -171,6 +174,28 @@ const saleSlice = createSlice({
         state.loading = false;
       })
       .addCase(getProductInvoice.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.loading = false;
+      })
+      .addCase(getObjects.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getObjects.fulfilled, (state, { payload }) => {
+        state.objects = payload;
+        state.loading = false;
+      })
+      .addCase(getObjects.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.loading = false;
+      })
+      .addCase(createObject.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(createObject.fulfilled, (state, { payload }) => {
+        // state.objects = payload;
+        state.loading = false;
+      })
+      .addCase(createObject.rejected, (state, { payload }) => {
         state.error = payload;
         state.loading = false;
       });
