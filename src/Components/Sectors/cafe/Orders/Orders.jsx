@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa";
 import api from "../../../../api";
 import { getAll as getAllClients, createClient } from "../Clients/clientStore";
-import "./orders.scss";
+import "./Orders.scss";
 
 /* ==== helpers ==== */
 const listFrom = (res) => res?.data?.results || res?.data || [];

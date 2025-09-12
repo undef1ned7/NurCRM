@@ -85,6 +85,7 @@ import CafeKassa from "./Components/Sectors/cafe/kassaCafe/kassa";
 import CafeClients from "./Components/Sectors/cafe/Clients/Clients";
 import BuildingWork from "./Components/Sectors/Building/BuildingWork/BuildingWork";
 import HostelKassa from "./Components/Sectors/Hostel/kassa/kassa";
+import Objects from "./Components/Sectors/Building/Objects/Objects";
 // import ClientDebtDetail from "./Components/Sectors/Building/ClientDebtDetail";
 
 function App() {
@@ -720,6 +721,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <BuildingWork />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="building/objects"
+              element={
+                <ProtectedRoute>
+                  <Objects />
                 </ProtectedRoute>
               }
             />

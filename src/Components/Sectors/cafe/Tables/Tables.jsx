@@ -9,7 +9,7 @@ import {
   FaMapMarkedAlt,
 } from "react-icons/fa";
 import api from "../../../../api";
-import "./tables.scss";
+import "./Tables.scss";
 
 const STATUSES = [
   { value: "free", label: "Свободен" },

@@ -96,7 +96,7 @@ export const getClientDealDetail = createAsyncThunk(
   "client/dealDetail",
   async (clientId, { rejectWithValue }) => {
     try {
-      const { data } = await api.get(`/main/client-deals/${clientId}/`);
+      const { data } = await api.get(`/main/clientdeals/${clientId}/`);
       return data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -109,7 +109,22 @@ export const updateDealDetail = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const { data: response } = await api.patch(
-        `/main/client-deals/${id}/`,
+        `/main/clientdeals/${id}/`,
+        data
+      );
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const payDebtDeal = createAsyncThunk(
+  "client/payDebtDeal",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const { data: response } = await api.post(
+        `/main/clientdeals/${id}/pay/`,
         data
       );
       return response;

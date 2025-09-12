@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { FaPlus, FaSearch, FaTimes, FaEdit, FaTrash } from "react-icons/fa";
 import api from "../../../../api";
-import "./staff.scss";
+import "./Staff.scss";
 
 /* ===== API ===== */
 const EMPLOYEES_LIST_URL = "/users/employees/";            // GET

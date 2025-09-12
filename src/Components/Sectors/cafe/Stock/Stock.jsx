@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FaSearch, FaPlus, FaTimes, FaBoxes, FaEdit, FaTrash } from "react-icons/fa";
 import api from "../../../../api";
-import "./stock.scss";
+import "./Stock.scss";
 
 /* helpers */
 const listFrom = (res) => res?.data?.results || res?.data || [];

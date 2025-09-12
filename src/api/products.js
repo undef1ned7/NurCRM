@@ -58,7 +58,10 @@ export const createProductApi = async (productData) => {
 
 export const updateProductApi = async (productId, productData) => {
   try {
-    const response = await api.put(`main/products/${productId}/`, productData);
+    const response = await api.patch(
+      `main/products/${productId}/`,
+      productData
+    );
     return response.data;
   } catch (error) {
     if (error.response) {

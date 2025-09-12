@@ -52,9 +52,18 @@ const getSectorPermissions = (sectorName) => {
       "can_view_cafe_clients",
       "can_view_cafe_tables",
     ],
-    "Строительная компания": ["can_view_building_work_process"],
-    "Ремонтные и отделочные работы": ["can_view_building_work_process"],
-    "Архитектура и дизайн": ["can_view_building_work_process"],
+    "Строительная компания": [
+      "can_view_building_work_process",
+      "can_view_building_objects",
+    ],
+    "Ремонтные и отделочные работы": [
+      "can_view_building_work_process",
+      "can_view_building_objects",
+    ],
+    "Архитектура и дизайн": [
+      "can_view_building_work_process",
+      "can_view_building_objects",
+    ],
   };
 
   return sectorPermissions[sectorName] || [];

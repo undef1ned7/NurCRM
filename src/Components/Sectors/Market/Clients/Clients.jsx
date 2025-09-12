@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 // import { useSelector } from "react-redux"; // не используется
 import "./Clients.scss";
 import api from "../../../../api";
-import HostelKassa from "../../Hostel/Clients/Clients";
+// Удалено неиспользуемое: import HostelKassa from "../../Hostel/Clients/Clients";
 import { useUser } from "../../../../store/slices/userSlice";
 
 // 👇 ленивый импорт страницы клиентов для бронирования
@@ -47,10 +47,9 @@ const isInvalidChoiceError = (e) => {
   );
 };
 
-/* ===== базовые вкладки ===== */
+/* ===== базовые вкладки (без бронирования!) ===== */
 const BASE_TABS = [
   { key: "clients", label: "Клиенты" },
-  { key: "clientsBooking", label: "Клиенты бронирование" },
   { key: "suppliers", label: "Поставщики" },
 ];
 
@@ -61,16 +60,8 @@ const tabKeyFromType = (t) => {
   if (v === "client") return "clients";
   if (v === "suppliers") return "suppliers";
   if (v === "implementers") return "resellers";
+  if (v === "contractor") return "resellers";
   return null;
-};
-
-// Подпись для отображения
-const typeLabel = (t) => {
-  const v = String(t || "").toLowerCase();
-  if (v === "client") return "Клиент";
-  if (v === "suppliers") return "Поставщик";
-  if (v === "implementers") return "Реализатор";
-  return "—";
 };
 
 // Базовые значения для POST/GET
@@ -78,13 +69,15 @@ const PRIMARY_TYPE_BY_TAB = {
   clients: "client",
   suppliers: "suppliers",
   resellers: "implementers",
+  contractor: "contractor",
 };
 
-// Варианты, которые пробуем (теперь ровно по enum бэка)
+// Варианты, которые пробуем (ровно по enum бэка)
 const TYPE_VARIANTS_BY_TAB = {
   clients: ["client"],
   suppliers: ["suppliers"],
   resellers: ["implementers"],
+  contractor: ["contractor"],
 };
 
 export default function MarketClients() {
@@ -92,17 +85,37 @@ export default function MarketClients() {
 
   // ⚠️ юзер из стора (подправьте под свой state, если нужно)
   const { company: user } = useUser();
+  const sectorName = user?.sector?.name;
 
-  // динамически формируем список вкладок
+  // динамически формируем список вкладок:
+  // - «Клиенты бронирование» показываем ТОЛЬКО для сектора "Гостиница"
+  // - вкладка resellers называется «Подрядчик» для сектора "Строительная компания",
+  //   иначе — «Реализаторы» (как раньше)
   const TABS = useMemo(() => {
     const base = [...BASE_TABS];
-    if (user?.sector?.name !== "Гостиница") {
-      base.push({ key: "resellers", label: "Реализаторы" });
+    if (sectorName === "Гостиница") {
+      base.splice(1, 0, {
+        key: "clientsBooking",
+        label: "Клиенты бронирование",
+      });
+    } else {
+      base.push({
+        key: "resellers",
+        label:
+          sectorName === "Строительная компания" ? "Подрядчики" : "Реализаторы",
+      });
     }
     return base;
-  }, [user]);
+  }, [sectorName]);
 
   const [activeTab, setActiveTab] = useState("clients");
+
+  // Если сектор не «Гостиница», а активной была вкладка бронирования — вернёмся на «Клиенты»
+  useEffect(() => {
+    if (activeTab === "clientsBooking" && sectorName !== "Гостиница") {
+      setActiveTab("clients");
+    }
+  }, [sectorName, activeTab]);
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -179,9 +192,22 @@ export default function MarketClients() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  /* ===== локальная подпись типа с учётом сектора ===== */
+  const ctxTypeLabel = (t) => {
+    const v = String(t || "").toLowerCase();
+    if (v === "client") return "Клиент";
+    if (v === "suppliers") return "Поставщик";
+    if (v === "implementers")
+      return sectorName === "Строительная компания"
+        ? "Подрядчики"
+        : "Реализатор";
+    return "—";
+  };
+
   /* ===== поиск + локальная фильтрация по типу ===== */
   const filtered = useMemo(() => {
     const base = Array.isArray(rows) ? rows : [];
+
     const onlyThisTab = base.filter((r) => {
       const tab = tabKeyFromType(r?.type);
       if (!tab) return activeTab === "clients"; // без типа — только на вкладке Клиенты
@@ -308,13 +334,16 @@ export default function MarketClients() {
     resetAddForm();
   };
 
+  const resellersTabLabel =
+    sectorName === "Строительная компания" ? "Подрядчики" : "Реализаторы";
+
   const title =
     activeTab === "clients"
       ? "Клиенты"
       : activeTab === "suppliers"
       ? "Поставщики"
       : activeTab === "resellers"
-      ? "Реализаторы"
+      ? resellersTabLabel
       : activeTab === "clientsBooking"
       ? "Клиенты бронирование"
       : "Клиенты";
@@ -343,16 +372,14 @@ export default function MarketClients() {
           </div>
         </header>
 
-        {/* <div className="panel" style={{ padding: 0, display: "block" }}> */}
         <Suspense fallback={<div className="loading">Загрузка…</div>}>
           <HostelClients />
         </Suspense>
-        {/* </div> */}
       </section>
     );
   }
 
-  // ───────────────────────── остальные вкладки (клиенты/поставщики/реализаторы)
+  // ───────────────────────── остальные вкладки (клиенты/поставщики/реализаторы|подрядчик)
   return (
     <section className="clients">
       {/* ===== ВКЛАДКИ ===== */}
@@ -397,6 +424,8 @@ export default function MarketClients() {
               ? "Новый клиент"
               : activeTab === "suppliers"
               ? "Новый поставщик"
+              : sectorName === "Строительная компания"
+              ? "Новый подрядчик"
               : "Новый реализатор"}
           </button>
         </div>
@@ -437,7 +466,7 @@ export default function MarketClients() {
                     {c.full_name || c.fio || "—"}
                   </span>
                   <span>{c.phone || "—"}</span>
-                  <span>{typeLabel(c.type)}</span>
+                  <span>{ctxTypeLabel(c.type)}</span>
                   <span>{c.date || "—"}</span>
                   <span className="linkCell">
                     <Link
@@ -474,6 +503,8 @@ export default function MarketClients() {
                   ? "Новый клиент"
                   : activeTab === "suppliers"
                   ? "Новый поставщик"
+                  : sectorName === "Строительная компания"
+                  ? "Новый подрядчик"
                   : "Новый реализатор"}
               </h3>
             </div>

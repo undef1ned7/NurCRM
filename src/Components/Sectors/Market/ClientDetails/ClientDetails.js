@@ -9,10 +9,12 @@ import {
 import api from "../../../../api";
 import {
   getClientDealDetail,
+  payDebtDeal,
   updateDealDetail,
 } from "../../../../store/creators/clientCreators";
 import { useClient } from "../../../../store/slices/ClientSlice";
 import "./ClientDetails.scss";
+import { useUser } from "../../../../store/slices/userSlice";
 
 // import { useDispatch } from "react-redux";
 
@@ -58,7 +60,17 @@ function normalizeDealFromApi(resOrObj) {
     id: d.id,
     title: d.title || "",
     kind: d.kind || "sale",
+
+    // суммы с сервера (строки -> числа)
     amount: Number(d.amount ?? 0),
+
+    // НОВОЕ: тянем предоплату и остаток долга прямо из API
+    prepayment: Number(d.prepayment ?? 0),
+    remaining_debt: Number(d.remaining_debt ?? 0),
+    debt_amount: Number(d.debt_amount ?? d.amount ?? 0),
+    monthly_payment: Number(d.monthly_payment ?? 0),
+    debt_months: d.debt_months ?? null,
+
     note: d.note || "",
     client: d.client || null,
     created_at: d.created_at || null,
@@ -96,73 +108,55 @@ const toIsoDate10 = (v) => {
   return `${y}-${m2}-${day}`;
 };
 
-// ===== helpers =====
-const toNumber = (v) => {
+// helpers
+function toNumber(v) {
   const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-};
-
-const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
-
-// Добавляет месяцы, сохраняя "день месяца"; если его нет (напр. 31-е → февраль), берём последний день месяца
-function addMonthsKeepDOM(date, monthsToAdd) {
-  const d = new Date(date.getTime());
-  const day = d.getDate();
-  const targetMonth = d.getMonth() + monthsToAdd;
-  const y = d.getFullYear() + Math.floor(targetMonth / 12);
-  const m = ((targetMonth % 12) + 12) % 12;
-  const lastDayOfTargetMonth = new Date(y, m + 1, 0).getDate();
-  const safeDay = Math.min(day, lastDayOfTargetMonth);
-  return new Date(
-    y,
-    m,
-    safeDay,
-    d.getHours(),
-    d.getMinutes(),
-    d.getSeconds(),
-    d.getMilliseconds()
-  );
+  return Number.isFinite(n) ? n : NaN;
 }
 
-function formatDateDDMMYYYY(dt) {
+export function toYYYYMMDD(input) {
+  if (input == null) return "";
+
+  if (typeof input === "string") {
+    const s = input.trim();
+    // Уже в нужном формате
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // DD.MM.YYYY -> YYYY-MM-DD
+    const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s);
+    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  }
+
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return "";
+
+  // Нормализуем к локальной дате без сдвига на таймзону
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+function formatDateDDMMYYYY(input) {
+  if (!input) return "—";
+  // сервер отдаёт YYYY-MM-DD
+  if (typeof input === "string" && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    const [y, m, d] = input.split("-");
+    return `${d}.${m}.${y}`;
+  }
+  const dt = new Date(input);
+  if (Number.isNaN(dt.getTime())) return String(input);
   const dd = String(dt.getDate()).padStart(2, "0");
   const mm = String(dt.getMonth() + 1).padStart(2, "0");
   const yyyy = dt.getFullYear();
   return `${dd}.${mm}.${yyyy}`;
 }
 
-/**
- * Генерация графика равных платежей с учётом округления до копеек
- * Правило: первые (months - 1) платежей равны округлённому base, последний — «добивка» до общей суммы
- */
-function buildInstallments({ total, months, firstDueDate }) {
-  if (!Number.isFinite(total) || !Number.isFinite(months) || months <= 0)
-    return [];
-
-  const base = round2(total / months); // напр. 100 / 12 = 8.33
-  const last = round2(total - base * (months - 1)); // добиваем до общей суммы (напр. 8.37)
-
-  const rows = [];
-  let rest = round2(total);
-  for (let i = 0; i < months; i++) {
-    const dueDate = addMonthsKeepDOM(firstDueDate, i);
-    const amount = i === months - 1 ? last : base;
-    rest = round2(rest - amount);
-    rows.push({
-      idx: i + 1,
-      dueDate,
-      amount,
-      rest,
-    });
-  }
-  return rows;
-}
-
-const DebtModal = ({ id, onClose }) => {
+const DebtModal = ({ id, onClose, onChanged }) => {
   const dispatch = useDispatch();
   const { dealDetail } = useClient();
 
-  const [state, setState] = useState({ amount: "", count_debt: "" });
+  const [state, setState] = useState({
+    amount: "",
+    debt_months: "",
+  });
   const [isEditing, setIsEditing] = useState(false);
 
   // грузим детали сделки
@@ -170,13 +164,14 @@ const DebtModal = ({ id, onClose }) => {
     dispatch(getClientDealDetail(id));
   }, [id, dispatch]);
 
-  // когда детали приехали — заполняем форму
+  // когда детали приехали — заполняем форму из СЕРВЕРА
   useEffect(() => {
     if (dealDetail) {
       setState({
+        // редактируем исходную сумму (amount), сервер сам посчитает debt_amount/remaining_debt
         amount: dealDetail.amount != null ? String(dealDetail.amount) : "",
-        count_debt:
-          dealDetail.count_debt != null ? String(dealDetail.count_debt) : "",
+        debt_months:
+          dealDetail.debt_months != null ? String(dealDetail.debt_months) : "",
       });
     }
   }, [dealDetail]);
@@ -189,51 +184,64 @@ const DebtModal = ({ id, onClose }) => {
   const onSubmit = async () => {
     try {
       const amount = Number(state.amount);
-      const count = Number(state.count_debt);
+      const months = Number(state.debt_months);
 
       await dispatch(
         updateDealDetail({
           id,
           data: {
+            // ВАЖНО: поля запроса под сервер — amount и debt_months
             amount: Number.isFinite(amount) ? amount : 0,
-            count_debt: Number.isFinite(count) ? count : 0,
+            debt_months: Number.isFinite(months) ? months : 0,
           },
         })
       ).unwrap();
+      onChanged?.();
+      dispatch(getClientDealDetail(id));
 
       setIsEditing(false);
     } catch (e) {
       console.error(e);
-      // можно показать тост/ошибку пользователю
+      // показать тост/ошибку пользователю при желании
+    }
+  };
+
+  const onPayDeal = async (data) => {
+    try {
+      const alreadyPaid = installments.some(
+        (i) => i.number === data.installment_number && i.paid_on
+      );
+      if (alreadyPaid) return;
+
+      await dispatch(payDebtDeal({ id, data })).unwrap();
+      onChanged?.();
+      dispatch(getClientDealDetail(id));
+    } catch (e) {
+      console.error(e);
     }
   };
 
   // источники значений (форма/сервер)
   const amountNum = toNumber(isEditing ? state.amount : dealDetail?.amount);
   const monthsNum = toNumber(
-    isEditing ? state.count_debt : dealDetail?.count_debt
+    isEditing ? state.debt_months : dealDetail?.debt_months
   );
 
-  const monthly =
-    Number.isFinite(amountNum) && Number.isFinite(monthsNum) && monthsNum > 0
+  const monthly = isEditing
+    ? Number.isFinite(amountNum) && Number.isFinite(monthsNum) && monthsNum > 0
       ? (amountNum / monthsNum).toFixed(2)
-      : "—";
+      : "—"
+    : dealDetail?.monthly_payment ?? "—";
 
-  // === график платежей ===
+  // ===== График платежей (только то, что пришло с сервера) =====
   const installments = useMemo(() => {
-    if (!dealDetail) return [];
-    // дата первого платежа — через месяц после created_at (или сегодняшняя, если нет created_at)
-    const createdAt = dealDetail?.created_at
-      ? new Date(dealDetail.created_at)
-      : new Date();
-    const firstDueDate = addMonthsKeepDOM(createdAt, 1);
+    return Array.isArray(dealDetail?.installments)
+      ? dealDetail.installments
+      : [];
+  }, [dealDetail]);
 
-    return buildInstallments({
-      total: amountNum,
-      months: monthsNum,
-      firstDueDate,
-    });
-  }, [dealDetail, amountNum, monthsNum]);
+  const firstDueDate =
+    dealDetail?.first_due_date ?? installments[0]?.due_date ?? null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -272,34 +280,42 @@ const DebtModal = ({ id, onClose }) => {
               onChange={onChange}
             />
           ) : (
-            <div className="value">{dealDetail?.amount ?? "—"}</div>
+            // показываем именно debt_amount, который уже учитывает предоплату и расчёты сервера
+            <div className="value">
+              {dealDetail?.debt_amount ?? dealDetail?.amount ?? "—"}
+            </div>
           )}
         </div>
 
         <div className="row">
-          <label className="label" htmlFor="count_debt">
+          <label className="label" htmlFor="debt_months">
             Срок продления (мес.)
           </label>
           {isEditing ? (
             <input
-              id="count_debt"
+              id="debt_months"
               type="number"
               inputMode="numeric"
               className="debt__input"
               step="1"
               min="1"
-              name="count_debt"
-              value={state.count_debt}
+              name="debt_months"
+              value={state.debt_months}
               onChange={onChange}
             />
           ) : (
-            <div className="value">{dealDetail?.count_debt ?? "—"}</div>
+            <div className="value">{dealDetail?.debt_months ?? "—"}</div>
           )}
         </div>
 
         <div className="row">
           <div className="label">Ежемесячный платёж</div>
           <div className="value">{monthly}</div>
+        </div>
+
+        <div className="row">
+          <div className="label">Остаток долга</div>
+          <div className="value">{dealDetail?.remaining_debt ?? "—"}</div>
         </div>
 
         {dealDetail?.note && (
@@ -309,7 +325,7 @@ const DebtModal = ({ id, onClose }) => {
           </div>
         )}
 
-        {/* ===== График платежей ===== */}
+        {/* ===== График платежей (с сервера) ===== */}
         {installments.length > 0 && (
           <section className="schedule">
             <div className="row3">
@@ -322,40 +338,81 @@ const DebtModal = ({ id, onClose }) => {
                       <th style={{ textAlign: "left" }}>Срок оплаты</th>
                       <th style={{ textAlign: "right" }}>Сумма</th>
                       <th style={{ textAlign: "right" }}>Остаток</th>
+                      <th style={{ textAlign: "right" }}>Оплачен</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {installments.map((p) => (
-                      <tr key={p.idx}>
-                        <td>{p.idx}</td>
-                        <td>{formatDateDDMMYYYY(p.dueDate)}</td>
-                        <td style={{ textAlign: "right" }}>
-                          {p.amount.toFixed(2)}
-                        </td>
-                        <td style={{ textAlign: "right" }}>
-                          {p.rest.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                    {installments.map((p) => {
+                      const paid = Boolean(p.paid_on);
+
+                      return (
+                        <tr
+                          key={p.number}
+                          className={paid ? "schedule__row--paid" : undefined}
+                          aria-checked={paid}
+                        >
+                          <td style={{ textAlign: "left" }}>{p.number}</td>
+                          <td style={{ textAlign: "left" }}>
+                            {formatDateDDMMYYYY(p.due_date)}
+                          </td>
+                          <td style={{ textAlign: "right" }}>{p.amount}</td>
+                          <td style={{ textAlign: "right" }}>
+                            {p.balance_after}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            {p.paid_on ? formatDateDDMMYYYY(p.paid_on) : "—"}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            {paid ? (
+                              <span title="Платёж уже проведён">
+                                Оплачено ✓
+                              </span>
+                            ) : (
+                              <button
+                                className="schedule__pay-btn"
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  cursor: "pointer",
+                                }}
+                                onClick={() =>
+                                  onPayDeal({
+                                    installment_number: p.number,
+                                    date: toYYYYMMDD(new Date()),
+                                  })
+                                }
+                              >
+                                Оплатить
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
+
                   <tfoot>
                     <tr>
                       <td colSpan={2} style={{ fontWeight: 600 }}>
                         Итого
                       </td>
                       <td style={{ textAlign: "right", fontWeight: 600 }}>
-                        {amountNum.toFixed(2)}
+                        {dealDetail?.debt_amount ?? "—"}
                       </td>
                       <td style={{ textAlign: "right", fontWeight: 600 }}>
-                        0.00
+                        {installments[installments.length - 1]?.balance_after ??
+                          "0.00"}
                       </td>
+                      <td />
                     </tr>
                   </tfoot>
                 </table>
-                <p className="schedule__hint">
-                  Первый платёж назначен через месяц после даты оформления
-                  сделки.
-                </p>
+                {firstDueDate && (
+                  <p className="schedule__hint">
+                    Первый платёж: {formatDateDDMMYYYY(firstDueDate)}.
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -381,9 +438,9 @@ const DebtModal = ({ id, onClose }) => {
                 setState({
                   amount:
                     dealDetail?.amount != null ? String(dealDetail.amount) : "",
-                  count_debt:
-                    dealDetail?.count_debt != null
-                      ? String(dealDetail.count_debt)
+                  debt_months:
+                    dealDetail?.debt_months != null
+                      ? String(dealDetail.debt_months)
                       : "",
                 });
                 setIsEditing(false);
@@ -402,6 +459,7 @@ export default function MarketClientDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
+  const { company } = useUser();
   const { clients = [], setClients = () => {} } = useOutletContext() || {};
 
   const initialClient = useMemo(() => {
@@ -689,17 +747,26 @@ export default function MarketClientDetails() {
   const totals = useMemo(() => {
     const agg = { debt: 0, prepayment: 0, sale: 0 };
     for (const d of deals) {
-      const k = d.kind || "sale";
-      const amt = Number(d.amount || 0);
-      if (agg[k] !== undefined) agg[k] += amt;
+      const kind = d.kind || "sale";
+      if (kind === "debt") {
+        agg.debt += Number(d.remaining_debt || 0);
+        agg.prepayment += Number(d.prepayment || 0);
+      } else if (kind === "prepayment") {
+        agg.prepayment += Number(d.amount || 0);
+      } else {
+        agg.sale += Number(d.amount || 0);
+      }
     }
-    return agg;
+    return { ...agg, amount: agg.sale }; // ← alias чтобы старые обращения не падали
   }, [deals]);
 
   const dataTransmission = (id) => {
     setSelectedRowId(id);
     setShowDebtModal(true);
   };
+  const sectorName = company?.sector?.name;
+
+  // const { pathname } = useLocation();
 
   const kindTranslate = {
     new: "Новый",
@@ -765,18 +832,44 @@ export default function MarketClientDetails() {
 
           <div className="debts-wrapper">
             <div className="debts debts--red">
-              <div className="debts-title">Долги</div>
-              <div className="debts-amount">{totals.debt.toFixed(2)} сом</div>
-            </div>
-            <div className="debts debts--green">
-              <div className="debts-title">Аванс</div>
+              <div className="debts-title">
+                {sectorName === "Строительная компания"
+                  ? "Сумма договора"
+                  : "Долг"}
+              </div>
               <div className="debts-amount">
-                {totals.prepayment.toFixed(2)} сом
+                {sectorName === "Строительная компания"
+                  ? (totals.sale ?? 0).toFixed(2) // было totals.amount
+                  : (totals.debt ?? 0).toFixed(2)}{" "}
+                сом
               </div>
             </div>
+
+            <div className="debts debts--green">
+              <div className="debts-title">
+                {sectorName === "Строительная компания"
+                  ? "Предоплата"
+                  : "Аванс"}
+              </div>
+              <div className="debts-amount">
+                {(totals.prepayment ?? 0).toFixed(2)} сом
+              </div>
+            </div>
+
             <div className="debts debts--orange">
-              <div className="debts-title">Продажи</div>
-              <div className="debts-amount">{totals.sale.toFixed(2)} сом</div>
+              <div className="debts-title">
+                {sectorName === "Строительная компания"
+                  ? "Остаток долга"
+                  : "Продажа"}
+              </div>
+              <div className="debts-amount">
+                {
+                  sectorName === "Строительная компания"
+                    ? (totals.debt ?? 0).toFixed(2)
+                    : (totals.sale ?? 0).toFixed(2) // было totals.amount
+                }{" "}
+                сом
+              </div>
             </div>
           </div>
         </div>
@@ -825,7 +918,11 @@ export default function MarketClientDetails() {
       </div>
 
       {showDebtModal && (
-        <DebtModal id={selectedRowId} onClose={() => setShowDebtModal(false)} />
+        <DebtModal
+          id={selectedRowId}
+          onClose={() => setShowDebtModal(false)}
+          onChanged={() => loadDeals(client.id)}
+        />
       )}
 
       {/* ===== Modal: Редактировать клиента ===== */}

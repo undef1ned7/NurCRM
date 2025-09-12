@@ -123,6 +123,11 @@ const SECTOR_ACCESS_TYPES = {
       label: "Процесс работы",
       backendKey: "can_view_building_work_process",
     },
+    {
+      value: "Объекты",
+      label: "Объекты",
+      backendKey: "can_view_building_objects",
+    },
   ],
   "Ремонтные и отделочные работы": [
     {
@@ -130,12 +135,22 @@ const SECTOR_ACCESS_TYPES = {
       label: "Процесс работы",
       backendKey: "can_view_building_work_process",
     },
+    {
+      value: "Объекты",
+      label: "Объекты",
+      backendKey: "can_view_building_objects",
+    },
   ],
   "Архитектура и дизайн": [
     {
       value: "Процесс работы",
       label: "Процесс работы",
       backendKey: "can_view_building_work_process",
+    },
+    {
+      value: "Объекты",
+      label: "Объекты",
+      backendKey: "can_view_building_objects",
     },
   ],
 };

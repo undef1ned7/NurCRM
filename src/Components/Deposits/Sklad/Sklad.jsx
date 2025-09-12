@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   SlidersHorizontal,
   MoreVertical,
   X,
   ChevronDown,
   Plus,
+  Minus,
 } from "lucide-react";
 import "./Sklad.scss";
 import { useDispatch, useSelector } from "react-redux";
@@ -35,6 +36,8 @@ import {
   getCashBoxes,
   useCash,
 } from "../../../store/slices/cashSlice";
+
+/* ===================== ВСПОМОГАТЕЛЬНЫЕ МОДАЛКИ ===================== */
 
 const AddBrandModal = ({ onClose }) => {
   const dispatch = useDispatch();
@@ -99,18 +102,20 @@ const EditModal = ({ item, onClose, onSaveSuccess, onDeleteConfirm }) => {
   });
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
     setEditedItem((prevData) => ({
       ...prevData,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "number" ? (value === "" ? "" : value) : value,
     }));
   };
 
   const handleSave = async () => {
-    if (!editedItem.name || !editedItem.price || !editedItem.quantity) {
-      alert(
-        "Пожалуйста, заполните все обязательные поля (Название, Цена, Количество)."
-      );
+    if (
+      !editedItem.name ||
+      editedItem.price === "" ||
+      editedItem.quantity === ""
+    ) {
+      alert("Пожалуйста, заполните поля: Название, Цена, Количество.");
       return;
     }
 
@@ -183,11 +188,6 @@ const EditModal = ({ item, onClose, onSaveSuccess, onDeleteConfirm }) => {
             required
           />
         </div>
-
-        {/* <div className="edit-modal__section">
-          <label>Описание</label>
-          <textarea name="description" rows="3" onChange={handleChange}>{editedItem.description}</textarea>
-        </div> */}
 
         <div className="edit-modal__section">
           <label>Цена *</label>
@@ -390,19 +390,213 @@ const FilterModal = ({
   );
 };
 
+/* ===================== НОВОЕ: Модалка «Принять товар» ===================== */
+
+const AcceptPendingModal = ({ onClose, onChanged }) => {
+  const dispatch = useDispatch();
+  const { list: products, loading } = useSelector((s) => s.product);
+  const { list: cashBoxes } = useCash();
+  const [selectedCashBox, setSelectedCashBox] = useState("");
+
+  useEffect(() => {
+    dispatch(getCashBoxes());
+  }, [dispatch]);
+
+  const pending = useMemo(
+    () =>
+      (products || []).filter(
+        (p) => String(p.status).toLowerCase() === "pending"
+      ),
+    [products]
+  );
+
+  const refresh = () => {
+    dispatch(fetchProductsAsync({})).finally(() => {
+      onChanged?.();
+    });
+  };
+
+  const calcExpenseAmount = (item) => {
+    const price = Number(item?.purchase_price ?? item?.price ?? 0);
+    const qty = Number(item?.quantity ?? 0);
+    const amt = price * qty;
+    // округлим до 2 знаков
+    return Math.round(amt * 100) / 100;
+  };
+
+  const acceptDisabled = !selectedCashBox;
+
+  const handleAccept = async (item) => {
+    if (!selectedCashBox) {
+      alert("Сначала выберите кассу вверху модалки.");
+      return;
+    }
+    try {
+      // 1) Принять товар (статус -> accepted)
+      await dispatch(
+        updateProductAsync({
+          productId: item.id,
+          updatedData: { status: "accepted" },
+        })
+      ).unwrap();
+
+      // 2) Движение денег в кассу как расход
+      const amount = calcExpenseAmount(item);
+      if (amount > 0) {
+        await dispatch(
+          addCashFlows({
+            cashbox: selectedCashBox,
+            type: "expense",
+            name: item.name,
+            amount,
+          })
+        ).unwrap();
+      }
+      refresh();
+    } catch (e) {
+      console.error(e);
+      alert("Не удалось принять товар");
+    }
+  };
+
+  const handleReject = async (item) => {
+    try {
+      // Только смена статуса, без кассы
+      await dispatch(
+        updateProductAsync({
+          productId: item.id,
+          updatedData: { status: "rejected" },
+        })
+      ).unwrap();
+      refresh();
+    } catch (e) {
+      console.error(e);
+      alert("Не удалось отклонить товар");
+    }
+  };
+
+  return (
+    <div className="add-modal">
+      <div className="add-modal__overlay" onClick={onClose} />
+      <div className="add-modal__content" role="dialog" aria-modal="true">
+        <div className="add-modal__header">
+          <h3>Принятие товаров (статус: pending)</h3>
+          <X className="add-modal__close-icon" size={20} onClick={onClose} />
+        </div>
+
+        <div className="add-modal__section">
+          <label>Касса (обязательно для принятия)</label>
+          <select
+            className="add-modal__input"
+            value={selectedCashBox}
+            onChange={(e) => setSelectedCashBox(e.target.value)}
+          >
+            <option value="">-- выберите кассу --</option>
+            {cashBoxes?.map((cash) => (
+              <option key={cash.id} value={cash.id}>
+                {cash.name ?? cash.department_name}
+              </option>
+            ))}
+          </select>
+          {!selectedCashBox && (
+            <div className="hint">
+              Для кнопки «Принять» нужно выбрать кассу. «Отказать» можно без
+              выбора кассы.
+            </div>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="add-modal__section">Загрузка…</div>
+        ) : pending.length === 0 ? (
+          <div className="add-modal__section">
+            Нет товаров со статусом pending.
+          </div>
+        ) : (
+          <div
+            className="table-wrapper"
+            style={{ maxHeight: 400, overflow: "auto" }}
+          >
+            <table className="sklad__table">
+              <thead>
+                <tr>
+                  <th>№</th>
+                  <th>Название</th>
+                  <th>Поставщик</th>
+                  <th>Кол-во</th>
+                  <th>Закуп. цена</th>
+                  <th>Итого (расход)</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pending.map((item, idx) => {
+                  const expense = calcExpenseAmount(item);
+                  return (
+                    <tr key={item.id}>
+                      <td>{idx + 1}</td>
+                      <td>{item.name}</td>
+                      <td>{item.client_name || "—"}</td>
+                      <td>{item.quantity}</td>
+                      <td>{item.purchase_price ?? "—"}</td>
+                      <td>{expense.toFixed(2)}</td>
+                      <td>
+                        <button
+                          className="add-modal__save"
+                          style={{ marginRight: 8 }}
+                          disabled={acceptDisabled}
+                          title={
+                            acceptDisabled
+                              ? "Выберите кассу выше"
+                              : "Принять товар"
+                          }
+                          onClick={() => handleAccept(item)}
+                        >
+                          Принять
+                        </button>
+                        <button
+                          className="add-modal__cancel"
+                          onClick={() => handleReject(item)}
+                        >
+                          Отказать
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="add-modal__footer">
+          <button className="add-modal__cancel" onClick={onClose}>
+            Закрыть
+          </button>
+          <button
+            className="add-modal__save"
+            onClick={() => dispatch(fetchProductsAsync({}))}
+          >
+            Обновить список
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ======================= AddModal (добавление товара) ======================= */
+
 const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
   const { list } = useClient();
-  console.log(list);
 
-  const answer = true;
-  // const [changeOption, setChangeOption] = useState("");
   const dispatch = useDispatch();
   const { creating, createError, brands, categories, barcodeError } =
     useProducts();
   const { company } = useUser();
   const [activeTab, setActiveTab] = useState(null);
   const [isTabSelected, setIsTabSelected] = useState(false);
-  // const [barcodeError, setBarcodeError] = useState(null);
+
   const [newItemData, setNewItemData] = useState({
     name: "",
     barcode: "",
@@ -429,6 +623,7 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
     amount: "",
   });
   const [showInputs, setShowInputs] = useState(false);
+
   const onChange = (e) => {
     const { name, value } = e.target;
     setState((prev) => ({ ...prev, [name]: value }));
@@ -556,7 +751,7 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
             >
               <option value="">-- Выберите бренд --</option>
               {brands.map((brand, idx) => (
-                <option key={idx} value={brand.name}>
+                <option key={brand.id ?? idx} value={brand.name}>
                   {brand.name}
                 </option>
               ))}
@@ -574,7 +769,7 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
             >
               <option value="">-- Выберите категорию --</option>
               {categories.map((category, idx) => (
-                <option key={idx} value={category.name}>
+                <option key={category.id ?? idx} value={category.name}>
                   {category.name}
                 </option>
               ))}
@@ -591,7 +786,7 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
             >
               <option value="">-- Выберите поставщика --</option>
               {filterClient.map((client, idx) => (
-                <option key={idx} value={client.id}>
+                <option key={client.id ?? idx} value={client.id}>
                   {client.full_name}
                 </option>
               ))}
@@ -706,13 +901,11 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
 
   const handleTabClick = (index) => {
     setActiveTab(index);
-    setIsTabSelected(true); // включаем отображение контента
+    setIsTabSelected(true);
   };
   useEffect(() => {
     dispatch(fetchClientsAsync());
-  }, []);
-
-  // const filterClient = list.filter((item) => item.type === "client");
+  }, [dispatch]);
 
   useEffect(() => {
     if (barcodeError) {
@@ -728,10 +921,7 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
       name: newItemData.name,
       amount: newItemData.price,
     }));
-  }, [newItemData]);
-
-  // console.log("sector:", company?.sector?.name);
-  // console.log("plan:", company?.subscription_plan?.name);
+  }, [newItemData, selectCashBox]);
 
   return (
     <div className="add-modal">
@@ -770,186 +960,8 @@ const AddModal = ({ onClose, onSaveSuccess, cashBoxes, selectCashBox }) => {
             )}
           </>
         ) : (
-          <>
-            <div className="add-modal__section">
-              <label>Название *</label>
-              <input
-                type="text"
-                name="name"
-                placeholder="Например, Монитор Dell"
-                className="add-modal__input"
-                value={newItemData.name}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="add-modal__section">
-              <label>Штрих код *</label>
-              <input
-                type="text"
-                name="barcode"
-                placeholder="Штрих код"
-                className="add-modal__input"
-                value={newItemData.barcode}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="add-modal__section">
-              <label>Бренд *</label>
-              <select
-                name="brand_name"
-                className="add-modal__input"
-                value={newItemData.brand_name}
-                onChange={handleChange}
-                required
-              >
-                <option value="">-- Выберите бренд --</option>
-                {brands.map((brand, idx) => (
-                  <option key={idx} value={brand.name}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="add-modal__section">
-              <label>Категория *</label>
-              <select
-                name="category_name"
-                className="add-modal__input"
-                value={newItemData.category_name}
-                onChange={handleChange}
-                required
-              >
-                <option value="">-- Выберите категорию --</option>
-                {categories.map((category, idx) => (
-                  <option key={idx} value={category.name}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="add-modal__section">
-              <label>Поставщик *</label>
-              <select
-                name="client"
-                className="add-modal__input"
-                value={newItemData.client}
-                onChange={handleChange}
-                required
-              >
-                <option value="">-- Выберите поставщика --</option>
-                {filterClient.map((client, idx) => (
-                  <option key={idx} value={client.id}>
-                    {client.full_name}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="create-client"
-                onClick={() => setShowInputs(!showInputs)}
-              >
-                {showInputs ? "Отменить" : "Создать поставщика"}
-              </button>
-              {showInputs && (
-                <form
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    rowGap: "10px",
-                  }}
-                  onSubmit={onSubmit}
-                >
-                  <input
-                    className="add-modal__input"
-                    onChange={onChange}
-                    type="text"
-                    placeholder="ФИО"
-                    name="full_name"
-                  />
-                  <input
-                    className="add-modal__input"
-                    onChange={onChange}
-                    type="text"
-                    name="phone"
-                    placeholder="Телефон"
-                  />
-                  <input
-                    className="add-modal__input"
-                    onChange={onChange}
-                    type="email"
-                    name="email"
-                    placeholder="Почта"
-                  />
-                  <button className="create-client">Создать</button>
-                </form>
-              )}
-            </div>
-
-            <div className="add-modal__section">
-              <label>Розничная цена *</label>
-              <input
-                type="number"
-                name="price"
-                placeholder="999.99"
-                className="add-modal__input"
-                value={newItemData.price}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                required
-              />
-            </div>
-            <div className="add-modal__section">
-              <label>Закупочная цена *</label>
-              <input
-                type="number"
-                name="purchase_price"
-                placeholder="999.99"
-                className="add-modal__input"
-                value={newItemData.purchase_price}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                required
-              />
-            </div>
-
-            <div className="add-modal__section">
-              <label>Количество *</label>
-              <input
-                type="number"
-                name="quantity"
-                placeholder="100"
-                className="add-modal__input"
-                value={newItemData.quantity}
-                onChange={handleChange}
-                min="0"
-                required
-              />
-            </div>
-
-            <div className="add-modal__footer">
-              <button
-                className="add-modal__cancel"
-                onClick={onClose}
-                disabled={creating}
-              >
-                Отмена
-              </button>
-              <button
-                className="add-modal__save"
-                onClick={handleSubmit}
-                disabled={creating}
-              >
-                {creating ? "Добавление..." : "Добавить"}
-              </button>
-            </div>
-          </>
+          // без табов — уже выведена ручная форма выше
+          <></>
         )}
       </div>
     </div>
@@ -998,7 +1010,7 @@ const SellModal = ({ onClose }) => {
 
   const handleTabClick = (index) => {
     setActiveTab(index);
-    setIsTabSelected(true); // включаем отображение контента
+    setIsTabSelected(true);
   };
   return (
     <div className="add-modal">
@@ -1012,6 +1024,7 @@ const SellModal = ({ onClose }) => {
         {tabs.map((tab, index) => {
           return (
             <button
+              key={index}
               className={`add-modal__button  ${
                 activeTab === index && isTabSelected
                   ? "add-modal__button-active"
@@ -1031,7 +1044,7 @@ const SellModal = ({ onClose }) => {
           <div className="receipt">
             <h2 className="receipt__title">Приход</h2>
             {products.map((product) => (
-              <div className="receipt__item">
+              <div className="receipt__item" key={product.id}>
                 <p className="receipt__item-name">
                   {product.id}. {product.name}
                 </p>
@@ -1063,6 +1076,8 @@ const SellModal = ({ onClose }) => {
   );
 };
 
+/* ============================== ГЛАВНЫЙ СКЛАД ============================== */
+
 export default function () {
   const dispatch = useDispatch();
 
@@ -1078,15 +1093,16 @@ export default function () {
     creating,
     updating,
     deleting,
-    // categories.
   } = useSelector((state) => state.product);
   const { list: cashBoxes } = useCash();
+  const { company } = useUser();
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [showSellModal, setShowSellModal] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false); // ← НОВОЕ
+  const [selectedItem, setSelectedItem] = useState(null);
   const [selectCashBox, setSelectCashBox] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -1095,12 +1111,10 @@ export default function () {
 
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [selectedBrand, setSelectedBrand] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [barcode, setBarcode] = useState("");
   const [scannerVisible, setScannerVisible] = useState(false);
   const [selectValue, setSelectValue] = useState("all");
-  const [activeTab, setActiveTab] = useState(1);
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     const params = {
@@ -1125,8 +1139,6 @@ export default function () {
     currentFilters,
   ]);
 
-  console.log(products);
-
   const handleEdit = (item) => {
     setSelectedItem(item);
     setShowEditModal(true);
@@ -1140,11 +1152,25 @@ export default function () {
     setShowEditModal(false);
     setShowAddModal(false);
     alert("Операция с товаром успешно завершена!");
+    dispatch(
+      fetchProductsAsync({
+        page: currentPage,
+        search: searchTerm,
+        ...currentFilters,
+      })
+    );
   };
 
   const handleDeleteConfirm = () => {
     setShowEditModal(false);
     alert("Товар успешно удален!");
+    dispatch(
+      fetchProductsAsync({
+        page: currentPage,
+        search: searchTerm,
+        ...currentFilters,
+      })
+    );
   };
 
   const handleSearchChange = (e) => {
@@ -1162,7 +1188,6 @@ export default function () {
     if (next) {
       setCurrentPage((prev) => prev + 1);
     }
-    // console.log(1);
   };
 
   const handlePreviousPage = () => {
@@ -1188,6 +1213,7 @@ export default function () {
         setShowSellModal(false);
         setShowEditModal(false);
         setShowFilterModal(false);
+        setShowReceiveModal(false);
       }
     };
 
@@ -1197,181 +1223,307 @@ export default function () {
 
   useEffect(() => {
     dispatch(getCashBoxes());
-  }, []);
+  }, [dispatch]);
 
-  console.log(cashBoxes);
+  const filterProducts = products.filter((item) => item.status === "accepted");
 
-  return (
-    <div className="sklad">
-      {/* <div className="vitrina__header" style={{ margin: "15px 0" }}>
-        <div className="vitrina__tabs">
-          {tabs.map((tab, index) => {
-            return (
-              <span
-                className={`vitrina__tab ${
-                  index === activeTab && "vitrina__tab--active"
-                }`}
-                onClick={() => setActiveTab(index)}
-              >
-                {tab.label}
-              </span>
-              // <button onClick={() => setActiveTab(index)}>{tab.label}</button>
-            );
-          })}
-        </div>
-      </div> */}
-      {/* {tabs[activeTab].content} */}
-      <>
-        <div className="sklad__header">
-          <div className="sklad__left">
-            <input
-              type="text"
-              placeholder="Поиск по названию товара"
-              className="sklad__search"
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
-            {/* <button className="sklad__filter" onClick={() => setShowFilterModal(true)}>
-              <SlidersHorizontal size={16} />
-            </button> */}
-            <select className="employee__search-wrapper">
-              {categories.map((category) => (
-                <option value={category.id}>{category.name}</option>
-              ))}
-            </select>
-            <div className="sklad__center">
-              <span>Всего: {count !== null ? count : "-"}</span>
-              <span>Найдено: {products.length}</span>
-              {isFiltered && (
-                <span
-                  className="sklad__reset"
-                  onClick={handleResetAllFilters}
-                  style={{ cursor: "pointer" }}
-                >
-                  Сбросить
-                </span>
+  const tabs = [
+    {
+      label: "Склад",
+      content: (
+        <>
+          <div className="sklad__header">
+            <div className="sklad__left">
+              <input
+                type="text"
+                placeholder="Поиск по названию товара"
+                className="sklad__search"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+              <select className="employee__search-wrapper">
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <div className="sklad__center">
+                <span>Всего: {count !== null ? count : "-"}</span>
+                <span>Найдено: {products.length}</span>
+                {isFiltered && (
+                  <span
+                    className="sklad__reset"
+                    onClick={handleResetAllFilters}
+                    style={{ cursor: "pointer" }}
+                  >
+                    Сбросить
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+              {company.sector?.name === "Строительная компания" ? (
+                <>
+                  <button
+                    className="sklad__add"
+                    onClick={() => setShowReceiveModal(true)}
+                  >
+                    <Plus size={16} style={{ marginRight: "4px" }} /> Принять
+                    товар
+                  </button>
+                  <button className="sklad__add">
+                    <Minus size={16} style={{ marginRight: "4px" }} /> Отправить
+                    товар
+                  </button>
+                </>
+              ) : (
+                <>
+                  <select
+                    value={selectCashBox}
+                    onChange={(e) => setSelectCashBox(e.target.value)}
+                    className="employee__search-wrapper"
+                  >
+                    <option value="" disabled>
+                      Выберите кассу
+                    </option>
+                    {cashBoxes?.map((cash) => (
+                      <option key={cash.id} value={cash.id}>
+                        {cash.name ?? cash.department_name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    className="sklad__add"
+                    onClick={handleAdd}
+                    disabled={!selectCashBox}
+                    title={
+                      !selectCashBox ? "Сначала выберите кассу" : undefined
+                    }
+                  >
+                    <Plus size={16} style={{ marginRight: "4px" }} /> Добавить
+                    товар
+                  </button>
+                </>
               )}
             </div>
           </div>
-          {/* {scannerVisible ? (
-            <BarcodeScanner
-              onScanSuccess={(code) => {
-                setBarcode(code);
-                setScannerVisible(false);
-              }}
-            />
+
+          {loading ? (
+            <p className="sklad__loading-message">Загрузка товаров...</p>
+          ) : error ? (
+            <p className="sklad__error-message">Ошибка загрузки:</p>
+          ) : products.length === 0 ? (
+            <p className="sklad__no-products-message">Нет доступных товаров.</p>
           ) : (
-            <button onClick={() => setScannerVisible(true)}>
-              📷 Сканировать штрих-код
-            </button>
-          )} */}
-          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-            <select
-              value={selectCashBox}
-              onChange={(e) => setSelectCashBox(e.target.value)}
-              className="employee__search-wrapper"
-            >
-              <option value="" disabled>
-                Выберите кассу
-              </option>
-              {cashBoxes?.map((cash) => (
-                <option key={cash.id} value={cash.id}>
-                  {cash.name ?? cash.department_name}
-                </option>
-              ))}
-            </select>
-
-            {/* <button
-              className="sklad__add"
-              onClick={handleAdd}
-              disabled={!selectCashBox}
-              title={!selectCashBox ? "Сначала выберите кассу" : undefined}
-            >
-              <Plus size={16} style={{ marginRight: "4px" }} /> 
-            </button> */}
-            <button
-              className="sklad__add"
-              onClick={handleAdd}
-              disabled={!selectCashBox}
-              title={!selectCashBox ? "Сначала выберите кассу" : undefined}
-            >
-              <Plus size={16} style={{ marginRight: "4px" }} /> Добавить товар
-            </button>
-          </div>
-        </div>
-
-        {loading ? (
-          <p className="sklad__loading-message">Загрузка товаров...</p>
-        ) : error ? (
-          <p className="sklad__error-message">
-            Ошибка загрузки:
-            {/* {error.detail || error.message || JSON.stringify(error)} */}
-          </p>
-        ) : products.length === 0 ? (
-          <p className="sklad__no-products-message">Нет доступных товаров.</p>
-        ) : (
-          <div className="table-wrapper">
-            <table className="sklad__table">
-              <thead>
-                <tr>
-                  <th>
-                    <input type="checkbox" />
-                  </th>
-                  <th></th>
-                  <th>№</th>
-                  <th>Название</th>
-                  <th>Поставщик</th>
-                  <th>Цена</th>
-                  <th>Количество</th>
-                  <th>Категория</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((item, index) => (
-                  <tr key={item.id}>
-                    <td>
+            <div className="table-wrapper">
+              <table className="sklad__table">
+                <thead>
+                  <tr>
+                    <th>
                       <input type="checkbox" />
-                    </td>
-                    <td>
-                      <MoreVertical
-                        size={16}
-                        onClick={() => handleEdit(item)}
-                        style={{ cursor: "pointer" }}
-                      />
-                    </td>
-                    <td>{index + 1}</td>
-                    <td>
-                      <strong>{item.name}</strong>
-                    </td>
-                    <td>{item.client_name ? item.client_name : "-"}</td>
-                    <td>{item.price}</td>
-                    <td>{item.quantity}</td>
-                    <td>{item.category}</td>
+                    </th>
+                    <th></th>
+                    <th>№</th>
+                    <th>Название</th>
+                    <th>Поставщик</th>
+                    <th>Цена</th>
+                    <th>Количество</th>
+                    <th>Категория</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {products.map((item, index) => (
+                    <tr key={item.id}>
+                      <td>
+                        <input type="checkbox" />
+                      </td>
+                      <td>
+                        <MoreVertical
+                          size={16}
+                          onClick={() => handleEdit(item)}
+                          style={{ cursor: "pointer" }}
+                        />
+                      </td>
+                      <td>{index + 1}</td>
+                      <td>
+                        <strong>{item.name}</strong>
+                      </td>
+                      <td>{item.client_name ? item.client_name : "-"}</td>
+                      <td>{item.price}</td>
+                      <td>{item.quantity}</td>
+                      <td>{item.category}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        <div className="sklad__pagination">
-          <span>
-            {currentPage} из {totalPages}
-          </span>
-          <button
-            onClick={handlePreviousPage}
-            disabled={!previous || loading || creating || updating || deleting}
-          >
-            ←
-          </button>
-          <button
-            onClick={handleNextPage}
-            disabled={!next || loading || creating || updating || deleting}
-          >
-            →
-          </button>
-        </div>
-      </>
+          <div className="sklad__pagination">
+            <span>
+              {currentPage} из {totalPages}
+            </span>
+            <button
+              onClick={handlePreviousPage}
+              disabled={
+                !previous || loading || creating || updating || deleting
+              }
+            >
+              ←
+            </button>
+            <button
+              onClick={handleNextPage}
+              disabled={!next || loading || creating || updating || deleting}
+            >
+              →
+            </button>
+          </div>
+        </>
+      ),
+      option: "scan",
+    },
+    {
+      label: "История",
+      content: (
+        <>
+          <div className="sklad__header">
+            <div className="sklad__left">
+              <input
+                type="text"
+                placeholder="Поиск по названию товара"
+                className="sklad__search"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+              <select className="employee__search-wrapper">
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <div className="sklad__center">
+                <span>Всего: {count !== null ? count : "-"}</span>
+                <span>Найдено: {products.length}</span>
+                {isFiltered && (
+                  <span
+                    className="sklad__reset"
+                    onClick={handleResetAllFilters}
+                    style={{ cursor: "pointer" }}
+                  >
+                    Сбросить
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <p className="sklad__loading-message">Загрузка товаров...</p>
+          ) : error ? (
+            <p className="sklad__error-message">Ошибка загрузки</p>
+          ) : filterProducts.length === 0 ? (
+            <p className="sklad__no-products-message">Нет доступных товаров.</p>
+          ) : (
+            <div className="table-wrapper">
+              <table className="sklad__table">
+                <thead>
+                  <tr>
+                    <th>
+                      <input type="checkbox" />
+                    </th>
+                    <th></th>
+                    <th>№</th>
+                    <th>Название</th>
+                    <th>Поставщик</th>
+                    <th>Цена</th>
+                    <th>Количество</th>
+                    <th>Категория</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filterProducts.map((item, index) => (
+                    <tr key={item.id}>
+                      <td>
+                        <input type="checkbox" />
+                      </td>
+                      <td>
+                        <MoreVertical
+                          size={16}
+                          onClick={() => handleEdit(item)}
+                          style={{ cursor: "pointer" }}
+                        />
+                      </td>
+                      <td>{index + 1}</td>
+                      <td>
+                        <strong>{item.name}</strong>
+                      </td>
+                      <td>{item.client_name ? item.client_name : "-"}</td>
+                      <td>{item.price}</td>
+                      <td>{item.quantity}</td>
+                      <td>{item.category}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="sklad__pagination">
+            <span>
+              {currentPage} из {totalPages}
+            </span>
+            <button
+              onClick={handlePreviousPage}
+              disabled={
+                !previous || loading || creating || updating || deleting
+              }
+            >
+              ←
+            </button>
+            <button
+              onClick={handleNextPage}
+              disabled={!next || loading || creating || updating || deleting}
+            >
+              →
+            </button>
+          </div>
+        </>
+      ),
+      option: "manually",
+    },
+  ];
+
+  return (
+    <div className="sklad">
+      {company.sector?.name !== "Строительная компания" ? (
+        tabs[0].content
+      ) : (
+        <>
+          <div className="vitrina__header" style={{ margin: "15px 0" }}>
+            <div className="vitrina__tabs">
+              {tabs.map((tab, index) => {
+                return (
+                  <span
+                    key={index}
+                    className={`vitrina__tab ${
+                      index === activeTab && "vitrina__tab--active"
+                    }`}
+                    onClick={() => setActiveTab(index)}
+                  >
+                    {tab.label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+          {tabs[activeTab].content}
+        </>
+      )}
+
       {showEditModal && selectedItem && (
         <EditModal
           item={selectedItem}
@@ -1402,6 +1554,21 @@ export default function () {
 
       {showBrandModal && (
         <AddBrandModal onClose={() => setShowBrandModal(false)} />
+      )}
+
+      {showReceiveModal && (
+        <AcceptPendingModal
+          onClose={() => setShowReceiveModal(false)}
+          onChanged={() =>
+            dispatch(
+              fetchProductsAsync({
+                page: currentPage,
+                search: searchTerm,
+                ...currentFilters,
+              })
+            )
+          }
+        />
       )}
     </div>
   );

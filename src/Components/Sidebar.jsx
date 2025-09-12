@@ -14,6 +14,7 @@ import {
   BsListCheck,
 } from "react-icons/bs";
 import {
+  FaBuilding,
   FaCog,
   FaComments,
   FaGlobe,
@@ -68,7 +69,10 @@ const HIDE_RULES = [
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/sell"] } },
   { when: { sector: "Кафе" }, hide: { toIncludes: ["/crm/cafe/payroll"] } },
   { when: { sector: "Гостиница" }, hide: { toIncludes: ["crm/analytics"] } },
-  { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/clients"] } },
+  {
+    when: { sector: "Гостиница" },
+    hide: { toIncludes: ["/crm/hostel/clients"] },
+  },
   { when: { sector: "Гостиница" }, hide: { toIncludes: ["/crm/hostel/bar"] } },
   {
     when: { sector: "Гостиница" },
@@ -222,6 +226,13 @@ const MENU_CONFIG = {
         to: "/crm/building/work",
         icon: <BsListCheck className="sidebar__menu-icon" />,
         permission: "can_view_building_work_process",
+        implemented: true,
+      },
+      {
+        label: "Объекты",
+        to: "/crm/building/objects",
+        icon: <FaBuilding className="sidebar__menu-icon" />,
+        permission: "can_view_building_objects",
         implemented: true,
       },
     ],

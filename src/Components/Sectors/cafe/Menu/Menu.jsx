@@ -9,7 +9,7 @@ import {
   FaEdit,
 } from "react-icons/fa";
 import api from "../../../../api";
-import "./menu.scss";
+import "./Menu.scss";
 
 /* helpers */
 const listFrom = (res) => res?.data?.results || res?.data || [];

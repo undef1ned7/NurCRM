@@ -9,6 +9,7 @@ import {
   getClientDeals,
   getClientDealDetail,
   updateDealDetail,
+  payDebtDeal,
 } from "../creators/clientCreators";
 import { useSelector } from "react-redux";
 
@@ -149,6 +150,17 @@ const clientSlice = createSlice({
         // state.dealDetail = payload;
       })
       .addCase(updateDealDetail.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.loading = false;
+      })
+      .addCase(payDebtDeal.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(payDebtDeal.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        // state.dealDetail = payload;
+      })
+      .addCase(payDebtDeal.rejected, (state, { payload }) => {
         state.error = payload;
         state.loading = false;
       });

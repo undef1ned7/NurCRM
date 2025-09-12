@@ -17,6 +17,19 @@
   box-sizing: border-box;
 }
 
+/* оплаченные строки — зачёркнуты и приглушены */
+.schedule__row--paid td {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* кнопку оплаты для оплаченных платежей делаем неактивной (если всё же рендерите) */
+.schedule__btn--paid {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
 .schedule__table {
   width: 100%;
   border-collapse: collapse;
